@@ -1,11 +1,19 @@
+export function sanitizeProjectName(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .substring(0, 40) || 'my-project';
+}
+
 export function generateComponent(name: string, props: Record<string, string>): string {
   const propInterface = Object.entries(props)
     .map(([key, type]) => `  ${key}: ${type};`)
     .join('\n');
 
-  return `import React from 'react';
-
-interface ${name}Props {
+  return `interface ${name}Props {
 ${propInterface}
 }
 
@@ -28,8 +36,7 @@ export function generatePage(name: string, components: string[]): string {
 
   const componentUsage = components.map(c => `      <${c} />`).join('\n');
 
-  return `import React from 'react';
-${imports}
+  return `${imports}
 
 export default function ${name}Page() {
   return (
@@ -42,10 +49,10 @@ ${componentUsage}
 }
 
 export function generateLayout(name: string, children: string): string {
-  return `import React from 'react';
-import './globals.css';
+  return `import './globals.css';
+import type { Metadata } from 'next';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: '${name}',
   description: '${name} application',
 };
@@ -108,10 +115,11 @@ body {
 `;
 }
 
-export function generateConfig(name: string): string {
-  return `import type { NextConfig } from 'next';
-
-const nextConfig: NextConfig = {
+export function generateConfig(name: string): { filename: string; content: string } {
+  return {
+    filename: 'next.config.mjs',
+    content: `/** @type {import('next').NextConfig} */
+const nextConfig = {
   reactStrictMode: true,
   images: {
     remotePatterns: [
@@ -124,12 +132,19 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
-`;
+`,
+  };
 }
 
 export function generatePackageJson(name: string): string {
+  const safeName = name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .substring(0, 50) || 'my-project';
+
   return JSON.stringify({
-    name: name.toLowerCase().replace(/\s+/g, '-'),
+    name: safeName,
     version: '0.1.0',
     private: true,
     scripts: {
@@ -139,18 +154,18 @@ export function generatePackageJson(name: string): string {
       lint: 'next lint',
     },
     dependencies: {
-      next: '^14.0.0',
-      react: '^18.2.0',
-      'react-dom': '^18.2.0',
+      next: '^14.2.0',
+      react: '^18.3.0',
+      'react-dom': '^18.3.0',
     },
     devDependencies: {
-      '@types/node': '^20.0.0',
-      '@types/react': '^18.2.0',
-      '@types/react-dom': '^18.2.0',
+      '@types/node': '^20.14.0',
+      '@types/react': '^18.3.0',
+      '@types/react-dom': '^18.3.0',
       autoprefixer: '^10.4.0',
       postcss: '^8.4.0',
       tailwindcss: '^3.4.0',
-      typescript: '^5.3.0',
+      typescript: '^5.5.0',
     },
   }, null, 2);
 }
@@ -179,10 +194,11 @@ export function generateTsConfig(): string {
   }, null, 2);
 }
 
-export function generateTailwindConfig(): string {
-  return `import type { Config } from 'tailwindcss';
-
-const config: Config = {
+export function generateTailwindConfig(): { filename: string; content: string } {
+  return {
+    filename: 'tailwind.config.mjs',
+    content: `/** @type {import('tailwindcss').Config} */
+const config = {
   content: [
     './src/pages/**/*.{js,ts,jsx,tsx,mdx}',
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -212,15 +228,21 @@ const config: Config = {
 };
 
 export default config;
-`;
+`,
+  };
 }
 
-export function generatePostcssConfig(): string {
-  return `module.exports = {
+export function generatePostcssConfig(): { filename: string; content: string } {
+  return {
+    filename: 'postcss.config.mjs',
+    content: `const config = {
   plugins: {
     tailwindcss: {},
     autoprefixer: {},
   },
 };
-`;
+
+export default config;
+`,
+  };
 }

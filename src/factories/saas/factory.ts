@@ -1,7 +1,7 @@
 import { Factory } from '../../core/engine.js';
 import type { FactoryConfig, FactoryResult, StudioInput, EngineConfig, Blueprint, GeneratedFile } from '../../core/types.js';
 import { processInput } from '../../inputs/index.js';
-import { generatePage, generateLayout, generateStyles, generateConfig, generatePackageJson, generateTsConfig, generateTailwindConfig, generatePostcssConfig } from '../../generators/codegen.js';
+import { generatePage, generateLayout, generateStyles, generateConfig, generatePackageJson, generateTsConfig, generateTailwindConfig, generatePostcssConfig, sanitizeProjectName } from '../../generators/codegen.js';
 
 export class SaasFactory extends Factory {
   readonly config: FactoryConfig = {
@@ -90,7 +90,7 @@ export class SaasFactory extends Factory {
   }
 
   private generateProjectFiles(blueprint: Blueprint): GeneratedFile[] {
-    const name = blueprint.project.name;
+    const name = sanitizeProjectName(blueprint.project.name);
     return [
       { path: 'src/app/page.tsx', content: generatePage('Home', ['Header', 'Hero', 'Footer']), type: 'page' },
       { path: 'src/app/login/page.tsx', content: generatePage('Login', ['LoginForm']), type: 'page' },
@@ -102,14 +102,17 @@ export class SaasFactory extends Factory {
       { path: 'src/components/RegisterForm.tsx', content: this.genRegisterForm(), type: 'component' },
       { path: 'src/components/Sidebar.tsx', content: this.genSidebar(), type: 'component' },
       { path: 'src/components/DashboardContent.tsx', content: this.genDashboardContent(), type: 'component' },
+      { path: 'src/components/Header.tsx', content: this.genHeader(), type: 'component' },
+      { path: 'src/components/Footer.tsx', content: this.genFooter(), type: 'component' },
+      { path: 'src/components/Hero.tsx', content: this.genHero(), type: 'component' },
       { path: 'src/lib/types.ts', content: this.genTypes(), type: 'type' },
       { path: 'src/app/api/auth/login/route.ts', content: this.genLoginApi(), type: 'api' },
       { path: 'src/app/api/auth/register/route.ts', content: this.genRegisterApi(), type: 'api' },
-      { path: 'next.config.ts', content: generateConfig(name), type: 'config' },
+      { path: generateConfig(name).filename, content: generateConfig(name).content, type: 'config' },
       { path: 'package.json', content: generatePackageJson(name), type: 'config' },
       { path: 'tsconfig.json', content: generateTsConfig(), type: 'config' },
-      { path: 'tailwind.config.ts', content: generateTailwindConfig(), type: 'config' },
-      { path: 'postcss.config.js', content: generatePostcssConfig(), type: 'config' },
+      { path: generateTailwindConfig().filename, content: generateTailwindConfig().content, type: 'config' },
+      { path: generatePostcssConfig().filename, content: generatePostcssConfig().content, type: 'config' },
     ];
   }
 
@@ -158,8 +161,7 @@ export function RegisterForm() {
   }
 
   private genSidebar(): string {
-    return `import React from 'react';
-import Link from 'next/link';
+    return `import Link from 'next/link';
 
 interface NavItem { label: string; href: string; icon?: string; }
 
@@ -183,18 +185,16 @@ export function Sidebar({ items = defaultItems }: { items?: NavItem[] }) {
   }
 
   private genDashboardContent(): string {
-    return `import React from 'react';
+    return `interface Stats { users?: number; revenue?: number; growth?: number; }
 
-interface Stats { users: number; revenue: number; growth: number; }
-
-export function DashboardContent({ stats }: { stats: Stats }) {
+export function DashboardContent({ stats = {} }: { stats?: Stats }) {
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 border rounded-lg"><p className="text-sm text-gray-500">Users</p><p className="text-2xl font-bold">{stats.users}</p></div>
-        <div className="p-4 border rounded-lg"><p className="text-sm text-gray-500">Revenue</p><p className="text-2xl font-bold">\${stats.revenue}</p></div>
-        <div className="p-4 border rounded-lg"><p className="text-sm text-gray-500">Growth</p><p className="text-2xl font-bold">{stats.growth}%</p></div>
+        <div className="p-4 border rounded-lg"><p className="text-sm text-gray-500">Users</p><p className="text-2xl font-bold">{stats.users ?? 0}</p></div>
+        <div className="p-4 border rounded-lg"><p className="text-sm text-gray-500">Revenue</p><p className="text-2xl font-bold">\${stats.revenue ?? 0}</p></div>
+        <div className="p-4 border rounded-lg"><p className="text-sm text-gray-500">Growth</p><p className="text-2xl font-bold">{stats.growth ?? 0}%</p></div>
       </div>
     </div>
   );
@@ -223,6 +223,54 @@ export async function POST(request: Request) {
 export async function POST(request: Request) {
   const { email, password, name } = await request.json();
   return NextResponse.json({ user: { id: Date.now().toString(), email, name, role: 'user' } });
+}
+`;
+  }
+
+  private genHeader(): string {
+    return `export function Header() {
+  return (
+    <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur">
+      <nav className="container mx-auto flex h-16 items-center justify-between px-4">
+        <a href="/" className="text-xl font-bold">SaaS App</a>
+        <div className="flex gap-6">
+          <a href="/login" className="text-sm font-medium hover:text-primary">Login</a>
+          <a href="/register" className="rounded-lg bg-primary px-4 py-2 text-sm text-white hover:bg-primary-dark">Sign Up</a>
+        </div>
+      </nav>
+    </header>
+  );
+}
+`;
+  }
+
+  private genFooter(): string {
+    return `export function Footer() {
+  return (
+    <footer className="border-t bg-gray-50">
+      <div className="container mx-auto py-8 px-4">
+        <p className="text-sm text-gray-500 text-center">&copy; {new Date().getFullYear()} All rights reserved.</p>
+      </div>
+    </footer>
+  );
+}
+`;
+  }
+
+  private genHero(): string {
+    return `export function Hero() {
+  return (
+    <section className="py-20 bg-gradient-to-b from-blue-50 to-white">
+      <div className="container mx-auto px-4 text-center">
+        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Build Better Products</h1>
+        <p className="mt-6 text-lg text-gray-600">The all-in-one platform for your team</p>
+        <div className="mt-8 flex justify-center gap-4">
+          <a href="/register" className="rounded-lg bg-primary px-6 py-3 text-white hover:bg-primary-dark">Get Started Free</a>
+          <a href="/login" className="rounded-lg border px-6 py-3 hover:bg-gray-50">Learn More</a>
+        </div>
+      </div>
+    </section>
+  );
 }
 `;
   }

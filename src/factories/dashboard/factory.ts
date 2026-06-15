@@ -1,7 +1,7 @@
 import { Factory } from '../../core/engine.js';
 import type { FactoryConfig, FactoryResult, StudioInput, EngineConfig, Blueprint, GeneratedFile } from '../../core/types.js';
 import { processInput } from '../../inputs/index.js';
-import { generatePage, generateLayout, generateStyles, generateConfig, generatePackageJson, generateTsConfig, generateTailwindConfig, generatePostcssConfig } from '../../generators/codegen.js';
+import { generatePage, generateLayout, generateStyles, generateConfig, generatePackageJson, generateTsConfig, generateTailwindConfig, generatePostcssConfig, sanitizeProjectName } from '../../generators/codegen.js';
 
 export class DashboardFactory extends Factory {
   readonly config: FactoryConfig = {
@@ -69,7 +69,7 @@ export class DashboardFactory extends Factory {
   }
 
   private generateProjectFiles(blueprint: Blueprint): GeneratedFile[] {
-    const name = blueprint.project.name;
+    const name = sanitizeProjectName(blueprint.project.name);
     return [
       { path: 'src/app/page.tsx', content: this.genDashboardPage(), type: 'page' },
       { path: 'src/app/layout.tsx', content: generateLayout(name, ''), type: 'page' },
@@ -82,11 +82,11 @@ export class DashboardFactory extends Factory {
       { path: 'src/lib/types.ts', content: this.genTypes(), type: 'type' },
       { path: 'src/lib/mock-data.ts', content: this.genMockData(), type: 'util' },
       { path: 'src/app/api/metrics/route.ts', content: this.genMetricsApi(), type: 'api' },
-      { path: 'next.config.ts', content: generateConfig(name), type: 'config' },
+      { path: generateConfig(name).filename, content: generateConfig(name).content, type: 'config' },
       { path: 'package.json', content: generatePackageJson(name), type: 'config' },
       { path: 'tsconfig.json', content: generateTsConfig(), type: 'config' },
-      { path: 'tailwind.config.ts', content: generateTailwindConfig(), type: 'config' },
-      { path: 'postcss.config.js', content: generatePostcssConfig(), type: 'config' },
+      { path: generateTailwindConfig().filename, content: generateTailwindConfig().content, type: 'config' },
+      { path: generatePostcssConfig().filename, content: generatePostcssConfig().content, type: 'config' },
     ];
   }
 

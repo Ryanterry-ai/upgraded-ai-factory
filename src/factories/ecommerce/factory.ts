@@ -1,7 +1,7 @@
 import { Factory } from '../../core/engine.js';
 import type { FactoryConfig, FactoryResult, StudioInput, EngineConfig, Blueprint, GeneratedFile } from '../../core/types.js';
 import { processInput } from '../../inputs/index.js';
-import { generatePage, generateLayout, generateStyles, generateConfig, generatePackageJson, generateTsConfig, generateTailwindConfig, generatePostcssConfig } from '../../generators/codegen.js';
+import { generatePage, generateLayout, generateStyles, generateConfig, generatePackageJson, generateTsConfig, generateTailwindConfig, generatePostcssConfig, sanitizeProjectName } from '../../generators/codegen.js';
 
 export class EcommerceFactory extends Factory {
   readonly config: FactoryConfig = {
@@ -95,7 +95,7 @@ export class EcommerceFactory extends Factory {
   }
 
   private generateProjectFiles(blueprint: Blueprint): GeneratedFile[] {
-    const name = blueprint.project.name;
+    const name = sanitizeProjectName(blueprint.project.name);
     return [
       { path: 'src/app/page.tsx', content: generatePage('Home', ['Header', 'Hero', 'ProductGrid', 'Footer']), type: 'page' },
       { path: 'src/app/products/page.tsx', content: generatePage('Products', ['Header', 'ProductGrid', 'Footer']), type: 'page' },
@@ -108,20 +108,22 @@ export class EcommerceFactory extends Factory {
       { path: 'src/components/CartItems.tsx', content: this.genCartItems(), type: 'component' },
       { path: 'src/components/CartSummary.tsx', content: this.genCartSummary(), type: 'component' },
       { path: 'src/components/CheckoutForm.tsx', content: this.genCheckoutForm(), type: 'component' },
+      { path: 'src/components/Header.tsx', content: this.genHeader(), type: 'component' },
+      { path: 'src/components/Footer.tsx', content: this.genFooter(), type: 'component' },
+      { path: 'src/components/Hero.tsx', content: this.genHero(), type: 'component' },
       { path: 'src/lib/types.ts', content: this.genTypes(), type: 'type' },
       { path: 'src/app/api/products/route.ts', content: this.genProductsApi(), type: 'api' },
       { path: 'src/app/api/cart/route.ts', content: this.genCartApi(), type: 'api' },
-      { path: 'next.config.ts', content: generateConfig(name), type: 'config' },
+      { path: generateConfig(name).filename, content: generateConfig(name).content, type: 'config' },
       { path: 'package.json', content: generatePackageJson(name), type: 'config' },
       { path: 'tsconfig.json', content: generateTsConfig(), type: 'config' },
-      { path: 'tailwind.config.ts', content: generateTailwindConfig(), type: 'config' },
-      { path: 'postcss.config.js', content: generatePostcssConfig(), type: 'config' },
+      { path: generateTailwindConfig().filename, content: generateTailwindConfig().content, type: 'config' },
+      { path: generatePostcssConfig().filename, content: generatePostcssConfig().content, type: 'config' },
     ];
   }
 
   private genProductCard(): string {
-    return `import React from 'react';
-import Link from 'next/link';
+    return `import Link from 'next/link';
 import Image from 'next/image';
 
 interface Product {
@@ -131,7 +133,8 @@ interface Product {
   image?: string;
 }
 
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({ product }: { product?: Product }) {
+  if (!product) return null;
   return (
     <Link href={\`/products/\${product.id}\`} className="group block">
       <div className="aspect-square overflow-hidden rounded-lg bg-gray-100">
@@ -150,12 +153,11 @@ export function ProductCard({ product }: { product: Product }) {
   }
 
   private genProductGrid(): string {
-    return `import React from 'react';
-import { ProductCard } from './ProductCard';
+    return `import { ProductCard } from './ProductCard';
 
 interface Product { id: string; name: string; price: number; image?: string; }
 
-export function ProductGrid({ products }: { products: Product[] }) {
+export function ProductGrid({ products = [] }: { products?: Product[] }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
       {products.map((product) => (
@@ -168,11 +170,9 @@ export function ProductGrid({ products }: { products: Product[] }) {
   }
 
   private genCartItems(): string {
-    return `import React from 'react';
+    return `interface CartItem { id: string; name: string; price: number; quantity: number; }
 
-interface CartItem { id: string; name: string; price: number; quantity: number; }
-
-export function CartItems({ items }: { items: CartItem[] }) {
+export function CartItems({ items = [] }: { items?: CartItem[] }) {
   return (
     <div className="space-y-4">
       {items.map((item) => (
@@ -191,9 +191,7 @@ export function CartItems({ items }: { items: CartItem[] }) {
   }
 
   private genCartSummary(): string {
-    return `import React from 'react';
-
-export function CartSummary({ total }: { total: number }) {
+    return `export function CartSummary({ total = 0 }: { total?: number }) {
   return (
     <div className="rounded-lg bg-gray-50 p-6">
       <h2 className="text-lg font-semibold">Order Summary</h2>
@@ -281,6 +279,53 @@ export async function GET() {
 export async function POST(request: Request) {
   const body = await request.json();
   return NextResponse.json({ item: { id: Date.now().toString(), ...body } });
+}
+`;
+  }
+
+  private genHeader(): string {
+    return `export function Header() {
+  return (
+    <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur">
+      <nav className="container mx-auto flex h-16 items-center justify-between px-4">
+        <a href="/" className="text-xl font-bold">Store</a>
+        <div className="flex gap-6">
+          <a href="/products" className="text-sm font-medium hover:text-primary">Products</a>
+          <a href="/cart" className="text-sm font-medium hover:text-primary">Cart</a>
+        </div>
+      </nav>
+    </header>
+  );
+}
+`;
+  }
+
+  private genFooter(): string {
+    return `export function Footer() {
+  return (
+    <footer className="border-t bg-gray-50">
+      <div className="container mx-auto py-8 px-4">
+        <p className="text-sm text-gray-500 text-center">&copy; {new Date().getFullYear()} All rights reserved.</p>
+      </div>
+    </footer>
+  );
+}
+`;
+  }
+
+  private genHero(): string {
+    return `export function Hero() {
+  return (
+    <section className="py-20 bg-gradient-to-b from-blue-50 to-white">
+      <div className="container mx-auto px-4 text-center">
+        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl">Welcome to Our Store</h1>
+        <p className="mt-6 text-lg text-gray-600">Discover our amazing products</p>
+        <div className="mt-8 flex justify-center gap-4">
+          <a href="/products" className="rounded-lg bg-primary px-6 py-3 text-white hover:bg-primary-dark">Shop Now</a>
+        </div>
+      </div>
+    </section>
+  );
 }
 `;
   }
