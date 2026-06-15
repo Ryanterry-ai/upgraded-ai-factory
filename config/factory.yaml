@@ -1,0 +1,40 @@
+# Factory Configuration
+
+## Global Settings
+```yaml
+# config/factory.yaml
+version: "1.0.0"
+default_framework: nextjs
+default_styling: tailwind
+default_language: typescript
+
+# Quality gates
+quality_gates:
+  blueprint_review: required
+  code_review: required
+  security_review: required_for_saas
+  performance_review: optional
+
+# Timeouts
+timeouts:
+  screenshot_capture: 180s
+  design_analysis: 300s
+  blueprint_generation: 120s
+  code_generation: 3600s
+  build: 600s
+
+# Retry policies
+retries:
+  max_attempts: 3
+  backoff: exponential
+  initial_delay: 5s
+
+# Memory settings
+memory:
+  working_memory_ttl: 3600s
+  project_memory_permanent: true
+  knowledge_memory_enabled: true
+```
+
+## Factory-Specific Overrides
+Each factory can override global settings in its own `config.yaml`.
