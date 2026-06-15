@@ -1,6 +1,6 @@
-# Upgraded AI Factory Studio
+# Upgraded AI Factory Studio v0.2.0
 
-A multi-factory AI platform capable of generating websites, ecommerce stores, SaaS applications, admin panels, dashboards, AI agents, and internal tools from any combination of prompt, URL, screenshot, Figma, PDF, or existing codebase.
+A multi-factory AI platform with **Requirement Understanding Engine** that normalizes any input (any language, natural language, business goals, feature lists, URLs, screenshots, PDFs, codebases, or combinations) into a canonical requirements schema before routing to the best factory.
 
 ## Quick Start
 
@@ -11,29 +11,88 @@ npm install
 # Build
 npm run build
 
-# Generate from prompt
-npx tsx src/cli/index.ts "Modern SaaS landing page"
+# Smart routing (auto-detects best factory)
+studio route "Ecommerce store for handmade candles with cart"
 
-# Generate from URL
-npx tsx src/cli/index.ts https://example.com
+# Generate from any input
+studio generate "Modern SaaS landing page"
+studio generate "https://example.com"
+studio generate "Dashboard analitik dengan grafik penjualan"
 
 # List all factories
-npx tsx src/cli/index.ts --list
+studio list
 
-# Start web interface
-npm run dev:web
+# Run audit
+studio audit website --count 10
+studio audit:all
+```
+
+## Architecture
+
+```
+User Input (any language, URL, screenshot, PDF, codebase)
+    ↓
+Requirement Understanding Engine
+    ↓
+Canonical Requirements Schema
+    ↓
+Factory Router
+    ↓
+Selected Factory (website | ecommerce | saas | admin | dashboard | agent | tools)
+    ↓
+Blueprint Generation
+    ↓
+Next.js Source Code
+```
+
+## Requirement Understanding Engine
+
+The engine normalizes **all input types** into a canonical requirements schema:
+
+| Input Type | Examples |
+|------------|----------|
+| **Natural Language** | "Build a todo app with auth and dark mode" |
+| **Any Language** | "Ecommerce store para velas artesanales" (Spanish) |
+| **Business Goals** | "Increase conversion rate by 20% with better UX" |
+| **Feature Lists** | "User registration, search, notifications, dashboard" |
+| **URLs** | "https://stripe.com" |
+| **Screenshots** | ./design.png |
+| **PDFs** | ./requirements.pdf |
+| **Codebases** | ./existing-project/ |
+| **Combinations** | URL + "Add dark mode and analytics" |
+
+### Canonical Schema
+
+```typescript
+interface CanonicalRequirements {
+  inputType: 'prompt' | 'url' | 'screenshot' | 'pdf' | 'codebase' | 'figma';
+  inputLanguage: 'en' | 'es' | 'fr' | 'de' | 'ja' | 'zh' | 'ko' | ...;
+  projectName: string;
+  projectType: 'website' | 'ecommerce' | 'saas' | 'admin' | 'dashboard' | 'agent' | 'tools';
+  features: ExtractedFeature[];
+  entities: ExtractedEntity[];
+  complexity: 'simple' | 'moderate' | 'complex';
+  industry: string;
+  targetAudience: string;
+  uiRequirements: UIRequirement;
+  dataRequirements: DataRequirement;
+  techStack: string[];
+  confidence: number;
+  ambiguities: string[];
+  suggestions: string[];
+}
 ```
 
 ## Supported Inputs
 
-| Input | Flag | Description |
-|-------|------|-------------|
-| **Prompt** | `-p <text>` | Text description of what to build |
-| **URL** | `-u <url>` | Website URL to analyze/clone |
-| **Screenshot** | `-s <path>` | Screenshot image path |
-| **Figma** | `-f <url>` | Figma design URL |
-| **PDF** | `--pdf <path>` | PDF document path |
-| **Codebase** | `-c <path>` | Existing codebase path |
+| Input | Description |
+|-------|-------------|
+| **Prompt** | Text description in any language |
+| **URL** | Website URL to analyze/clone |
+| **Screenshot** | Screenshot image path |
+| **Figma** | Figma design URL |
+| **PDF** | PDF document path |
+| **Codebase** | Existing codebase path |
 
 ## Supported Factories
 
@@ -47,92 +106,36 @@ npm run dev:web
 | **AI Agent** | `agent` | AI chatbots with chat UI and knowledge base |
 | **Internal Tools** | `tools` | Internal tools, form builders, data viewers |
 
-## Usage Examples
+## CLI Commands
 
 ```bash
-# Website from prompt
-studio "Portfolio site for a photographer"
+# Route input to best factory (shows routing decision)
+studio route <text>
 
-# Ecommerce from prompt
-studio "Ecommerce store for handmade jewelry"
+# Generate project
+studio generate <prompt|url|path>
 
-# SaaS from prompt
-studio "Project management SaaS with auth and billing"
+# Audit a factory
+studio audit <factory> --count <n>
 
-# Dashboard from prompt
-studio "Analytics dashboard with charts and KPIs"
+# Audit all factories
+studio audit:all
 
-# AI Agent from prompt
-studio "AI chatbot for customer support"
+# List factories
+studio list
 
-# Website from URL
-studio -u https://stripe.com
-
-# Website from screenshot
-studio -s ./design.png -o ./my-project
-
-# Force specific factory
-studio "Build a landing page" -F saas
-
-# Dry run (blueprint only)
-studio "My app" --dry-run
+# Show help
+studio help
 ```
 
 ## CLI Options
 
 ```
---url, -u <url>              Website URL to analyze/clone
---screenshot, -s <path>      Screenshot image path
---prompt, -p <text>          Text description of what to build
---figma, -f <url>            Figma design URL
---pdf <path>                 PDF document path
---codebase, -c <path>        Existing codebase path
---factory, -F <type>         Force specific factory
+--factory, -F <type>         Force specific factory type
 --output, -o <dir>           Output directory (default: ./output)
---format <fmt>               Output format: json, yaml, both
 --dry-run                    Generate blueprint only, no files
---verbose, -v                Verbose output
---list                       List all available factories
---help, -h                   Show help
-```
-
-## Web Interface
-
-```bash
-npm run dev:web
-# Open http://localhost:3000
-```
-
-## Architecture
-
-```
-src/
-├── core/                    # Engine, registry, types
-│   ├── engine.ts           # StudioEngine, FactoryRegistry, Factory base class
-│   └── types.ts            # All TypeScript type definitions
-├── inputs/                  # Input processors
-│   ├── url-processor.ts    # URL fetching and analysis
-│   ├── screenshot-processor.ts
-│   ├── prompt-processor.ts
-│   ├── figma-processor.ts
-│   ├── pdf-processor.ts
-│   └── codebase-processor.ts
-├── factories/               # Factory implementations
-│   ├── website/            # Website Factory
-│   ├── ecommerce/          # Ecommerce Factory
-│   ├── saas/               # SaaS Factory
-│   ├── admin/              # Admin Panel Factory
-│   ├── dashboard/          # Dashboard Factory
-│   ├── agent/              # AI Agent Factory
-│   └── tools/              # Internal Tools Factory
-├── generators/              # Code generators
-│   ├── blueprint-gen.ts    # Blueprint JSON/YAML generation
-│   └── codegen.ts          # Component, page, config generation
-├── cli/                     # CLI interface
-│   └── index.ts
-└── web/                     # Web interface
-    ├── index.html           # Frontend UI
-    └── server.ts            # API server
+--count <n>                  Number of benchmarks (default: 20)
+--verbose                    Show detailed output
 ```
 
 ## Output
@@ -143,6 +146,65 @@ Each factory generates:
 - **Next.js source code** — Components, pages, API routes
 - **Configuration** — package.json, tsconfig, tailwind, postcss
 
-## Phase 4 Success Criteria
+## Source Structure
 
-A user can submit a URL, screenshot, prompt, Figma link, PDF, or codebase and receive a structured website blueprint that becomes the source of truth for future code generation.
+```
+src/
+├── core/
+│   ├── engine.ts              # StudioEngine, FactoryRegistry, Factory base
+│   ├── types.ts               # All TypeScript type definitions
+│   ├── canonical-schema.ts    # Canonical requirements schema
+│   ├── requirement-engine.ts  # Requirement Understanding Engine
+│   ├── factory-router.ts      # Smart factory routing
+│   └── factory-setup.ts       # Engine factory registration
+├── inputs/                    # Input processors
+├── factories/                 # Factory implementations
+│   ├── website/
+│   ├── ecommerce/
+│   ├── saas/
+│   ├── admin/
+│   ├── dashboard/
+│   ├── agent/
+│   └── tools/
+├── generators/                # Code generators
+├── audit/                     # Production readiness audit
+│   ├── prompts/               # Benchmark prompts (20 per factory)
+│   ├── analyzers/             # Quality analyzers
+│   ├── benchmark-runner.ts    # Benchmark orchestration
+│   └── report-generator.ts    # Scorecard & report generation
+├── cli/
+│   └── studio.ts              # Main CLI entry point
+└── web/
+    ├── index.html             # Web UI
+    └── server.ts              # API server
+```
+
+## Benchmark & Audit
+
+Run quality benchmarks across all factories:
+
+```bash
+# Audit a single factory
+studio audit website --count 10
+
+# Audit all factories
+studio audit:all
+
+# Reports saved to ./audit-reports/
+```
+
+Quality metrics measured:
+- Build success rate
+- TypeScript errors
+- Responsive design
+- Accessibility (ARIA)
+- SEO metadata
+- Error boundaries
+- Loading states
+- Dark mode support
+
+## Version History
+
+- **v0.2.0** — Requirement Understanding Engine, canonical schema, smart routing
+- **v0.1.0** — 7 factories, 6 input types, CLI + Web UI
+- **v0.0.1** — Initial architecture specs

@@ -12,6 +12,8 @@ import type {
   StudioEvent,
 } from './types.js';
 import { blueprintToJson, blueprintToYaml } from '../generators/blueprint-gen.js';
+import { FactoryRouter, RoutingDecision } from './factory-router.js';
+import { CanonicalRequirements, RequirementsEngineResult } from './canonical-schema.js';
 
 // ═══════════════════════════════════════════════════════════
 // Factory Registry — Manages all registered factories
@@ -221,11 +223,13 @@ export abstract class Factory {
 // ═══════════════════════════════════════════════════════════
 export class StudioEngine {
   private registry: FactoryRegistry;
+  private router: FactoryRouter;
   private config: EngineConfig;
   private eventHandler?: EventHandler;
 
   constructor(config: Partial<EngineConfig> = {}) {
     this.registry = new FactoryRegistry();
+    this.router = new FactoryRouter();
     this.config = {
       outputDir: config.outputDir || './output',
       verbose: config.verbose || false,
@@ -287,7 +291,110 @@ export class StudioEngine {
     };
   }
 
+  /**
+   * Smart execution with Requirement Understanding Engine.
+   * Normalizes any input (any language, URL, screenshot, PDF, codebase, or combinations)
+   * into a canonical requirements schema before routing to the best factory.
+   */
+  async generate(input: {
+    prompt?: string;
+    url?: string;
+    screenshot?: Buffer;
+    pdf?: Buffer;
+    codebase?: string;
+    outputDir?: string;
+    factory?: string;
+    dryRun?: boolean;
+  }): Promise<EngineResult & { routing?: RoutingDecision; requirements?: CanonicalRequirements }> {
+    const startTime = Date.now();
+
+    // Determine input type and content
+    let inputType: InputType = 'prompt';
+    let content: string | Buffer = '';
+
+    if (input.url) {
+      inputType = 'url';
+      content = input.url;
+    } else if (input.screenshot) {
+      inputType = 'screenshot';
+      content = input.screenshot;
+    } else if (input.pdf) {
+      inputType = 'pdf';
+      content = input.pdf;
+    } else if (input.codebase) {
+      inputType = 'codebase';
+      content = input.codebase;
+    } else if (input.prompt) {
+      inputType = 'prompt';
+      content = input.prompt;
+    }
+
+    // Route through Requirement Understanding Engine
+    let routing: RoutingDecision | undefined;
+    let factoryType: FactoryType | undefined;
+
+    if (input.factory) {
+      // Explicit factory specified
+      factoryType = input.factory as FactoryType;
+    } else {
+      // Smart routing through the engine
+      routing = await this.router.route({
+        type: inputType,
+        content,
+      });
+      factoryType = routing.factory;
+    }
+
+    this.emit({ type: 'input:received', input: { type: inputType, content } as StudioInput });
+
+    const factory = this.registry.get(factoryType);
+    if (!factory) {
+      return {
+        success: false,
+        results: [],
+        totalDuration: Date.now() - startTime,
+        totalFiles: 0,
+        totalSize: 0,
+      };
+    }
+
+    this.emit({ type: 'factory:selected', factory: factoryType });
+    this.emit({ type: 'factory:started', factory: factoryType });
+
+    const studioInput: StudioInput = {
+      type: inputType,
+      prompt: input.prompt || (inputType === 'prompt' ? content.toString() : undefined),
+      url: input.url || (inputType === 'url' ? content.toString() : undefined),
+      screenshotPath: inputType === 'screenshot' ? content.toString() : undefined,
+      pdfPath: inputType === 'pdf' ? content.toString() : undefined,
+      codebasePath: inputType === 'codebase' ? content.toString() : undefined,
+    };
+
+    const result = await factory.execute(studioInput, {
+      ...this.config,
+      outputDir: input.outputDir || this.config.outputDir,
+      dryRun: input.dryRun ?? this.config.dryRun,
+    });
+
+    this.emit({ type: 'factory:completed', factory: factoryType, result });
+
+    const totalDuration = Date.now() - startTime;
+    return {
+      success: result.success,
+      results: [result],
+      totalDuration,
+      totalFiles: result.files.length,
+      totalSize: result.metadata.totalSize,
+      routing,
+      requirements: routing?.requirements,
+    };
+  }
+
   getRegistry(): FactoryRegistry {
     return this.registry;
+  }
+
+  getRouter(): FactoryRouter {
+    return this.router;
   }
 }
