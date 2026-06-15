@@ -1,7 +1,7 @@
 import { Factory } from '../../core/engine.js';
 import type { FactoryConfig, FactoryResult, StudioInput, EngineConfig, Blueprint, GeneratedFile, FactoryType } from '../../core/types.js';
 import { processInput } from '../../inputs/index.js';
-import { generatePage, generateLayout, generateStyles, generateConfig, generatePackageJson, generateTsConfig, generateTailwindConfig, generatePostcssConfig } from '../../generators/codegen.js';
+import { generatePage, generateLayout, generateStyles, generateConfig, generatePackageJson, generateTsConfig, generateTailwindConfig, generatePostcssConfig, sanitizeProjectName } from '../../generators/codegen.js';
 
 export class WebsiteFactory extends Factory {
   readonly config: FactoryConfig = {
@@ -57,7 +57,8 @@ export class WebsiteFactory extends Factory {
   }
 
   private buildBlueprint(prompt: string, metadata: Record<string, unknown>): Blueprint {
-    const name = (metadata.title as string) || this.extractName(prompt);
+    const rawName = (metadata.title as string) || this.extractName(prompt);
+    const name = sanitizeProjectName(rawName);
     const structure = metadata.structure as Record<string, unknown> || {};
 
     const pages = this.extractPages(prompt, structure);
@@ -138,41 +139,135 @@ export class WebsiteFactory extends Factory {
 
   private generateProjectFiles(blueprint: Blueprint): GeneratedFile[] {
     const name = blueprint.project.name;
+    const nextConfig = generateConfig(name);
+    const tailwindConfig = generateTailwindConfig();
+    const postcssConfig = generatePostcssConfig();
+
     return [
       { path: 'src/app/page.tsx', content: generatePage('Home', ['Header', 'Hero', 'Features', 'Footer']), type: 'page' },
       { path: 'src/app/layout.tsx', content: generateLayout(name, ''), type: 'page' },
       { path: 'src/app/globals.css', content: generateStyles(), type: 'style' },
-      { path: 'src/components/Header.tsx', content: this.genComponent('Header', { children: 'ReactNode' }), type: 'component' },
-      { path: 'src/components/Footer.tsx', content: this.genComponent('Footer', { children: 'ReactNode' }), type: 'component' },
-      { path: 'src/components/Hero.tsx', content: this.genComponent('Hero', { title: 'string', subtitle: 'string' }), type: 'component' },
-      { path: 'src/components/Button.tsx', content: this.genComponent('Button', { variant: "'primary' | 'secondary'", children: 'ReactNode' }), type: 'component' },
-      { path: 'src/components/Card.tsx', content: this.genComponent('Card', { title: 'string', description: 'string' }), type: 'component' },
-      { path: 'src/components/Features.tsx', content: this.genComponent('Features', { items: 'Feature[]' }), type: 'component' },
-      { path: 'next.config.ts', content: generateConfig(name), type: 'config' },
+      { path: 'src/components/Header.tsx', content: this.genComponent('Header', {}), type: 'component' },
+      { path: 'src/components/Footer.tsx', content: this.genComponent('Footer', {}), type: 'component' },
+      { path: 'src/components/Hero.tsx', content: this.genComponent('Hero', {}), type: 'component' },
+      { path: 'src/components/Button.tsx', content: this.genComponent('Button', {}), type: 'component' },
+      { path: 'src/components/Card.tsx', content: this.genComponent('Card', {}), type: 'component' },
+      { path: 'src/components/Features.tsx', content: this.genComponent('Features', {}), type: 'component' },
+      { path: nextConfig.filename, content: nextConfig.content, type: 'config' },
       { path: 'package.json', content: generatePackageJson(name), type: 'config' },
       { path: 'tsconfig.json', content: generateTsConfig(), type: 'config' },
-      { path: 'tailwind.config.ts', content: generateTailwindConfig(), type: 'config' },
-      { path: 'postcss.config.js', content: generatePostcssConfig(), type: 'config' },
+      { path: tailwindConfig.filename, content: tailwindConfig.content, type: 'config' },
+      { path: postcssConfig.filename, content: postcssConfig.content, type: 'config' },
     ];
   }
 
   private genComponent(name: string, props: Record<string, string>): string {
-    const propInterface = Object.entries(props).map(([k, v]) => `  ${k}: ${v};`).join('\n');
-    return `import React from 'react';
+    const propInterface = Object.entries(props).map(([k, v]) => `  ${k}?: ${v};`).join('\n');
+    const propNames = Object.keys(props);
 
-interface ${name}Props {
-${propInterface}
-}
+    // Generate meaningful content based on component name
+    const content = this.getComponentContent(name);
 
-export function ${name}({ ${Object.keys(props).join(', ')} }: ${name}Props) {
+    if (propNames.length === 0) {
+      return `export function ${name}() {
   return (
-    <section className="py-12">
-      <div className="container mx-auto px-4">
-        <h2>${name}</h2>
-      </div>
-    </section>
+    ${content}
   );
 }
 `;
+    }
+
+    return `interface ${name}Props {
+${propInterface}
+}
+
+export function ${name}({ ${propNames.join(', ')} }: ${name}Props) {
+  return (
+    ${content}
+  );
+}
+`;
+  }
+
+  private getComponentContent(name: string): string {
+    switch (name) {
+      case 'Header':
+        return `<header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+      <nav className="container mx-auto flex h-16 items-center justify-between px-4">
+        <div className="text-xl font-bold">Brand</div>
+        <div className="flex gap-6">
+          <a href="#" className="text-sm font-medium hover:text-primary">Home</a>
+          <a href="#" className="text-sm font-medium hover:text-primary">About</a>
+          <a href="#" className="text-sm font-medium hover:text-primary">Contact</a>
+        </div>
+      </nav>
+    </header>`;
+      case 'Footer':
+        return `<footer className="border-t bg-gray-50">
+      <div className="container mx-auto py-8 px-4">
+        <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
+          <p className="text-sm text-gray-500">&copy; {new Date().getFullYear()} All rights reserved.</p>
+          <div className="flex gap-4">
+            <a href="#" className="text-sm text-gray-500 hover:text-gray-700">Privacy</a>
+            <a href="#" className="text-sm text-gray-500 hover:text-gray-700">Terms</a>
+          </div>
+        </div>
+      </div>
+    </footer>`;
+      case 'Hero':
+        return `<section className="py-20 md:py-32">
+      <div className="container mx-auto px-4 text-center">
+        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
+          Welcome
+        </h1>
+        <p className="mt-6 text-lg text-gray-600 md:text-xl">
+          Build something amazing with our platform.
+        </p>
+        <div className="mt-8 flex justify-center gap-4">
+          <button className="rounded-lg bg-primary px-6 py-3 text-white hover:bg-primary-dark">
+            Get Started
+          </button>
+          <button className="rounded-lg border px-6 py-3 hover:bg-gray-50">
+            Learn More
+          </button>
+        </div>
+      </div>
+    </section>`;
+      case 'Features':
+        return `<section className="py-16 bg-gray-50">
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl font-bold text-center mb-12">Features</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="rounded-lg border bg-white p-6 shadow-sm">
+            <h3 className="text-xl font-semibold">Fast</h3>
+            <p className="mt-2 text-gray-600">Lightning fast performance.</p>
+          </div>
+          <div className="rounded-lg border bg-white p-6 shadow-sm">
+            <h3 className="text-xl font-semibold">Secure</h3>
+            <p className="mt-2 text-gray-600">Enterprise-grade security.</p>
+          </div>
+          <div className="rounded-lg border bg-white p-6 shadow-sm">
+            <h3 className="text-xl font-semibold">Easy</h3>
+            <p className="mt-2 text-gray-600">Simple to use and deploy.</p>
+          </div>
+        </div>
+      </div>
+    </section>`;
+      case 'Button':
+        return `<button className="rounded-lg bg-primary px-6 py-3 font-medium text-white transition-colors hover:bg-primary-dark">
+      Click me
+    </button>`;
+      case 'Card':
+        return `<div className="rounded-lg border bg-white p-6 shadow-sm transition-shadow hover:shadow-md">
+      <h3 className="text-xl font-semibold">Card Title</h3>
+      <p className="mt-2 text-gray-600">Card description goes here.</p>
+    </div>`;
+      default:
+        return `<section className="py-12">
+      <div className="container mx-auto px-4">
+        <h2 className="text-2xl font-bold">${name}</h2>
+      </div>
+    </section>`;
+    }
   }
 }
