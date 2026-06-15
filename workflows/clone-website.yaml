@@ -1,0 +1,82 @@
+# Workflow Definitions
+
+## Standard Clone Workflow
+```yaml
+# workflows/clone-website.yaml
+name: Clone Website
+trigger: user_provides_url
+factory: same-dev
+
+steps:
+  - id: intake
+    name: URL Intake & Validation
+    agent: coordinator
+    timeout: 30s
+    
+  - id: screenshot
+    name: Screenshot Capture
+    agent: screenshot-vision
+    timeout: 180s
+    depends_on: [intake]
+    
+  - id: design_analysis
+    name: Design Analysis
+    agent: design-reverse-engineer
+    timeout: 300s
+    depends_on: [screenshot]
+    
+  - id: component_extraction
+    name: Component Extraction
+    agent: component-extractor
+    timeout: 300s
+    depends_on: [screenshot]
+    
+  - id: blueprint
+    name: Blueprint Generation
+    agent: blueprint-generator
+    timeout: 120s
+    depends_on: [design_analysis, component_extraction]
+    
+  - id: blueprint_review
+    name: Blueprint Review
+    agent: coordinator
+    gate: true
+    timeout: 60s
+    depends_on: [blueprint]
+    
+  - id: code_generation
+    name: Code Generation
+    agent: ui-ux-pro-max
+    timeout: 1800s
+    depends_on: [blueprint_review]
+    
+  - id: code_review
+    name: Code Review
+    agent: reviewer
+    gate: true
+    timeout: 300s
+    depends_on: [code_generation]
+    
+  - id: build_test
+    name: Build & Test
+    agent: frontend-architect
+    timeout: 600s
+    depends_on: [code_review]
+    
+  - id: final_review
+    name: Final Review
+    agent: coordinator
+    gate: true
+    timeout: 300s
+    depends_on: [build_test]
+    
+  - id: deployment
+    name: Deployment Preparation
+    agent: deployment
+    timeout: 180s
+    depends_on: [final_review]
+```
+
+## Parallel Execution Opportunities
+- Steps 2-4 can run concurrently (screenshot, design analysis, component extraction)
+- Step 7 can parallelize component generation across independent components
