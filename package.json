@@ -1,21 +1,30 @@
 {
   "name": "upgraded-ai-factory-studio",
-  "version": "0.1.0",
-  "description": "Multi-factory AI platform for generating websites, ecommerce, SaaS, admin panels, dashboards, agents, and internal tools",
+  "version": "0.2.0",
+  "description": "Multi-factory AI platform with Requirement Understanding Engine for generating websites, ecommerce, SaaS, admin panels, dashboards, agents, and internal tools",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "studio": "./dist/cli/index.js",
-    "samedev": "./dist/cli/index.js"
+    "studio": "./dist/cli/studio.js",
+    "samedev": "./dist/cli/index.js",
+    "audit": "./dist/cli/studio.js"
   },
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/cli/index.ts",
     "dev:web": "tsx src/web/server.ts",
-    "start": "node dist/cli/index.js",
+    "start": "node dist/cli/studio.js",
     "start:web": "node dist/web/server.js",
-    "studio": "tsx src/cli/index.ts",
-    "studio:web": "tsx src/web/server.ts"
+    "studio": "tsx src/cli/studio.ts",
+    "studio:web": "tsx src/web/server.ts",
+    "audit": "tsx src/cli/studio.ts audit:all",
+    "audit:website": "tsx src/cli/studio.ts audit website",
+    "audit:ecommerce": "tsx src/cli/studio.ts audit ecommerce",
+    "audit:saas": "tsx src/cli/studio.ts audit saas",
+    "audit:admin": "tsx src/cli/studio.ts audit admin",
+    "audit:dashboard": "tsx src/cli/studio.ts audit dashboard",
+    "audit:agent": "tsx src/cli/studio.ts audit agent",
+    "audit:tools": "tsx src/cli/studio.ts audit tools"
   },
   "dependencies": {
     "cheerio": "^1.0.0-rc.12",

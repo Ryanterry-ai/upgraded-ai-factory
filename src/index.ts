@@ -1,4 +1,6 @@
-export * from './core/index.js';
-export * from './inputs/index.js';
-export * from './factories/index.js';
-export * from './generators/index.js';
+export * from './core/canonical-schema.js';
+export * from './core/requirement-engine.js';
+export * from './core/factory-router.js';
+export { StudioEngine, FactoryRegistry, Factory } from './core/engine.js';
+export { createEngine } from './core/factory-setup.js';
+export * from './audit/index.js';
