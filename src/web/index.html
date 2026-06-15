@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Upgraded AI Factory Studio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: #0a0a0a; color: #fafafa; }
+    .glass { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(12px); }
+    .glow { box-shadow: 0 0 60px rgba(59,130,246,0.15); }
+    .input-glow:focus { box-shadow: 0 0 0 2px rgba(59,130,246,0.5); }
+    @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+    @keyframes pulse { 0%,100% { opacity:1; } 50% { opacity:0.5; } }
+    .fade-up { animation: fadeUp 0.5s ease-out forwards; }
+    .pulse { animation: pulse 2s ease-in-out infinite; }
+    .factory-card { transition: all 0.2s ease; }
+    .factory-card:hover { transform: translateY(-2px); border-color: rgba(59,130,246,0.4); }
+    .factory-card.selected { border-color: #3b82f6; background: rgba(59,130,246,0.1); }
+    .progress-bar { transition: width 0.3s ease; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <div id="app" class="max-w-5xl mx-auto px-6 py-12">
+    <!-- Header -->
+    <header class="text-center mb-12 fade-up">
+      <div class="inline-flex items-center gap-3 mb-4">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-lg font-bold">F</div>
+        <h1 class="text-3xl font-bold tracking-tight">Upgraded AI Factory Studio</h1>
+      </div>
+      <p class="text-gray-400 text-lg">Generate websites, ecommerce stores, SaaS apps, dashboards, agents & more</p>
+    </header>
+
+    <!-- Input Section -->
+    <section class="glass rounded-2xl p-8 mb-8 fade-up" style="animation-delay:0.1s">
+      <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+        <span class="w-6 h-6 rounded-full bg-blue-500/20 text-blue-400 text-sm flex items-center justify-center">1</span>
+        Input
+      </h2>
+      
+      <!-- Input Type Tabs -->
+      <div class="flex gap-2 mb-6 flex-wrap">
+        <button onclick="setInputType('prompt')" class="input-tab px-4 py-2 rounded-lg text-sm font-medium bg-blue-500/20 text-blue-400" data-type="prompt">Prompt</button>
+        <button onclick="setInputType('url')" class="input-tab px-4 py-2 rounded-lg text-sm font-medium bg-white/5 text-gray-400 hover:bg-white/10" data-type="url">URL</button>
+        <button onclick="setInputType('screenshot')" class="input-tab px-4 py-2 rounded-lg text-sm font-medium bg-white/5 text-gray-400 hover:bg-white/10" data-type="screenshot">Screenshot</button>
+        <button onclick="setInputType('figma')" class="input-tab px-4 py-2 rounded-lg text-sm font-medium bg-white/5 text-gray-400 hover:bg-white/10" data-type="figma">Figma</button>
+        <button onclick="setInputType('pdf')" class="input-tab px-4 py-2 rounded-lg text-sm font-medium bg-white/5 text-gray-400 hover:bg-white/10" data-type="pdf">PDF</button>
+        <button onclick="setInputType('codebase')" class="input-tab px-4 py-2 rounded-lg text-sm font-medium bg-white/5 text-gray-400 hover:bg-white/10" data-type="codebase">Codebase</button>
+      </div>
+
+      <!-- Input Fields -->
+      <div id="input-prompt" class="input-panel">
+        <textarea id="prompt-input" rows="4" placeholder="Describe what you want to build...&#10;&#10;Examples:&#10;• Modern SaaS landing page for a project management tool&#10;• Ecommerce store selling handmade jewelry&#10;• AI chatbot for customer support" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 input-glow focus:outline-none resize-none"></textarea>
+      </div>
+      <div id="input-url" class="input-panel hidden">
+        <input id="url-input" type="url" placeholder="https://example.com" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 input-glow focus:outline-none">
+      </div>
+      <div id="input-screenshot" class="input-panel hidden">
+        <div class="border-2 border-dashed border-white/10 rounded-xl p-8 text-center">
+          <input id="screenshot-input" type="file" accept="image/*" class="hidden" onchange="handleFileSelect(this, 'screenshot')">
+          <button onclick="document.getElementById('screenshot-input').click()" class="text-blue-400 hover:text-blue-300">Click to upload screenshot</button>
+          <p id="screenshot-filename" class="text-gray-500 mt-2 text-sm"></p>
+        </div>
+      </div>
+      <div id="input-figma" class="input-panel hidden">
+        <input id="figma-input" type="url" placeholder="https://figma.com/file/..." class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 input-glow focus:outline-none">
+      </div>
+      <div id="input-pdf" class="input-panel hidden">
+        <div class="border-2 border-dashed border-white/10 rounded-xl p-8 text-center">
+          <input id="pdf-input" type="file" accept=".pdf" class="hidden" onchange="handleFileSelect(this, 'pdf')">
+          <button onclick="document.getElementById('pdf-input').click()" class="text-blue-400 hover:text-blue-300">Click to upload PDF</button>
+          <p id="pdf-filename" class="text-gray-500 mt-2 text-sm"></p>
+        </div>
+      </div>
+      <div id="input-codebase" class="input-panel hidden">
+        <input id="codebase-input" type="text" placeholder="/path/to/your/codebase" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white placeholder-gray-500 input-glow focus:outline-none">
+      </div>
+    </section>
+
+    <!-- Factory Selection -->
+    <section class="glass rounded-2xl p-8 mb-8 fade-up" style="animation-delay:0.2s">
+      <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+        <span class="w-6 h-6 rounded-full bg-purple-500/20 text-purple-400 text-sm flex items-center justify-center">2</span>
+        Factory <span class="text-sm font-normal text-gray-500 ml-2">(auto-detected or choose below)</span>
+      </h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-3" id="factory-grid">
+        <button onclick="selectFactory('website')" class="factory-card glass rounded-xl p-4 text-left" data-factory="website">
+          <div class="text-2xl mb-2">🌐</div>
+          <div class="font-medium text-sm">Website</div>
+          <div class="text-xs text-gray-500 mt-1">Landing pages, blogs</div>
+        </button>
+        <button onclick="selectFactory('ecommerce')" class="factory-card glass rounded-xl p-4 text-left" data-factory="ecommerce">
+          <div class="text-2xl mb-2">🛒</div>
+          <div class="font-medium text-sm">Ecommerce</div>
+          <div class="text-xs text-gray-500 mt-1">Stores, products, cart</div>
+        </button>
+        <button onclick="selectFactory('saas')" class="factory-card glass rounded-xl p-4 text-left" data-factory="saas">
+          <div class="text-2xl mb-2">☁️</div>
+          <div class="font-medium text-sm">SaaS</div>
+          <div class="text-xs text-gray-500 mt-1">Auth, billing, multi-tenant</div>
+        </button>
+        <button onclick="selectFactory('admin')" class="factory-card glass rounded-xl p-4 text-left" data-factory="admin">
+          <div class="text-2xl mb-2">⚙️</div>
+          <div class="font-medium text-sm">Admin</div>
+          <div class="text-xs text-gray-500 mt-1">CRUD, data tables</div>
+        </button>
+        <button onclick="selectFactory('dashboard')" class="factory-card glass rounded-xl p-4 text-left" data-factory="dashboard">
+          <div class="text-2xl mb-2">📊</div>
+          <div class="font-medium text-sm">Dashboard</div>
+          <div class="text-xs text-gray-500 mt-1">Charts, metrics, analytics</div>
+        </button>
+        <button onclick="selectFactory('agent')" class="factory-card glass rounded-xl p-4 text-left" data-factory="agent">
+          <div class="text-2xl mb-2">🤖</div>
+          <div class="font-medium text-sm">AI Agent</div>
+          <div class="text-xs text-gray-500 mt-1">Chatbots, assistants</div>
+        </button>
+        <button onclick="selectFactory('tools')" class="factory-card glass rounded-xl p-4 text-left" data-factory="tools">
+          <div class="text-2xl mb-2">🔧</div>
+          <div class="font-medium text-sm">Tools</div>
+          <div class="text-xs text-gray-500 mt-1">Internal tools, builders</div>
+        </button>
+        <button onclick="selectFactory(null)" class="factory-card glass rounded-xl p-4 text-left border-dashed" data-factory="auto">
+          <div class="text-2xl mb-2">✨</div>
+          <div class="font-medium text-sm">Auto-Detect</div>
+          <div class="text-xs text-gray-500 mt-1">Let AI choose</div>
+        </button>
+      </div>
+    </section>
+
+    <!-- Generate Button -->
+    <div class="text-center mb-8 fade-up" style="animation-delay:0.3s">
+      <button onclick="generate()" id="generate-btn" class="px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl text-lg font-semibold hover:from-blue-500 hover:to-purple-500 transition-all glow">
+        Generate Blueprint
+      </button>
+    </div>
+
+    <!-- Progress -->
+    <div id="progress-section" class="hidden glass rounded-2xl p-8 mb-8">
+      <h2 class="text-xl font-semibold mb-4">Generating...</h2>
+      <div class="w-full bg-white/10 rounded-full h-2 mb-4">
+        <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full progress-bar" style="width:0%"></div>
+      </div>
+      <p id="progress-text" class="text-gray-400 text-sm"></p>
+    </div>
+
+    <!-- Results -->
+    <section id="results-section" class="hidden glass rounded-2xl p-8 fade-up">
+      <h2 class="text-xl font-semibold mb-6 flex items-center gap-2">
+        <span class="w-6 h-6 rounded-full bg-green-500/20 text-green-400 text-sm flex items-center justify-center">✓</span>
+        Blueprint Generated
+      </h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white/5 rounded-lg p-4"><p class="text-xs text-gray-500">Factory</p><p id="result-factory" class="font-semibold"></p></div>
+        <div class="bg-white/5 rounded-lg p-4"><p class="text-xs text-gray-500">Pages</p><p id="result-pages" class="font-semibold"></p></div>
+        <div class="bg-white/5 rounded-lg p-4"><p class="text-xs text-gray-500">Components</p><p id="result-components" class="font-semibold"></p></div>
+        <div class="bg-white/5 rounded-lg p-4"><p class="text-xs text-gray-500">Duration</p><p id="result-duration" class="font-semibold"></p></div>
+      </div>
+      <div class="bg-black/40 rounded-xl p-4 max-h-96 overflow-auto">
+        <pre id="result-blueprint" class="text-sm text-gray-300 whitespace-pre-wrap"></pre>
+      </div>
+      <div class="flex gap-3 mt-6">
+        <button onclick="downloadBlueprint('json')" class="px-4 py-2 bg-white/10 rounded-lg text-sm hover:bg-white/20">Download JSON</button>
+        <button onclick="downloadBlueprint('yaml')" class="px-4 py-2 bg-white/10 rounded-lg text-sm hover:bg-white/20">Download YAML</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    let currentInputType = 'prompt';
+    let selectedFactory = null;
+    let generatedBlueprint = null;
+
+    function setInputType(type) {
+      currentInputType = type;
+      document.querySelectorAll('.input-tab').forEach(t => {
+        t.className = t.dataset.type === type ? 'input-tab px-4 py-2 rounded-lg text-sm font-medium bg-blue-500/20 text-blue-400' : 'input-tab px-4 py-2 rounded-lg text-sm font-medium bg-white/5 text-gray-400 hover:bg-white/10';
+      });
+      document.querySelectorAll('.input-panel').forEach(p => p.classList.add('hidden'));
+      document.getElementById('input-' + type).classList.remove('hidden');
+    }
+
+    function selectFactory(type) {
+      selectedFactory = type;
+      document.querySelectorAll('.factory-card').forEach(c => c.classList.remove('selected'));
+      if (type) document.querySelector(`[data-factory="${type}"]`)?.classList.add('selected');
+    }
+
+    function handleFileSelect(input, type) {
+      const name = input.files[0]?.name || '';
+      document.getElementById(type + '-filename').textContent = name;
+    }
+
+    function detectFactory(prompt) {
+      const lower = prompt.toLowerCase();
+      if (/shop|store|product|cart|checkout|ecommerce|buy|purchase/i.test(lower)) return 'ecommerce';
+      if (/agent|chatbot|chat|ai|assistant|bot/i.test(lower)) return 'agent';
+      if (/admin|panel|crud|manage|backoffice/i.test(lower)) return 'admin';
+      if (/dashboard|analytics|chart|graph|metric/i.test(lower)) return 'dashboard';
+      if (/tool|internal|utility|builder|viewer/i.test(lower)) return 'tools';
+      if (/saas|subscription|billing|tenant/i.test(lower)) return 'saas';
+      return 'website';
+    }
+
+    function getInput() {
+      switch (currentInputType) {
+        case 'prompt': return document.getElementById('prompt-input').value;
+        case 'url': return document.getElementById('url-input').value;
+        case 'figma': return document.getElementById('figma-input').value;
+        case 'codebase': return document.getElementById('codebase-input').value;
+        default: return '';
+      }
+    }
+
+    async function generate() {
+      const input = getInput();
+      if (!input) { alert('Please enter an input'); return; }
+
+      const factory = selectedFactory || detectFactory(input);
+      const btn = document.getElementById('generate-btn');
+      const progress = document.getElementById('progress-section');
+      const results = document.getElementById('results-section');
+
+      btn.disabled = true;
+      btn.textContent = 'Generating...';
+      progress.classList.remove('hidden');
+      results.classList.add('hidden');
+
+      const steps = ['Analyzing input...', 'Building blueprint...', 'Generating components...', 'Finalizing...'];
+      for (let i = 0; i < steps.length; i++) {
+        document.getElementById('progress-text').textContent = steps[i];
+        document.getElementById('progress-bar').style.width = ((i + 1) / steps.length * 100) + '%';
+        await new Promise(r => setTimeout(r, 500));
+      }
+
+      try {
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ input, inputType: currentInputType, factory }),
+        });
+        const data = await response.json();
+        generatedBlueprint = data;
+
+        document.getElementById('result-factory').textContent = data.factory || factory;
+        document.getElementById('result-pages').textContent = data.blueprint?.pages?.length || 0;
+        document.getElementById('result-components').textContent = data.blueprint?.components?.length || 0;
+        document.getElementById('result-duration').textContent = ((data.duration || 0) / 1000).toFixed(1) + 's';
+
+        progress.classList.add('hidden');
+        results.classList.remove('hidden');
+      } catch (err) {
+        progress.classList.add('hidden');
+        alert('Generation failed: ' + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Generate Blueprint';
+      }
+    }
+
+    function downloadBlueprint(format) {
+      if (!generatedBlueprint) return;
+      const content = format === 'yaml' ? generatedBlueprint.yaml : JSON.stringify(generatedBlueprint.blueprint, null, 2);
+      const blob = new Blob([content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `blueprint.${format}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+  </script>
+</body>
+</html>

@@ -1,105 +1,148 @@
-# Upgraded AI Factory
+# Upgraded AI Factory Studio
 
-A unified AI Software Factory operating system with specialized agents, product factories, and intelligent workflows for automated software development.
+A multi-factory AI platform capable of generating websites, ecommerce stores, SaaS applications, admin panels, dashboards, AI agents, and internal tools from any combination of prompt, URL, screenshot, Figma, PDF, or existing codebase.
+
+## Quick Start
+
+```bash
+# Install dependencies
+npm install
+
+# Build
+npm run build
+
+# Generate from prompt
+npx tsx src/cli/index.ts "Modern SaaS landing page"
+
+# Generate from URL
+npx tsx src/cli/index.ts https://example.com
+
+# List all factories
+npx tsx src/cli/index.ts --list
+
+# Start web interface
+npm run dev:web
+```
+
+## Supported Inputs
+
+| Input | Flag | Description |
+|-------|------|-------------|
+| **Prompt** | `-p <text>` | Text description of what to build |
+| **URL** | `-u <url>` | Website URL to analyze/clone |
+| **Screenshot** | `-s <path>` | Screenshot image path |
+| **Figma** | `-f <url>` | Figma design URL |
+| **PDF** | `--pdf <path>` | PDF document path |
+| **Codebase** | `-c <path>` | Existing codebase path |
+
+## Supported Factories
+
+| Factory | Type | Description |
+|---------|------|-------------|
+| **Website** | `website` | Marketing sites, landing pages, blogs, portfolios |
+| **Ecommerce** | `ecommerce` | Online stores with products, cart, checkout |
+| **SaaS** | `saas` | SaaS apps with auth, billing, multi-tenancy |
+| **Admin Panel** | `admin` | Admin dashboards with CRUD and data tables |
+| **Dashboard** | `dashboard` | Analytics dashboards with charts and metrics |
+| **AI Agent** | `agent` | AI chatbots with chat UI and knowledge base |
+| **Internal Tools** | `tools` | Internal tools, form builders, data viewers |
+
+## Usage Examples
+
+```bash
+# Website from prompt
+studio "Portfolio site for a photographer"
+
+# Ecommerce from prompt
+studio "Ecommerce store for handmade jewelry"
+
+# SaaS from prompt
+studio "Project management SaaS with auth and billing"
+
+# Dashboard from prompt
+studio "Analytics dashboard with charts and KPIs"
+
+# AI Agent from prompt
+studio "AI chatbot for customer support"
+
+# Website from URL
+studio -u https://stripe.com
+
+# Website from screenshot
+studio -s ./design.png -o ./my-project
+
+# Force specific factory
+studio "Build a landing page" -F saas
+
+# Dry run (blueprint only)
+studio "My app" --dry-run
+```
+
+## CLI Options
+
+```
+--url, -u <url>              Website URL to analyze/clone
+--screenshot, -s <path>      Screenshot image path
+--prompt, -p <text>          Text description of what to build
+--figma, -f <url>            Figma design URL
+--pdf <path>                 PDF document path
+--codebase, -c <path>        Existing codebase path
+--factory, -F <type>         Force specific factory
+--output, -o <dir>           Output directory (default: ./output)
+--format <fmt>               Output format: json, yaml, both
+--dry-run                    Generate blueprint only, no files
+--verbose, -v                Verbose output
+--list                       List all available factories
+--help, -h                   Show help
+```
+
+## Web Interface
+
+```bash
+npm run dev:web
+# Open http://localhost:3000
+```
 
 ## Architecture
 
-### Phase 0: AI Operating System
-- **CLAUDE.md**: Master operating system (Vision, Mission, Standards, Quality Gates)
-- **AGENTS.md**: Organizational hierarchy (9 departments, 32 agents)
-
-### Phase 1: Agent Organization
-- 32 specialized agents across 9 departments
-- Unified SKILL.md format for all agents
-- Clear responsibilities, inputs, outputs, and collaboration rules
-
-### Phase 2: Product Factory Layer
-- 6 product factories (Same.dev, Readdy, Claude Code, Ecommerce, SaaS, Agent)
-- 6 playbooks (Clone Website, Build SaaS, Build Ecommerce, Build Agent, Build Admin Panel, Build Dashboard)
-- Website Intelligence Department (5 agents for website analysis)
-
-### Phase 3: Execution Architecture
-- Runtime Architecture (API Gateway, Factory Router, Workflow Engine, Agent Runtime, Memory Layer, Artifact Layer, State Store)
-- Workflow Engine (sequential, parallel, conditional routing, approval gates, retry logic)
-- State Management (7 state types with lifecycles)
-- Memory Architecture (4 layers: Working, Project, Knowledge, Agent)
-- Storage Architecture (PostgreSQL, Redis, pgvector)
-- Vector Memory Architecture (RAG with OpenAI embeddings)
-- Orchestration Architecture (Custom Workflow Engine + n8n integrations)
-
-## Directory Structure
-
 ```
-upgraded-ai-factory/
-├── CLAUDE.md                    # Master operating system
-├── AGENTS.md                    # Organizational hierarchy
-├── .agents/
-│   └── agents/
-│       ├── executive/           # CEO, Coordinator
-│       ├── product/             # PM, Strategist, Competitive Research
-│       ├── research/            # UX Research, Market Research
-│       ├── design/              # UI/UX Pro Max, Design System, 21st.dev, Framer Motion
-│       ├── engineering/         # Frontend/Backend Architect/Engineer, Database, API
-│       ├── quality/             # QA, Reviewer, Security, Performance
-│       ├── growth/              # SEO, CRO, Content, Analytics
-│       ├── operations/          # DevOps, Deployment
-│       └── website-intelligence/ # Website Analyzer, Screenshot Vision, etc.
-├── factories/
-│   ├── same-dev/                # Website clone factory
-│   ├── readdy/                  # Readdy-powered factory
-│   ├── claude-code/             # Claude Code factory
-│   ├── ecommerce/               # Ecommerce factory
-│   ├── saas/                    # SaaS factory
-│   └── agent/                   # AI agent factory
-├── playbooks/
-│   ├── clone-website/           # Clone website playbook
-│   ├── build-saas/              # Build SaaS playbook
-│   ├── build-ecommerce/         # Build ecommerce playbook
-│   ├── build-agent/             # Build AI agent playbook
-│   ├── build-admin-panel/       # Build admin panel playbook
-│   └── build-dashboard/         # Build dashboard playbook
-├── docs/
-│   └── architecture/            # Architecture documentation
-│       ├── 08-samedev-runtime.md
-│       ├── 09-artifact-architecture.md
-│       └── 10-future-compatibility.md
-├── _shared/                     # Shared conventions
-├── rules/                       # Review rules
-├── hooks/                       # Git hooks
-├── config/                      # Factory configuration
-├── templates/                   # Blueprint, component, deployment templates
-└── workflows/                   # Workflow definitions
+src/
+├── core/                    # Engine, registry, types
+│   ├── engine.ts           # StudioEngine, FactoryRegistry, Factory base class
+│   └── types.ts            # All TypeScript type definitions
+├── inputs/                  # Input processors
+│   ├── url-processor.ts    # URL fetching and analysis
+│   ├── screenshot-processor.ts
+│   ├── prompt-processor.ts
+│   ├── figma-processor.ts
+│   ├── pdf-processor.ts
+│   └── codebase-processor.ts
+├── factories/               # Factory implementations
+│   ├── website/            # Website Factory
+│   ├── ecommerce/          # Ecommerce Factory
+│   ├── saas/               # SaaS Factory
+│   ├── admin/              # Admin Panel Factory
+│   ├── dashboard/          # Dashboard Factory
+│   ├── agent/              # AI Agent Factory
+│   └── tools/              # Internal Tools Factory
+├── generators/              # Code generators
+│   ├── blueprint-gen.ts    # Blueprint JSON/YAML generation
+│   └── codegen.ts          # Component, page, config generation
+├── cli/                     # CLI interface
+│   └── index.ts
+└── web/                     # Web interface
+    ├── index.html           # Frontend UI
+    └── server.ts            # API server
 ```
 
-## Getting Started
+## Output
 
-1. Review `CLAUDE.md` for operating system overview
-2. Review `AGENTS.md` for agent organization
-3. Choose a factory based on your project type
-4. Follow the corresponding playbook
+Each factory generates:
+- **Blueprint JSON** — Complete project specification
+- **Blueprint YAML** — Human-readable specification
+- **Next.js source code** — Components, pages, API routes
+- **Configuration** — package.json, tsconfig, tailwind, postcss
 
-## Factories
+## Phase 4 Success Criteria
 
-| Factory | Use Case | Time Estimate |
-|---------|----------|---------------|
-| **Same.dev** | Clone existing website | 30-60 minutes |
-| **Readdy** | Build from text description | 30-60 minutes |
-| **Claude Code** | Complex code generation | 45-90 minutes |
-| **Ecommerce** | Online store | 2-4 hours |
-| **SaaS** | Multi-tenant application | 3-6 hours |
-| **Agent** | Custom AI agent | 2-4 hours |
-
-## Playbooks
-
-| Playbook | Description |
-|----------|-------------|
-| **Clone Website** | Step-by-step website cloning |
-| **Build SaaS** | SaaS application development |
-| **Build Ecommerce** | Ecommerce store creation |
-| **Build Agent** | AI agent development |
-| **Build Admin Panel** | Admin dashboard creation |
-| **Build Dashboard** | Analytics dashboard creation |
-
-## Contributing
-
-This is a specification-only repository. Implementation code is not included. All architecture and design decisions are documented for future implementation.
+A user can submit a URL, screenshot, prompt, Figma link, PDF, or codebase and receive a structured website blueprint that becomes the source of truth for future code generation.
