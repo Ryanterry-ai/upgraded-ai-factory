@@ -4,5 +4,7 @@
 deploy/vercel/*.env
 node_modules/
 dist/
+.next/
+web/.next/
 *.js.map
 *.d.ts
