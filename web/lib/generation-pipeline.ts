@@ -4,6 +4,7 @@ import { runAgentWorkflow, type WorkflowResult } from "./agent-executor-adapter"
 import { retrieveMemory, formatMemoryContext, recordGeneration, type MemoryContext } from "./memory-adapter";
 import { validateBuild, type ValidationResult } from "./build-validator";
 import { predictQuality, extractPatterns, recordPatterns, type QualityPrediction } from "./pattern-adapter";
+import { getOptimizedBlueprintForFactory, type OptimizedBlueprint } from "./blueprint-optimizer";
 
 export interface GenerationRequest {
   prompt: string;
@@ -29,6 +30,7 @@ export interface GenerationResult {
   memoryContext?: MemoryContext;
   buildValidation?: ValidationResult;
   qualityPrediction?: QualityPrediction;
+  optimizedBlueprint?: OptimizedBlueprint;
 }
 
 function sanitizeName(input: string): string {
@@ -945,6 +947,12 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
     const qualityScore = calculateQualityScore(files);
     const buildValidation = validateBuild(files);
 
+    // Optimize blueprint based on feedback
+    const optimizedBlueprint = await getOptimizedBlueprintForFactory(factory, {
+      pages: blueprint.pages,
+      components: blueprint.components,
+    }).catch(() => ({ pages: blueprint.pages, components: blueprint.components, optimizations: [] }));
+
     const { error: bpError } = await supabase.from("blueprints").insert({
       project_id: projectId,
       json: blueprint,
@@ -1051,6 +1059,7 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
       memoryContext,
       buildValidation,
       qualityPrediction,
+      optimizedBlueprint,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

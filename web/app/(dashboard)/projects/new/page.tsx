@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,7 +19,19 @@ const factories = [
   { id: "tools", label: "Tools", description: "Utilities, converters" },
 ];
 
-type Step = "input" | "routing" | "generating" | "storing" | "done" | "error";
+type Step = "input" | "routing" | "generating" | "agents" | "validating" | "storing" | "done" | "error";
+
+interface ProgressEvent {
+  step: string;
+  label: string;
+  detail?: string;
+}
+
+interface AgentInfo {
+  name: string;
+  success: boolean;
+  duration: number;
+}
 
 interface GenerationResult {
   projectId: string;
@@ -29,6 +41,20 @@ interface GenerationResult {
   qualityScore: number;
   buildSuccess: boolean;
   error?: string;
+  errors: string[];
+  warnings: string[];
+  llmUsed: boolean;
+  memoryUsed: boolean;
+  patternsExtracted: number;
+  totalMs?: number;
+  agentResults?: {
+    agents: AgentInfo[];
+    totalDuration: number;
+    totalTokens: number;
+    successCount: number;
+    failCount: number;
+    insights: Record<string, unknown>;
+  };
 }
 
 export default function NewProjectPage() {
@@ -37,29 +63,44 @@ export default function NewProjectPage() {
   const [name, setName] = useState("");
   const [step, setStep] = useState<Step>("input");
   const [stepLabel, setStepLabel] = useState("");
+  const [progressEvents, setProgressEvents] = useState<ProgressEvent[]>([]);
+  const [agentEvents, setAgentEvents] = useState<AgentInfo[]>([]);
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [error, setError] = useState("");
+  const [elapsedMs, setElapsedMs] = useState(0);
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
+
+  const startTimer = useCallback(() => {
+    const start = Date.now();
+    timerRef.current = setInterval(() => {
+      setElapsedMs(Date.now() - start);
+    }, 100);
+  }, []);
+
+  const stopTimer = useCallback(() => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+  }, []);
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     setStep("routing");
-    setStepLabel("Routing to best factory...");
+    setStepLabel("Starting generation...");
     setError("");
+    setProgressEvents([]);
+    setAgentEvents([]);
+    startTimer();
 
     try {
-      setTimeout(() => {
-        if (step === "routing") setStepLabel("Analyzing requirements...");
-      }, 2000);
-
-      setTimeout(() => {
-        if (step === "routing") setStep("generating");
-        setStepLabel("Generating project files...");
-      }, 4000);
-
       const response = await fetch("/api/generate", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "text/event-stream",
+        },
         body: JSON.stringify({
           prompt,
           factory: factory === "auto" ? undefined : factory,
@@ -67,34 +108,93 @@ export default function NewProjectPage() {
         }),
       });
 
-      const data: GenerationResult = await response.json();
+      const contentType = response.headers.get("content-type") || "";
 
-      if (!response.ok) {
-        setStep("error");
-        setError(data.error || "Generation failed");
-        return;
+      if (contentType.includes("text/event-stream")) {
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error("No response body");
+
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split("\n");
+          buffer = lines.pop() || "";
+
+          let eventType = "";
+          for (const line of lines) {
+            if (line.startsWith("event: ")) {
+              eventType = line.slice(7).trim();
+            } else if (line.startsWith("data: ")) {
+              const data = line.slice(6);
+              try {
+                const parsed = JSON.parse(data);
+
+                if (eventType === "progress") {
+                  const evt = parsed as ProgressEvent;
+                  setStepLabel(evt.label);
+                  setProgressEvents((prev) => [...prev, evt]);
+                  if (evt.step === "generating") setStep("generating");
+                  if (evt.step === "agents") setStep("agents");
+                  if (evt.step === "validating") setStep("validating");
+                  if (evt.step === "storing") setStep("storing");
+                } else if (eventType === "agent") {
+                  setAgentEvents((prev) => [...prev, parsed as AgentInfo]);
+                } else if (eventType === "complete") {
+                  stopTimer();
+                  setResult(parsed as GenerationResult);
+                  setStep("done");
+                } else if (eventType === "error") {
+                  stopTimer();
+                  setError(parsed.error || "Generation failed");
+                  setStep("error");
+                }
+              } catch {
+                // Skip malformed JSON
+              }
+            }
+          }
+        }
+      } else {
+        const data = await response.json();
+        stopTimer();
+        if (!response.ok) {
+          setError(data.error || "Generation failed");
+          setStep("error");
+        } else {
+          setResult(data as GenerationResult);
+          setStep("done");
+        }
       }
-
-      setStep("storing");
-      setStepLabel("Saving to storage...");
-
-      setTimeout(() => {
-        setResult(data);
-        setStep("done");
-      }, 1000);
     } catch {
-      setStep("error");
+      stopTimer();
       setError("Network error — check your connection");
+      setStep("error");
     }
   };
 
-  const stepIndicator = (current: Step, target: Step, label: string) => {
+  const formatMs = (ms: number) => {
+    if (ms < 1000) return `${ms}ms`;
+    return `${(ms / 1000).toFixed(1)}s`;
+  };
+
+  const stepIndicator = (target: Step, label: string) => {
+    const steps: Step[] = ["routing", "generating", "agents", "validating", "storing", "done"];
+    const targetIdx = steps.indexOf(target);
+    const currentIdx = steps.indexOf(step);
     const state =
       step === target
         ? "active"
-        : ["done", "storing"].indexOf(step) >= ["routing", "generating", "storing", "done"].indexOf(target)
-          ? "done"
-          : "pending";
+        : step === "done" || step === "error"
+          ? currentIdx >= targetIdx ? "done" : "pending"
+          : currentIdx > targetIdx
+            ? "done"
+            : "pending";
+
     return (
       <div className="flex items-center gap-2">
         <div
@@ -119,11 +219,14 @@ export default function NewProjectPage() {
         <div className="flex items-center gap-3">
           <h1 className="text-3xl font-bold">Generation Complete</h1>
           <Badge variant="default">Success</Badge>
+          {result.totalMs && (
+            <span className="text-sm text-muted-foreground">{formatMs(result.totalMs)}</span>
+          )}
         </div>
 
         <Card>
           <CardContent className="pt-6 space-y-4">
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-4 gap-4 text-center">
               <div>
                 <p className="text-2xl font-bold">{result.files.length}</p>
                 <p className="text-sm text-muted-foreground">Files</p>
@@ -136,9 +239,40 @@ export default function NewProjectPage() {
                 <p className="text-2xl font-bold capitalize">{result.factory}</p>
                 <p className="text-sm text-muted-foreground">Factory</p>
               </div>
+              <div>
+                <p className="text-2xl font-bold">{result.agentResults?.successCount || 0}/{(result.agentResults?.successCount || 0) + (result.agentResults?.failCount || 0)}</p>
+                <p className="text-sm text-muted-foreground">Agents</p>
+              </div>
+            </div>
+
+            <div className="flex gap-2 text-xs text-muted-foreground">
+              {result.llmUsed && <Badge variant="secondary">LLM</Badge>}
+              {result.memoryUsed && <Badge variant="secondary">Memory</Badge>}
+              {result.patternsExtracted > 0 && <Badge variant="secondary">{result.patternsExtracted} Patterns</Badge>}
             </div>
           </CardContent>
         </Card>
+
+        {result.agentResults?.insights && (
+          <Card>
+            <CardContent className="pt-6 space-y-2">
+              <h3 className="font-semibold">Agent Insights</h3>
+              {typeof result.agentResults.insights.scope === "string" && (
+                <p className="text-sm text-muted-foreground">{result.agentResults.insights.scope}</p>
+              )}
+              {Array.isArray(result.agentResults.insights.features) && (
+                <ul className="text-sm list-disc list-inside">
+                  {(result.agentResults.insights.features as string[]).map((f, i) => (
+                    <li key={i}>{f}</li>
+                  ))}
+                </ul>
+              )}
+              {typeof result.agentResults.insights.seoTitle === "string" && (
+                <p className="text-xs">SEO: {result.agentResults.insights.seoTitle}</p>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         <Card>
           <CardContent className="pt-6">
@@ -154,6 +288,19 @@ export default function NewProjectPage() {
           </CardContent>
         </Card>
 
+        {result.warnings.length > 0 && (
+          <Card>
+            <CardContent className="pt-6">
+              <h3 className="font-semibold mb-2">Warnings</h3>
+              <ul className="text-sm text-yellow-600 space-y-1">
+                {result.warnings.map((w, i) => (
+                  <li key={i}>• {w}</li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        )}
+
         <div className="flex gap-3">
           <Button onClick={() => router.push(`/projects/${result.projectId}`)} className="flex-1">
             View Project
@@ -164,7 +311,7 @@ export default function NewProjectPage() {
           >
             Download ZIP
           </Button>
-          <Button variant="ghost" onClick={() => { setStep("input"); setResult(null); setPrompt(""); setName(""); }}>
+          <Button variant="ghost" onClick={() => { setStep("input"); setResult(null); setPrompt(""); setName(""); setProgressEvents([]); setAgentEvents([]); setElapsedMs(0); }}>
             New Project
           </Button>
         </div>
@@ -182,7 +329,7 @@ export default function NewProjectPage() {
         <Card>
           <CardContent className="pt-6">
             <p className="text-destructive">{error}</p>
-            <Button className="mt-4" onClick={() => { setStep("input"); setError(""); }}>
+            <Button className="mt-4" onClick={() => { setStep("input"); setError(""); setProgressEvents([]); setAgentEvents([]); setElapsedMs(0); }}>
               Try Again
             </Button>
           </CardContent>
@@ -194,16 +341,49 @@ export default function NewProjectPage() {
   if (step !== "input") {
     return (
       <div className="mx-auto max-w-2xl space-y-8">
-        <h1 className="text-3xl font-bold">Generating Project</h1>
+        <div className="flex items-center justify-between">
+          <h1 className="text-3xl font-bold">Generating Project</h1>
+          <span className="text-sm text-muted-foreground font-mono">{formatMs(elapsedMs)}</span>
+        </div>
         <Card>
           <CardContent className="pt-6 space-y-6">
             <div className="space-y-3">
-              {stepIndicator("input", "routing", "Analyzing input")}
-              {stepIndicator("routing", "generating", "Selecting factory")}
-              {stepIndicator("generating", "storing", "Generating files")}
-              {stepIndicator("storing", "done", "Saving results")}
+              {stepIndicator("routing", "Analyzing input")}
+              {stepIndicator("generating", "Generating files")}
+              {stepIndicator("agents", "Running agents")}
+              {stepIndicator("validating", "Validating build")}
+              {stepIndicator("storing", "Saving results")}
             </div>
+
             <p className="text-sm text-muted-foreground animate-pulse">{stepLabel}</p>
+
+            {agentEvents.length > 0 && (
+              <div className="space-y-1">
+                {agentEvents.map((agent, i) => (
+                  <div key={i} className="flex items-center justify-between text-xs">
+                    <span className="flex items-center gap-1">
+                      {agent.success ? (
+                        <span className="text-green-500">✓</span>
+                      ) : (
+                        <span className="text-red-500">✗</span>
+                      )}
+                      {agent.name}
+                    </span>
+                    <span className="text-muted-foreground">{formatMs(agent.duration)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {progressEvents.length > 0 && (
+              <div className="max-h-32 overflow-y-auto space-y-1">
+                {progressEvents.map((evt, i) => (
+                  <div key={i} className="text-xs text-muted-foreground">
+                    {evt.label}
+                  </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
