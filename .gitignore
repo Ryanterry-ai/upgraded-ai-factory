@@ -10,3 +10,4 @@ web/.next/
 *.d.ts
 
 .vercel
+.env.vercel
