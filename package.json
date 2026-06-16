@@ -1,6 +1,6 @@
 {
   "name": "upgraded-ai-factory-studio",
-  "version": "0.7.0",
+  "version": "0.7.5",
   "description": "Multi-factory AI platform with Requirement Understanding Engine for generating websites, ecommerce, SaaS, admin panels, dashboards, agents, and internal tools",
   "type": "module",
   "main": "dist/index.js",
@@ -9,7 +9,8 @@
     "samedev": "./dist/cli/index.js",
     "audit": "./dist/cli/studio.js",
     "memory": "./dist/cli/memory.js",
-    "runtime": "./dist/cli/runtime.js"
+    "runtime": "./dist/cli/runtime.js",
+    "agent-activate": "./dist/cli/agent-activate.js"
   },
   "scripts": {
     "build": "tsc",
@@ -31,13 +32,19 @@
     "runtime": "tsx src/cli/runtime.ts",
     "runtime:website": "tsx src/cli/runtime.ts --factory website --dry-run",
     "runtime:ecommerce": "tsx src/cli/runtime.ts --factory ecommerce --dry-run",
-    "runtime:saas": "tsx src/cli/runtime.ts --factory saas --dry-run"
+    "runtime:saas": "tsx src/cli/runtime.ts --factory saas --dry-run",
+    "agent-activate": "tsx src/cli/agent-activate.ts",
+    "agent:website": "tsx src/cli/agent-activate.ts --factory website --dry-run",
+    "agent:ecommerce": "tsx src/cli/agent-activate.ts --factory ecommerce --dry-run",
+    "agent:saas": "tsx src/cli/agent-activate.ts --factory saas --dry-run"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.104.2",
     "@langchain/core": "^1.1.49",
     "@langchain/langgraph": "^1.4.2",
     "cheerio": "^1.0.0-rc.12",
-    "js-yaml": "^4.1.0"
+    "js-yaml": "^4.1.0",
+    "openai": "^6.42.0"
   },
   "devDependencies": {
     "@types/js-yaml": "^4.0.9",
