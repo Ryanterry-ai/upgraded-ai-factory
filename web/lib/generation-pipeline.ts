@@ -1,4 +1,9 @@
 import { getSupabase } from "./supabase";
+import { callLLMWithFallback, isLLMAvailable, type LLMMessage } from "./llm-adapter";
+import { runAgentWorkflow, type WorkflowResult } from "./agent-executor-adapter";
+import { retrieveMemory, formatMemoryContext, recordGeneration, type MemoryContext } from "./memory-adapter";
+import { validateBuild, type ValidationResult } from "./build-validator";
+import { predictQuality, extractPatterns, recordPatterns, type QualityPrediction } from "./pattern-adapter";
 
 export interface GenerationRequest {
   prompt: string;
@@ -8,13 +13,22 @@ export interface GenerationRequest {
 
 export interface GenerationResult {
   projectId: string;
-  status: "completed" | "failed";
+  status: "completed" | "failed" | "partial";
   factory: string;
   files: { path: string; content: string; type: string }[];
   blueprint: unknown;
   qualityScore: number;
   buildSuccess: boolean;
   error?: string;
+  errors: string[];
+  warnings: string[];
+  llmUsed: boolean;
+  memoryUsed: boolean;
+  patternsExtracted: number;
+  agentResults?: WorkflowResult;
+  memoryContext?: MemoryContext;
+  buildValidation?: ValidationResult;
+  qualityPrediction?: QualityPrediction;
 }
 
 function sanitizeName(input: string): string {
@@ -618,6 +632,160 @@ export default config;
   };
 }
 
+// ── LLM-Enhanced Content Generation ──────────────────────
+
+interface LLMContent {
+  heroTitle: string;
+  heroSubtitle: string;
+  features: Array<{ title: string; description: string }>;
+  aboutText: string;
+  ctaText: string;
+}
+
+async function generateLLMContent(
+  prompt: string,
+  factory: string,
+  memoryContext?: MemoryContext
+): Promise<LLMContent | null> {
+  if (!isLLMAvailable()) return null;
+
+  let memorySection = "";
+  if (memoryContext) {
+    memorySection = "\n\n" + formatMemoryContext(memoryContext);
+  }
+
+  const systemPrompt = `You are a web content generator. Given a project description, generate real, specific content for a website.
+Return ONLY valid JSON with this exact structure:
+{
+  "heroTitle": "string - compelling headline (max 60 chars)",
+  "heroSubtitle": "string - supporting text (max 150 chars)",
+  "features": [{"title": "string", "description": "string"}] - exactly 3 features,
+  "aboutText": "string - 2-3 sentences about the project",
+  "ctaText": "string - call to action button text"
+}
+No markdown. No explanation. Only JSON.`;
+
+  const messages: LLMMessage[] = [
+    { role: "system", content: systemPrompt },
+    {
+      role: "user",
+      content: `Project type: ${factory}\nDescription: ${prompt.slice(0, 500)}${memorySection}`,
+    },
+  ];
+
+  const { content, usedFallback } = await callLLMWithFallback(messages, {
+    model: "gpt-4o-mini",
+    temperature: 0.7,
+    maxTokens: 500,
+  });
+
+  if (usedFallback || !content) return null;
+
+  try {
+    const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    const parsed = JSON.parse(cleaned);
+    return {
+      heroTitle: typeof parsed.heroTitle === "string" ? parsed.heroTitle : "Welcome",
+      heroSubtitle: typeof parsed.heroSubtitle === "string" ? parsed.heroSubtitle : prompt.slice(0, 150),
+      features: Array.isArray(parsed.features)
+        ? parsed.features.slice(0, 3).map((f: Record<string, string>) => ({
+            title: f.title || "Feature",
+            description: f.description || "Description",
+          }))
+        : [],
+      aboutText: typeof parsed.aboutText === "string" ? parsed.aboutText : "",
+      ctaText: typeof parsed.ctaText === "string" ? parsed.ctaText : "Get Started",
+    };
+  } catch {
+    return null;
+  }
+}
+
+function genHeroLLM(title: string, subtitle: string): string {
+  return `export function Hero() {
+  return (
+    <section className="py-20 md:py-32">
+      <div className="container mx-auto px-4 text-center">
+        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
+          ${title}
+        </h1>
+        <p className="mt-6 text-lg text-gray-600 md:text-xl max-w-2xl mx-auto">
+          ${subtitle}
+        </p>
+        <div className="mt-8 flex justify-center gap-4">
+          <button className="rounded-lg bg-blue-600 px-6 py-3 text-white font-medium hover:bg-blue-700 transition-colors">
+            Get Started
+          </button>
+          <button className="rounded-lg border border-gray-300 px-6 py-3 font-medium hover:bg-gray-50 transition-colors">
+            Learn More
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+`;
+}
+
+function genFeaturesLLM(features: Array<{ title: string; description: string }>): string {
+  const featuresJS = JSON.stringify(features);
+  return `export function Features() {
+  const features = ${featuresJS};
+  return (
+    <section className="py-16 bg-gray-50 dark:bg-gray-900">
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl font-bold text-center mb-12">Features</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {features.map((f) => (
+            <div key={f.title} className="rounded-lg border bg-white dark:bg-gray-800 p-6 shadow-sm">
+              <h3 className="text-xl font-semibold">{f.title}</h3>
+              <p className="mt-2 text-gray-600 dark:text-gray-400">{f.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+`;
+}
+
+function genAboutLLM(text: string): string {
+  return `export function AboutContent() {
+  return (
+    <section className="py-16">
+      <div className="container mx-auto px-4 max-w-3xl">
+        <h1 className="text-4xl font-bold mb-8">About Us</h1>
+        <p className="text-lg text-gray-600 mb-4">
+          ${text || "We are a team dedicated to building amazing products that help people succeed."}
+        </p>
+        <p className="text-lg text-gray-600">
+          Our mission is to provide the best tools and experiences for our users.
+        </p>
+      </div>
+    </section>
+  );
+}
+`;
+}
+
+function genCTALLM(text: string): string {
+  return `export function CTA() {
+  return (
+    <section className="py-16 bg-blue-600">
+      <div className="container mx-auto px-4 text-center">
+        <h2 className="text-3xl font-bold text-white mb-4">Ready to Get Started?</h2>
+        <p className="text-blue-100 mb-8 max-w-xl mx-auto">Join thousands of users who are already building amazing things.</p>
+        <button className="bg-white text-blue-600 px-8 py-3 rounded-lg font-medium hover:bg-blue-50 transition-colors">
+          ${text || "Start Free Trial"}
+        </button>
+      </div>
+    </section>
+  );
+}
+`;
+}
+
 const COMPONENT_GENERATORS: Record<string, (prompt?: string) => string> = {
   Header: () => genHeader("Project"),
   Footer: genFooter,
@@ -639,7 +807,12 @@ const COMPONENT_GENERATORS: Record<string, (prompt?: string) => string> = {
   RegisterForm: genRegisterForm,
 };
 
-function generateFiles(prompt: string, factory: string, projectName: string): { path: string; content: string; type: string }[] {
+async function generateFiles(
+  prompt: string,
+  factory: string,
+  projectName: string,
+  llmContent: LLMContent | null
+): Promise<{ path: string; content: string; type: string }[]> {
   const blueprint = buildBlueprint(prompt, factory, projectName);
   const files: { path: string; content: string; type: string }[] = [];
 
@@ -676,9 +849,21 @@ function generateFiles(prompt: string, factory: string, projectName: string): { 
   for (const compName of usedComponents) {
     const gen = COMPONENT_GENERATORS[compName];
     if (gen) {
+      let content = gen(prompt);
+      if (llmContent) {
+        if (compName === "Hero") {
+          content = genHeroLLM(llmContent.heroTitle, llmContent.heroSubtitle);
+        } else if (compName === "Features" && llmContent.features.length > 0) {
+          content = genFeaturesLLM(llmContent.features);
+        } else if (compName === "AboutContent" && llmContent.aboutText) {
+          content = genAboutLLM(llmContent.aboutText);
+        } else if (compName === "CTA" && llmContent.ctaText) {
+          content = genCTALLM(llmContent.ctaText);
+        }
+      }
       files.push({
         path: `src/components/${compName}.tsx`,
-        content: gen(prompt),
+        content,
         type: "component",
       });
     } else {
@@ -729,6 +914,8 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
   const supabase = getSupabase();
   const factory = detectFactory(request.prompt, request.factory);
   const projectName = extractProjectName(request.prompt, request.name);
+  const errors: string[] = [];
+  const warnings: string[] = [];
 
   const { data: project, error: createError } = await supabase
     .from("projects")
@@ -747,15 +934,26 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
   const projectId = project.id;
 
   try {
-    const files = generateFiles(request.prompt, factory, projectName);
+    const [llmContent, agentResults, memoryContext, qualityPrediction] = await Promise.all([
+      generateLLMContent(request.prompt, factory),
+      runAgentWorkflow(request.prompt, factory, projectName),
+      retrieveMemory(request.prompt, factory),
+      predictQuality(request.prompt, factory),
+    ]);
+    const files = await generateFiles(request.prompt, factory, projectName, llmContent);
     const blueprint = buildBlueprint(request.prompt, factory, projectName);
     const qualityScore = calculateQualityScore(files);
+    const buildValidation = validateBuild(files);
 
     const { error: bpError } = await supabase.from("blueprints").insert({
       project_id: projectId,
       json: blueprint,
     });
-    if (bpError) console.error("Blueprint insert error:", bpError);
+    if (bpError) {
+      const msg = `Blueprint insert failed: ${bpError.message}`;
+      errors.push(msg);
+      console.error(msg);
+    }
 
     const { error: genError } = await supabase.from("generations").insert({
       factory,
@@ -764,7 +962,11 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
       build_success: false,
       file_count: files.length,
     });
-    if (genError) console.error("Generation insert error:", genError);
+    if (genError) {
+      const msg = `Generation record insert failed: ${genError.message}`;
+      errors.push(msg);
+      console.error(msg);
+    }
 
     const zipBuffer = await createZip(files);
     const { error: storageError } = await supabase.storage
@@ -773,30 +975,86 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
         contentType: "application/zip",
         upsert: true,
       });
-    if (storageError) console.error("Storage upload error:", storageError);
+    if (storageError) {
+      const msg = `ZIP upload failed: ${storageError.message}`;
+      errors.push(msg);
+      console.error(msg);
+    }
 
     const { error: updateError } = await supabase
       .from("projects")
       .update({
         quality_score: qualityScore,
-        build_success: true,
+        build_success: buildValidation.buildSuccess,
         file_count: files.length,
         updated_at: new Date().toISOString(),
       })
       .eq("id", projectId);
-    if (updateError) console.error("Project update error:", updateError);
+    if (updateError) {
+      const msg = `Project update failed: ${updateError.message}`;
+      errors.push(msg);
+      console.error(msg);
+    }
+
+    // Add validation warnings
+    const failedChecks = buildValidation.checks.filter((c) => !c.passed);
+    for (const check of failedChecks) {
+      if (check.severity === "warning") {
+        warnings.push(check.message);
+      } else {
+        errors.push(check.message);
+      }
+    }
+
+    const status = errors.length > 0 ? "partial" : "completed";
+
+    // Record generation for future memory retrieval
+    await recordGeneration({
+      projectId,
+      factory,
+      prompt: request.prompt,
+      fileCount: files.length,
+      qualityScore,
+      buildSuccess: buildValidation.buildSuccess,
+      llmUsed: llmContent !== null,
+      agentCount: agentResults.successCount,
+      durationMs: agentResults.totalDuration,
+    }).catch((err) => {
+      warnings.push(`Failed to record generation: ${err.message}`);
+    });
+
+    // Extract and record patterns
+    const extractedPatterns = extractPatterns(
+      files,
+      factory,
+      buildValidation.buildSuccess,
+      qualityScore
+    );
+    const patternsRecorded = await recordPatterns(extractedPatterns).catch(
+      () => 0
+    );
 
     return {
       projectId,
-      status: "completed",
+      status,
       factory,
       files,
       blueprint,
       qualityScore,
-      buildSuccess: true,
+      buildSuccess: buildValidation.buildSuccess,
+      errors,
+      warnings,
+      llmUsed: llmContent !== null,
+      memoryUsed: memoryContext.recentProjects.length > 0,
+      patternsExtracted: patternsRecorded,
+      agentResults,
+      memoryContext,
+      buildValidation,
+      qualityPrediction,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
+    errors.push(message);
     await supabase.from("projects").update({ quality_score: 0, build_success: false }).eq("id", projectId);
     return {
       projectId,
@@ -807,6 +1065,11 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
       qualityScore: 0,
       buildSuccess: false,
       error: message,
+      errors,
+      warnings,
+      llmUsed: false,
+      memoryUsed: false,
+      patternsExtracted: 0,
     };
   }
 }
