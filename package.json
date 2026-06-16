@@ -1,13 +1,14 @@
 {
   "name": "upgraded-ai-factory-studio",
-  "version": "0.5.5",
+  "version": "0.6.0",
   "description": "Multi-factory AI platform with Requirement Understanding Engine for generating websites, ecommerce, SaaS, admin panels, dashboards, agents, and internal tools",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
     "studio": "./dist/cli/studio.js",
     "samedev": "./dist/cli/index.js",
-    "audit": "./dist/cli/studio.js"
+    "audit": "./dist/cli/studio.js",
+    "memory": "./dist/cli/memory.js"
   },
   "scripts": {
     "build": "tsc",
@@ -24,7 +25,8 @@
     "audit:admin": "tsx src/cli/studio.ts audit admin",
     "audit:dashboard": "tsx src/cli/studio.ts audit dashboard",
     "audit:agent": "tsx src/cli/studio.ts audit agent",
-    "audit:tools": "tsx src/cli/studio.ts audit tools"
+    "audit:tools": "tsx src/cli/studio.ts audit tools",
+    "memory": "tsx src/cli/memory.ts"
   },
   "dependencies": {
     "cheerio": "^1.0.0-rc.12",
