@@ -1,0 +1,12 @@
+{
+  "type:Uses 'any' type (1 occurrences)": {
+    "count": 6,
+    "fix": "auto-repair",
+    "description": "Uses 'any' type (1 occurrences)"
+  },
+  "client-component:Imports useState but doesn't use it": {
+    "count": 4,
+    "fix": "auto-repair",
+    "description": "Imports useState but doesn't use it"
+  }
+}
