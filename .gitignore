@@ -8,3 +8,5 @@ dist/
 web/.next/
 *.js.map
 *.d.ts
+
+.vercel

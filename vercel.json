@@ -1,23 +1,10 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": null,
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
+  "framework": "nextjs",
+  "buildCommand": "cd web && npx next build",
+  "outputDirectory": "web/.next",
   "installCommand": "npm install",
-  "devCommand": "npm run dev",
   "regions": ["sin1"],
-  "env": {
-    "SUPABASE_URL": "@supabase-url",
-    "SUPABASE_ANON_KEY": "@supabase-anon-key",
-    "SUPABASE_SERVICE_ROLE_KEY": "@supabase-service-role-key",
-    "OPENAI_API_KEY": "@openai-api-key",
-    "LLM_PROVIDER": "openai"
-  },
-  "functions": {
-    "dist/cli/**/*.js": {
-      "maxDuration": 30
-    }
-  },
   "headers": [
     {
       "source": "/api/(.*)",
