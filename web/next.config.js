@@ -8,10 +8,6 @@ const nextConfig = {
       { protocol: 'https', hostname: '*.supabase.co' },
     ],
   },
-  webpack: (config, { isServer }) => {
-    config.resolve.alias['@factory'] = path.resolve(__dirname, '../src');
-    return config;
-  },
 };
 
 module.exports = nextConfig;

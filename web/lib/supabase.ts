@@ -3,7 +3,8 @@ import { validateEnv } from "./env";
 
 export function getSupabase() {
   const env = validateEnv();
-  return createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+  const key = env.SUPABASE_SERVICE_ROLE_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  return createClient(env.NEXT_PUBLIC_SUPABASE_URL, key, {
     auth: { persistSession: false },
   });
 }
