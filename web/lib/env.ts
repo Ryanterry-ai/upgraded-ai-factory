@@ -12,7 +12,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_APP_NAME: z.string().default("Upgraded AI Factory"),
   SENTRY_DSN: z.string().optional(),
   NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
-  NEXT_PUBLIC_POSTHOG_HOST: z.string().url().optional(),
+  NEXT_PUBLIC_POSTHOG_HOST: z.string().optional(),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -22,14 +22,9 @@ let cachedEnv: Env | null = null;
 export function validateEnv(): Env {
   if (cachedEnv) return cachedEnv;
 
-  if (typeof window === "undefined" && !process.env.NEXT_PUBLIC_SUPABASE_URL) {
-    return envSchema.parse({});
-  }
-
   const parsed = envSchema.safeParse(process.env);
 
   if (!parsed.success) {
-    console.error("Invalid environment variables:", parsed.error.flatten().fieldErrors);
     return envSchema.parse({});
   }
 
