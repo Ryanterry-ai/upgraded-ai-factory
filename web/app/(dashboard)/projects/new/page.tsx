@@ -1,30 +1,20 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
+import { motion, AnimatePresence } from "framer-motion";
+import {
+  Sparkles, Send, Globe, ShoppingCart, LayoutDashboard, Settings, Bot,
+  Code2, CheckCircle2, Circle, Loader2, ArrowRight, Download, Eye,
+  FileCode2, Clock, AlertCircle, ChevronRight, Layers, Box, Upload,
+  Link as LinkIcon, FileImage, FileText,
+} from "lucide-react";
 
-const factories = [
-  { id: "auto", label: "Auto-Detect", description: "AI picks the best factory" },
-  { id: "website", label: "Website", description: "Landing pages, portfolios, blogs" },
-  { id: "ecommerce", label: "E-commerce", description: "Online stores, product pages" },
-  { id: "saas", label: "SaaS", description: "Web apps, dashboards, tools" },
-  { id: "dashboard", label: "Dashboard", description: "Analytics, admin panels" },
-  { id: "admin", label: "Admin Panel", description: "CMS, user management" },
-  { id: "agent", label: "AI Agent", description: "Chatbots, automation" },
-  { id: "tools", label: "Tools", description: "Utilities, converters" },
-];
-
-type Step = "input" | "routing" | "generating" | "agents" | "validating" | "storing" | "done" | "error";
+type Step = "input" | "generating" | "done" | "error";
 
 interface ProgressEvent {
   step: string;
   label: string;
-  detail?: string;
 }
 
 interface AgentInfo {
@@ -33,20 +23,25 @@ interface AgentInfo {
   duration: number;
 }
 
+interface GeneratedFile {
+  path: string;
+  content: string;
+  type: string;
+}
+
 interface GenerationResult {
   projectId: string;
   status: string;
   factory: string;
-  files: { path: string; content: string; type: string }[];
+  files: GeneratedFile[];
+  blueprint: any;
   qualityScore: number;
   buildSuccess: boolean;
-  error?: string;
   errors: string[];
   warnings: string[];
   llmUsed: boolean;
   memoryUsed: boolean;
   patternsExtracted: number;
-  totalMs?: number;
   agentResults?: {
     agents: AgentInfo[];
     totalDuration: number;
@@ -55,12 +50,28 @@ interface GenerationResult {
     failCount: number;
     insights: Record<string, unknown>;
   };
+  totalMs?: number;
 }
+
+const WORKSPACE_STEPS = [
+  { id: "routing", label: "Routing", icon: Layers },
+  { id: "generating", label: "Generating", icon: Code2 },
+  { id: "agents", label: "AI Agents", icon: Bot },
+  { id: "validating", label: "Validating", icon: CheckCircle2 },
+  { id: "storing", label: "Storing", icon: Box },
+];
+
+const AGENT_ICONS: Record<string, string> = {
+  "Product Manager": "📋",
+  "Frontend Engineer": "🎨",
+  "SEO Specialist": "🔍",
+  "QA Engineer": "✅",
+  "Security Agent": "🔒",
+  "Performance Agent": "⚡",
+};
 
 export default function NewProjectPage() {
   const [prompt, setPrompt] = useState("");
-  const [factory, setFactory] = useState("auto");
-  const [name, setName] = useState("");
   const [step, setStep] = useState<Step>("input");
   const [stepLabel, setStepLabel] = useState("");
   const [progressEvents, setProgressEvents] = useState<ProgressEvent[]>([]);
@@ -68,27 +79,27 @@ export default function NewProjectPage() {
   const [result, setResult] = useState<GenerationResult | null>(null);
   const [error, setError] = useState("");
   const [elapsedMs, setElapsedMs] = useState(0);
+  const [selectedFile, setSelectedFile] = useState<GeneratedFile | null>(null);
+  const [inputMode, setInputMode] = useState<"prompt" | "url" | "upload">("prompt");
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
 
   const startTimer = useCallback(() => {
     const start = Date.now();
-    timerRef.current = setInterval(() => {
-      setElapsedMs(Date.now() - start);
-    }, 100);
+    timerRef.current = setInterval(() => setElapsedMs(Date.now() - start), 100);
   }, []);
 
   const stopTimer = useCallback(() => {
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
   }, []);
+
+  useEffect(() => () => stopTimer(), [stopTimer]);
 
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep("routing");
-    setStepLabel("Starting generation...");
+    if (!prompt.trim()) return;
+    setStep("generating");
+    setStepLabel("Starting...");
     setError("");
     setProgressEvents([]);
     setAgentEvents([]);
@@ -97,359 +108,437 @@ export default function NewProjectPage() {
     try {
       const response = await fetch("/api/generate", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "text/event-stream",
-        },
-        body: JSON.stringify({
-          prompt,
-          factory: factory === "auto" ? undefined : factory,
-          name,
-        }),
+        headers: { "Content-Type": "application/json", Accept: "text/event-stream" },
+        body: JSON.stringify({ prompt: prompt.trim() }),
       });
 
-      const contentType = response.headers.get("content-type") || "";
+      const reader = response.body?.getReader();
+      if (!reader) throw new Error("No response body");
+      const decoder = new TextDecoder();
+      let buffer = "";
 
-      if (contentType.includes("text/event-stream")) {
-        const reader = response.body?.getReader();
-        if (!reader) throw new Error("No response body");
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
 
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() || "";
-
-          let eventType = "";
-          for (const line of lines) {
-            if (line.startsWith("event: ")) {
-              eventType = line.slice(7).trim();
-            } else if (line.startsWith("data: ")) {
-              const data = line.slice(6);
-              try {
-                const parsed = JSON.parse(data);
-
-                if (eventType === "progress") {
-                  const evt = parsed as ProgressEvent;
-                  setStepLabel(evt.label);
-                  setProgressEvents((prev) => [...prev, evt]);
-                  if (evt.step === "generating") setStep("generating");
-                  if (evt.step === "agents") setStep("agents");
-                  if (evt.step === "validating") setStep("validating");
-                  if (evt.step === "storing") setStep("storing");
-                } else if (eventType === "agent") {
-                  setAgentEvents((prev) => [...prev, parsed as AgentInfo]);
-                } else if (eventType === "complete") {
-                  stopTimer();
-                  setResult(parsed as GenerationResult);
-                  setStep("done");
-                } else if (eventType === "error") {
-                  stopTimer();
-                  setError(parsed.error || "Generation failed");
-                  setStep("error");
-                }
-              } catch {
-                // Skip malformed JSON
+        let eventType = "";
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            eventType = line.slice(7).trim();
+          } else if (line.startsWith("data: ")) {
+            try {
+              const parsed = JSON.parse(line.slice(6));
+              if (eventType === "progress") {
+                setStepLabel(parsed.label);
+                setProgressEvents((prev) => [...prev, parsed]);
+                setStep("generating");
+              } else if (eventType === "complete") {
+                stopTimer();
+                setResult(parsed);
+                setStep("done");
+              } else if (eventType === "error") {
+                stopTimer();
+                setError(parsed.error || "Generation failed");
+                setStep("error");
               }
-            }
+            } catch {}
           }
         }
-      } else {
-        const data = await response.json();
-        stopTimer();
-        if (!response.ok) {
-          setError(data.error || "Generation failed");
-          setStep("error");
-        } else {
-          setResult(data as GenerationResult);
-          setStep("done");
-        }
       }
-    } catch {
+    } catch (err) {
       stopTimer();
-      setError("Network error — check your connection");
+      setError(err instanceof Error ? err.message : "Network error");
       setStep("error");
     }
   };
 
-  const formatMs = (ms: number) => {
-    if (ms < 1000) return `${ms}ms`;
-    return `${(ms / 1000).toFixed(1)}s`;
+  const formatTime = (ms: number) => {
+    const s = Math.floor(ms / 1000);
+    const m = Math.floor(s / 60);
+    return m > 0 ? `${m}m ${s % 60}s` : `${s}s`;
   };
 
-  const stepIndicator = (target: Step, label: string) => {
-    const steps: Step[] = ["routing", "generating", "agents", "validating", "storing", "done"];
-    const targetIdx = steps.indexOf(target);
-    const currentIdx = steps.indexOf(step);
-    const state =
-      step === target
-        ? "active"
-        : step === "done" || step === "error"
-          ? currentIdx >= targetIdx ? "done" : "pending"
-          : currentIdx > targetIdx
-            ? "done"
-            : "pending";
-
+  // ── Input View ──────────────────────────────────────
+  if (step === "input") {
     return (
-      <div className="flex items-center gap-2">
-        <div
-          className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
-            state === "done"
-              ? "bg-green-500 text-white"
-              : state === "active"
-                ? "bg-primary text-white animate-pulse"
-                : "bg-muted text-muted-foreground"
-          }`}
-        >
-          {state === "done" ? "✓" : state === "active" ? "●" : "○"}
+      <div className="min-h-screen bg-background flex flex-col">
+        {/* Minimal top bar */}
+        <nav className="h-14 border-b border-border flex items-center px-6 justify-between">
+          <button onClick={() => router.push("/")} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
+            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-brand-light to-pink-500 flex items-center justify-center">
+              <Sparkles className="w-3 h-3 text-white" />
+            </div>
+            build.same
+          </button>
+          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span className="w-2 h-2 rounded-full bg-green-500 pulse-dot" />
+            32 agents online
+          </div>
+        </nav>
+
+        {/* Centered prompt area */}
+        <div className="flex-1 flex items-center justify-center px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-2xl"
+          >
+            <h1 className="text-3xl md:text-4xl font-bold text-center mb-2 tracking-tight">
+              What do you want to build?
+            </h1>
+            <p className="text-muted-foreground text-center mb-8">
+              Describe your app and our AI team will build it.
+            </p>
+
+            {/* Input mode tabs */}
+            <div className="flex items-center justify-center gap-1 mb-4">
+              {[
+                { id: "prompt" as const, icon: Sparkles, label: "Prompt" },
+                { id: "url" as const, icon: LinkIcon, label: "URL" },
+                { id: "upload" as const, icon: Upload, label: "Upload" },
+              ].map((m) => (
+                <button
+                  key={m.id}
+                  onClick={() => setInputMode(m.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    inputMode === m.id
+                      ? "bg-white text-black"
+                      : "text-muted-foreground hover:text-foreground hover:bg-zinc-800"
+                  }`}
+                >
+                  <m.icon className="w-3.5 h-3.5" />
+                  {m.label}
+                </button>
+              ))}
+            </div>
+
+            <form onSubmit={handleGenerate}>
+              <div className="glass rounded-2xl p-1.5 focus-within:border-brand-light/50 transition-all">
+                <div className="flex items-start gap-3 px-4 py-3">
+                  <Sparkles className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
+                  <textarea
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    placeholder={
+                      inputMode === "prompt"
+                        ? "Build a SaaS dashboard with login, analytics charts, user management, and billing..."
+                        : inputMode === "url"
+                        ? "Paste a URL to clone or reference..."
+                        : "Describe your design or upload a file..."
+                    }
+                    rows={4}
+                    maxLength={10000}
+                    className="flex-1 bg-transparent text-foreground placeholder:text-muted-foreground outline-none resize-none text-sm leading-relaxed"
+                    autoFocus
+                  />
+                </div>
+                <div className="flex items-center justify-between px-4 py-2 border-t border-border/50">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground">{prompt.length}/10,000</span>
+                    {inputMode === "upload" && (
+                      <div className="flex items-center gap-2">
+                        <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-zinc-800">
+                          <FileImage className="w-3.5 h-3.5" /> Screenshot
+                        </button>
+                        <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-zinc-800">
+                          <Box className="w-3.5 h-3.5" /> Figma
+                        </button>
+                        <button type="button" className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1 rounded-lg hover:bg-zinc-800">
+                          <FileText className="w-3.5 h-3.5" /> PDF
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={!prompt.trim()}
+                    className="flex items-center gap-2 bg-white text-black px-4 py-2 rounded-xl text-sm font-medium hover:bg-zinc-200 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    <Send className="w-4 h-4" />
+                    Generate
+                  </button>
+                </div>
+              </div>
+            </form>
+
+            {/* Suggestions */}
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-2">
+              {[
+                "Ecommerce store with product grid and cart",
+                "SaaS dashboard with charts and billing",
+                "Portfolio with blog and contact form",
+                "Admin panel with user management",
+              ].map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setPrompt(s)}
+                  className="text-xs px-3 py-1.5 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-zinc-500 transition-all"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </motion.div>
         </div>
-        <span className={`text-sm ${state === "active" ? "font-medium" : "text-muted-foreground"}`}>{label}</span>
       </div>
     );
-  };
+  }
 
-  if (step === "done" && result) {
-    return (
-      <div className="mx-auto max-w-3xl space-y-8">
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold">Generation Complete</h1>
-          <Badge variant="default">Success</Badge>
-          {result.totalMs && (
-            <span className="text-sm text-muted-foreground">{formatMs(result.totalMs)}</span>
+  // ── Generating / Done / Error View ──────────────────
+  const currentStepIdx = WORKSPACE_STEPS.findIndex((s) => {
+    if (progressEvents.length === 0) return s.id === "routing";
+    const last = progressEvents[progressEvents.length - 1].step;
+    return s.id === last;
+  });
+
+  return (
+    <div className="min-h-screen bg-background flex flex-col lg:flex-row">
+      {/* Left: Agent Timeline */}
+      <div className="w-full lg:w-80 border-b lg:border-b-0 lg:border-r border-border flex flex-col">
+        <div className="h-14 border-b border-border flex items-center px-4 justify-between">
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-brand-light" />
+            <span className="text-sm font-medium">Generation</span>
+          </div>
+          <span className="text-xs text-muted-foreground font-mono">{formatTime(elapsedMs)}</span>
+        </div>
+
+        {/* Progress steps */}
+        <div className="p-4 space-y-1">
+          {WORKSPACE_STEPS.map((s, i) => {
+            const isActive = i === currentStepIdx;
+            const isDone = i < currentStepIdx || step === "done";
+            return (
+              <motion.div
+                key={s.id}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.05 }}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all ${
+                  isActive ? "bg-brand/10 text-brand-light" : isDone ? "text-muted-foreground" : "text-zinc-600"
+                }`}
+              >
+                {isDone ? (
+                  <CheckCircle2 className="w-4 h-4 text-green-500 shrink-0" />
+                ) : isActive ? (
+                  <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+                ) : (
+                  <Circle className="w-4 h-4 shrink-0" />
+                )}
+                <span className="font-medium">{s.label}</span>
+                {isActive && (
+                  <span className="ml-auto text-xs text-muted-foreground truncate max-w-[120px]">
+                    {stepLabel}
+                  </span>
+                )}
+              </motion.div>
+            );
+          })}
+        </div>
+
+        {/* Agent events */}
+        {agentEvents.length > 0 && (
+          <div className="border-t border-border p-4">
+            <p className="text-xs font-medium text-muted-foreground mb-3">AI Agents</p>
+            <div className="space-y-2">
+              {agentEvents.map((a, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center gap-2 text-xs"
+                >
+                  <span>{AGENT_ICONS[a.name] || "🤖"}</span>
+                  <span className="truncate flex-1">{a.name}</span>
+                  <span className={`font-mono ${a.success ? "text-green-500" : "text-red-500"}`}>
+                    {a.duration}ms
+                  </span>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Elapsed bar */}
+        <div className="mt-auto p-4 border-t border-border">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+            <span>{step === "done" ? "Complete" : "Working..."}</span>
+            <span className="font-mono">{formatTime(elapsedMs)}</span>
+          </div>
+          <div className="h-1 bg-zinc-800 rounded-full overflow-hidden">
+            <motion.div
+              className="h-full bg-gradient-to-r from-brand-light to-pink-500"
+              initial={{ width: "0%" }}
+              animate={{ width: step === "done" ? "100%" : `${Math.min((currentStepIdx + 1) / WORKSPACE_STEPS.length * 100, 90)}%` }}
+              transition={{ duration: 0.5 }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Right: Content area */}
+      <div className="flex-1 flex flex-col min-h-0">
+        {/* Content header */}
+        <div className="h-14 border-b border-border flex items-center px-4 justify-between">
+          <div className="flex items-center gap-2">
+            {step === "done" && result && (
+              <>
+                <span className="text-sm font-medium">{result.factory}</span>
+                <span className="text-xs text-muted-foreground">•</span>
+                <span className="text-xs text-muted-foreground">{result.files.length} files</span>
+                <span className="text-xs text-muted-foreground">•</span>
+                <span className={`text-xs ${result.buildSuccess ? "text-green-500" : "text-yellow-500"}`}>
+                  {result.buildSuccess ? "Build passed" : "Partial"}
+                </span>
+              </>
+            )}
+            {step === "generating" && (
+              <span className="text-sm text-muted-foreground">{stepLabel}</span>
+            )}
+            {step === "error" && (
+              <span className="text-sm text-red-500">{error}</span>
+            )}
+          </div>
+          {step === "done" && result && (
+            <div className="flex items-center gap-2">
+              <a
+                href={`/api/projects/${result.projectId}/download`}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-border hover:bg-zinc-800 transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" /> ZIP
+              </a>
+              <button
+                onClick={() => router.push(`/projects/${result.projectId}`)}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg bg-white text-black hover:bg-zinc-200 transition-colors"
+              >
+                <Eye className="w-3.5 h-3.5" /> View Project
+              </button>
+            </div>
           )}
         </div>
 
-        <Card>
-          <CardContent className="pt-6 space-y-4">
-            <div className="grid grid-cols-4 gap-4 text-center">
-              <div>
-                <p className="text-2xl font-bold">{result.files.length}</p>
-                <p className="text-sm text-muted-foreground">Files</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{(result.qualityScore * 100).toFixed(0)}%</p>
-                <p className="text-sm text-muted-foreground">Quality</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold capitalize">{result.factory}</p>
-                <p className="text-sm text-muted-foreground">Factory</p>
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{result.agentResults?.successCount || 0}/{(result.agentResults?.successCount || 0) + (result.agentResults?.failCount || 0)}</p>
-                <p className="text-sm text-muted-foreground">Agents</p>
-              </div>
-            </div>
-
-            <div className="flex gap-2 text-xs text-muted-foreground">
-              {result.llmUsed && <Badge variant="secondary">LLM</Badge>}
-              {result.memoryUsed && <Badge variant="secondary">Memory</Badge>}
-              {result.patternsExtracted > 0 && <Badge variant="secondary">{result.patternsExtracted} Patterns</Badge>}
-            </div>
-          </CardContent>
-        </Card>
-
-        {result.agentResults?.insights && (
-          <Card>
-            <CardContent className="pt-6 space-y-2">
-              <h3 className="font-semibold">Agent Insights</h3>
-              {typeof result.agentResults.insights.scope === "string" && (
-                <p className="text-sm text-muted-foreground">{result.agentResults.insights.scope}</p>
-              )}
-              {Array.isArray(result.agentResults.insights.features) && (
-                <ul className="text-sm list-disc list-inside">
-                  {(result.agentResults.insights.features as string[]).map((f, i) => (
-                    <li key={i}>{f}</li>
-                  ))}
-                </ul>
-              )}
-              {typeof result.agentResults.insights.seoTitle === "string" && (
-                <p className="text-xs">SEO: {result.agentResults.insights.seoTitle}</p>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        <Card>
-          <CardContent className="pt-6">
-            <h3 className="font-semibold mb-3">Generated Files</h3>
-            <div className="space-y-1 max-h-64 overflow-y-auto">
-              {result.files.map((file) => (
-                <div key={file.path} className="flex items-center justify-between rounded border px-3 py-1.5 text-sm">
-                  <span className="font-mono">{file.path}</span>
-                  <Badge variant="outline" className="text-xs">{file.type}</Badge>
+        {/* Main content */}
+        <div className="flex-1 overflow-auto">
+          {step === "generating" && (
+            <div className="flex items-center justify-center h-full">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="text-center"
+              >
+                <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-brand/10 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 text-brand-light animate-spin" />
                 </div>
-              ))}
+                <p className="text-lg font-medium mb-1">{stepLabel}</p>
+                <p className="text-sm text-muted-foreground">Our AI team is building your project</p>
+              </motion.div>
             </div>
-          </CardContent>
-        </Card>
+          )}
 
-        {result.warnings.length > 0 && (
-          <Card>
-            <CardContent className="pt-6">
-              <h3 className="font-semibold mb-2">Warnings</h3>
-              <ul className="text-sm text-yellow-600 space-y-1">
-                {result.warnings.map((w, i) => (
-                  <li key={i}>• {w}</li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        )}
-
-        <div className="flex gap-3">
-          <Button onClick={() => router.push(`/projects/${result.projectId}`)} className="flex-1">
-            View Project
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => window.open(`/api/projects/${result.projectId}/download`, "_blank")}
-          >
-            Download ZIP
-          </Button>
-          <Button variant="ghost" onClick={() => { setStep("input"); setResult(null); setPrompt(""); setName(""); setProgressEvents([]); setAgentEvents([]); setElapsedMs(0); }}>
-            New Project
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (step === "error") {
-    return (
-      <div className="mx-auto max-w-2xl space-y-8">
-        <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold">Generation Failed</h1>
-          <Badge variant="destructive">Error</Badge>
-        </div>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="text-destructive">{error}</p>
-            <Button className="mt-4" onClick={() => { setStep("input"); setError(""); setProgressEvents([]); setAgentEvents([]); setElapsedMs(0); }}>
-              Try Again
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (step !== "input") {
-    return (
-      <div className="mx-auto max-w-2xl space-y-8">
-        <div className="flex items-center justify-between">
-          <h1 className="text-3xl font-bold">Generating Project</h1>
-          <span className="text-sm text-muted-foreground font-mono">{formatMs(elapsedMs)}</span>
-        </div>
-        <Card>
-          <CardContent className="pt-6 space-y-6">
-            <div className="space-y-3">
-              {stepIndicator("routing", "Analyzing input")}
-              {stepIndicator("generating", "Generating files")}
-              {stepIndicator("agents", "Running agents")}
-              {stepIndicator("validating", "Validating build")}
-              {stepIndicator("storing", "Saving results")}
-            </div>
-
-            <p className="text-sm text-muted-foreground animate-pulse">{stepLabel}</p>
-
-            {agentEvents.length > 0 && (
-              <div className="space-y-1">
-                {agentEvents.map((agent, i) => (
-                  <div key={i} className="flex items-center justify-between text-xs">
-                    <span className="flex items-center gap-1">
-                      {agent.success ? (
-                        <span className="text-green-500">✓</span>
-                      ) : (
-                        <span className="text-red-500">✗</span>
-                      )}
-                      {agent.name}
-                    </span>
-                    <span className="text-muted-foreground">{formatMs(agent.duration)}</span>
+          {step === "done" && result && (
+            <div className="p-6 space-y-6">
+              {/* Stats */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {[
+                  { label: "Files", value: result.files.length },
+                  { label: "Quality", value: `${Math.round(result.qualityScore * 100)}%` },
+                  { label: "Agents", value: `${result.agentResults?.successCount || 0}/${(result.agentResults?.successCount || 0) + (result.agentResults?.failCount || 0)}` },
+                  { label: "Time", value: formatTime(result.totalMs || elapsedMs) },
+                ].map((s) => (
+                  <div key={s.label} className="p-3 rounded-xl border border-border">
+                    <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
+                    <p className="text-lg font-bold">{s.value}</p>
                   </div>
                 ))}
               </div>
-            )}
 
-            {progressEvents.length > 0 && (
-              <div className="max-h-32 overflow-y-auto space-y-1">
-                {progressEvents.map((evt, i) => (
-                  <div key={i} className="text-xs text-muted-foreground">
-                    {evt.label}
-                  </div>
-                ))}
+              {/* Agent insights */}
+              {result.agentResults?.insights && (
+                <div className="p-4 rounded-xl border border-border">
+                  <p className="text-sm font-medium mb-3">Agent Insights</p>
+                  {typeof result.agentResults.insights.scope === "string" && (
+                    <p className="text-xs text-muted-foreground mb-2">{result.agentResults.insights.scope}</p>
+                  )}
+                  {Array.isArray(result.agentResults.insights.features) && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {(result.agentResults.insights.features as string[]).map((f, i) => (
+                        <span key={i} className="text-xs px-2 py-1 rounded-md bg-zinc-800 text-muted-foreground">{f}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* File explorer */}
+              <div className="rounded-xl border border-border overflow-hidden">
+                <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                  <p className="text-sm font-medium">Files</p>
+                  <span className="text-xs text-muted-foreground">{result.files.length} generated</span>
+                </div>
+                <div className="divide-y divide-border max-h-80 overflow-auto">
+                  {result.files.map((f, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setSelectedFile(selectedFile?.path === f.path ? null : f)}
+                      className={`w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-zinc-800/50 transition-colors ${
+                        selectedFile?.path === f.path ? "bg-zinc-800/50" : ""
+                      }`}
+                    >
+                      <FileCode2 className="w-4 h-4 text-brand-light shrink-0" />
+                      <span className="text-xs font-mono truncate flex-1">{f.path}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-800 text-muted-foreground">{f.type}</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
-  return (
-    <div className="mx-auto max-w-2xl space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold">New Project</h1>
-        <p className="text-muted-foreground">Describe what you want to build</p>
-      </div>
-
-      <Card>
-        <CardContent className="pt-6">
-          <form onSubmit={handleGenerate} className="space-y-6">
-            <div>
-              <label className="mb-2 block text-sm font-medium">Project Name (optional)</label>
-              <Input
-                placeholder="my-awesome-project"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium">Factory</label>
-              <div className="grid grid-cols-2 gap-2">
-                {factories.map((f) => (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => setFactory(f.id)}
-                    className={`rounded-md border p-3 text-left text-sm transition-colors ${
-                      factory === f.id
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:bg-accent"
-                    }`}
+              {/* Code viewer */}
+              <AnimatePresence>
+                {selectedFile && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="rounded-xl border border-border overflow-hidden"
                   >
-                    <div className="font-medium">{f.label}</div>
-                    <div className="text-xs text-muted-foreground">{f.description}</div>
-                  </button>
-                ))}
+                    <div className="px-4 py-3 border-b border-border flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <FileCode2 className="w-4 h-4 text-brand-light" />
+                        <span className="text-xs font-mono">{selectedFile.path}</span>
+                      </div>
+                      <button onClick={() => setSelectedFile(null)} className="text-xs text-muted-foreground hover:text-foreground">
+                        Close
+                      </button>
+                    </div>
+                    <pre className="p-4 text-xs font-mono text-muted-foreground overflow-auto max-h-96 leading-relaxed">
+                      <code>{selectedFile.content}</code>
+                    </pre>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {step === "error" && (
+            <div className="flex items-center justify-center h-full">
+              <div className="text-center">
+                <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                <p className="text-lg font-medium mb-2">Generation Failed</p>
+                <p className="text-sm text-muted-foreground mb-6">{error}</p>
+                <button
+                  onClick={() => { setStep("input"); setPrompt(""); }}
+                  className="px-4 py-2 rounded-lg bg-white text-black text-sm font-medium hover:bg-zinc-200 transition-colors"
+                >
+                  Try Again
+                </button>
               </div>
             </div>
-
-            <div>
-              <label className="mb-2 block text-sm font-medium">Description</label>
-              <Textarea
-                placeholder="Build a modern landing page for a SaaS product called 'Acme' with a hero section, features grid, pricing, and CTA..."
-                rows={6}
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                required
-              />
-              <p className="mt-1 text-xs text-muted-foreground">{prompt.length} / 10,000 characters</p>
-            </div>
-
-            {error && <p className="text-sm text-destructive">{error}</p>}
-
-            <Button type="submit" className="w-full" disabled={!prompt.trim()}>
-              Generate Project
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
