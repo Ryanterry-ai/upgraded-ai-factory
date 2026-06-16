@@ -1,6 +1,6 @@
 {
   "name": "upgraded-ai-factory-studio",
-  "version": "0.8.0",
+  "version": "0.8.5",
   "description": "Multi-factory AI platform with Requirement Understanding Engine for generating websites, ecommerce, SaaS, admin panels, dashboards, agents, and internal tools",
   "type": "module",
   "main": "dist/index.js",
@@ -11,7 +11,8 @@
     "memory": "./dist/cli/memory.js",
     "runtime": "./dist/cli/runtime.js",
     "agent-activate": "./dist/cli/agent-activate.js",
-    "intelligence": "./dist/cli/intelligence.js"
+    "intelligence": "./dist/cli/intelligence.js",
+    "benchmark": "./dist/cli/benchmark.js"
   },
   "scripts": {
     "build": "tsc",
@@ -46,7 +47,13 @@
     "intelligence:insights": "tsx src/cli/intelligence.ts insights",
     "intelligence:predict": "tsx src/cli/intelligence.ts predict",
     "intelligence:promote": "tsx src/cli/intelligence.ts promote",
-    "intelligence:demo": "tsx src/cli/intelligence.ts demo"
+    "intelligence:demo": "tsx src/cli/intelligence.ts demo",
+    "benchmark": "tsx src/cli/benchmark.ts",
+    "benchmark:run": "tsx src/cli/benchmark.ts run",
+    "benchmark:stats": "tsx src/cli/benchmark.ts stats",
+    "benchmark:prompts": "tsx src/cli/benchmark.ts prompts",
+    "benchmark:compare": "tsx src/cli/benchmark.ts compare",
+    "benchmark:demo": "tsx src/cli/benchmark.ts demo"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.2",
