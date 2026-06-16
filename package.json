@@ -1,6 +1,6 @@
 {
   "name": "upgraded-ai-factory-studio",
-  "version": "0.2.0",
+  "version": "0.5.5",
   "description": "Multi-factory AI platform with Requirement Understanding Engine for generating websites, ecommerce, SaaS, admin panels, dashboards, agents, and internal tools",
   "type": "module",
   "main": "dist/index.js",
