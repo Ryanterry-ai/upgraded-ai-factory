@@ -87,27 +87,46 @@ export async function retrieveMemory(
       ? allProjectsResult.value.data || []
       : [];
 
-  // Semantic similarity search
+  // Semantic similarity search — use pgvector RPC if available, fallback to brute-force
   const queryEmbedding = await generateEmbedding(prompt);
-  const similarProjects: MemoryContext["similarProjects"] = [];
+  let similarProjects: MemoryContext["similarProjects"] = [];
 
-  for (const project of allProjectsForSimilar) {
-    if (!project.prompt) continue;
-    const projectEmbedding = await generateEmbedding(project.prompt);
-    const similarity = cosineSimilarity(queryEmbedding, projectEmbedding);
-    if (similarity > 0.3) {
-      similarProjects.push({
-        name: project.name,
-        factory: project.factory,
-        prompt: project.prompt,
-        quality_score: project.quality_score,
-        file_count: project.file_count,
-        similarity,
-      });
+  try {
+    // Try pgvector RPC first (server-side vector search)
+    const { data: rpcResults } = await supabase.rpc("search_projects", {
+      query_embedding: JSON.stringify(queryEmbedding),
+      match_count: 5,
+      match_threshold: 0.3,
+    });
+    if (rpcResults && rpcResults.length > 0) {
+      similarProjects = rpcResults.map((r: any) => ({
+        name: r.name,
+        factory: r.factory,
+        prompt: r.prompt,
+        quality_score: r.quality_score,
+        file_count: r.file_count,
+        similarity: r.similarity,
+      }));
     }
+  } catch {
+    // Fallback: brute-force in-memory similarity search
+    for (const project of allProjectsForSimilar) {
+      if (!project.prompt) continue;
+      const projectEmbedding = await generateEmbedding(project.prompt);
+      const similarity = cosineSimilarity(queryEmbedding, projectEmbedding);
+      if (similarity > 0.3) {
+        similarProjects.push({
+          name: project.name,
+          factory: project.factory,
+          prompt: project.prompt,
+          quality_score: project.quality_score,
+          file_count: project.file_count,
+          similarity,
+        });
+      }
+    }
+    similarProjects.sort((a, b) => b.similarity - a.similarity);
   }
-
-  similarProjects.sort((a, b) => b.similarity - a.similarity);
 
   const totalGenerations = allProjects.length;
   const successfulCount = allProjects.filter(
