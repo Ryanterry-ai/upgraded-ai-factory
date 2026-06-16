@@ -1,6 +1,6 @@
 {
   "name": "upgraded-ai-factory-studio",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Multi-factory AI platform with Requirement Understanding Engine for generating websites, ecommerce, SaaS, admin panels, dashboards, agents, and internal tools",
   "type": "module",
   "main": "dist/index.js",
@@ -8,7 +8,8 @@
     "studio": "./dist/cli/studio.js",
     "samedev": "./dist/cli/index.js",
     "audit": "./dist/cli/studio.js",
-    "memory": "./dist/cli/memory.js"
+    "memory": "./dist/cli/memory.js",
+    "runtime": "./dist/cli/runtime.js"
   },
   "scripts": {
     "build": "tsc",
@@ -26,9 +27,15 @@
     "audit:dashboard": "tsx src/cli/studio.ts audit dashboard",
     "audit:agent": "tsx src/cli/studio.ts audit agent",
     "audit:tools": "tsx src/cli/studio.ts audit tools",
-    "memory": "tsx src/cli/memory.ts"
+    "memory": "tsx src/cli/memory.ts",
+    "runtime": "tsx src/cli/runtime.ts",
+    "runtime:website": "tsx src/cli/runtime.ts --factory website --dry-run",
+    "runtime:ecommerce": "tsx src/cli/runtime.ts --factory ecommerce --dry-run",
+    "runtime:saas": "tsx src/cli/runtime.ts --factory saas --dry-run"
   },
   "dependencies": {
+    "@langchain/core": "^1.1.49",
+    "@langchain/langgraph": "^1.4.2",
     "cheerio": "^1.0.0-rc.12",
     "js-yaml": "^4.1.0"
   },
