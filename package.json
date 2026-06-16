@@ -1,6 +1,6 @@
 {
   "name": "upgraded-ai-factory-studio",
-  "version": "0.7.5",
+  "version": "0.8.0",
   "description": "Multi-factory AI platform with Requirement Understanding Engine for generating websites, ecommerce, SaaS, admin panels, dashboards, agents, and internal tools",
   "type": "module",
   "main": "dist/index.js",
@@ -10,7 +10,8 @@
     "audit": "./dist/cli/studio.js",
     "memory": "./dist/cli/memory.js",
     "runtime": "./dist/cli/runtime.js",
-    "agent-activate": "./dist/cli/agent-activate.js"
+    "agent-activate": "./dist/cli/agent-activate.js",
+    "intelligence": "./dist/cli/intelligence.js"
   },
   "scripts": {
     "build": "tsc",
@@ -36,7 +37,16 @@
     "agent-activate": "tsx src/cli/agent-activate.ts",
     "agent:website": "tsx src/cli/agent-activate.ts --factory website --dry-run",
     "agent:ecommerce": "tsx src/cli/agent-activate.ts --factory ecommerce --dry-run",
-    "agent:saas": "tsx src/cli/agent-activate.ts --factory saas --dry-run"
+    "agent:saas": "tsx src/cli/agent-activate.ts --factory saas --dry-run",
+    "intelligence": "tsx src/cli/intelligence.ts",
+    "intelligence:stats": "tsx src/cli/intelligence.ts stats",
+    "intelligence:leaderboard": "tsx src/cli/intelligence.ts leaderboard",
+    "intelligence:patterns": "tsx src/cli/intelligence.ts patterns",
+    "intelligence:templates": "tsx src/cli/intelligence.ts templates",
+    "intelligence:insights": "tsx src/cli/intelligence.ts insights",
+    "intelligence:predict": "tsx src/cli/intelligence.ts predict",
+    "intelligence:promote": "tsx src/cli/intelligence.ts promote",
+    "intelligence:demo": "tsx src/cli/intelligence.ts demo"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.2",
