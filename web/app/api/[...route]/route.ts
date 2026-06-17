@@ -338,24 +338,18 @@ app.post("/generate", async (c) => {
           // Generate and send preview URL
           if (result.files && result.files.length > 0) {
             try {
-              let previewUrl: string;
               const scraped = result.scraped;
               const homePage = scraped?.pages?.find(p => p.path === "/") || scraped?.pages?.[0];
 
-              if (homePage?.fullHtml) {
-                // Use actual site HTML for pixel-perfect preview
-                previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(homePage.fullHtml)}`;
+              if (homePage?.fullHtml && result.projectId) {
+                // Use HTTP endpoint for preview — allows on-demand page loading
+                const previewUrl = `/api/preview/${result.projectId}`;
+                send("preview_url", { url: previewUrl });
               } else {
                 // Fallback to reconstructed preview
                 const previewHtml = generatePreviewHtml(scraped || null, name?.trim() || "Project");
-                previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}`;
-              }
-              send("preview_url", { url: previewUrl });
-
-              // Send page paths for on-demand navigation
-              const pagePaths = scraped?.pages?.filter(p => p.fullHtml).map(p => p.path) || [];
-              if (pagePaths.length > 1) {
-                send("page_paths", { paths: pagePaths });
+                const previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}`;
+                send("preview_url", { url: previewUrl });
               }
             } catch (previewErr) {
               console.error("Preview generation failed:", previewErr);
@@ -749,6 +743,50 @@ app.get("/analytics/overview", async (c) => {
     dailyTrend,
     totalProjects: projects.length,
     totalGenerations: generations.length,
+  });
+});
+
+// ── Clone Preview & Download ─────────────────────────────
+
+import { listPages, getPageHtml, getSite } from "@/lib/clone-store";
+
+// List all pages for a cloned site
+app.get("/clone/pages/:projectId", (c) => {
+  const projectId = c.req.param("projectId");
+  const pages = listPages(projectId);
+  if (pages.length === 0) {
+    return c.json({ error: "No pages found for this project" }, 404);
+  }
+  return c.json({ pages, count: pages.length });
+});
+
+// Get HTML for a specific page
+app.get("/clone/page/:projectId", (c) => {
+  const projectId = c.req.param("projectId");
+  const path = c.req.query("path") || "/";
+  const html = getPageHtml(projectId, path);
+  if (!html) {
+    return c.json({ error: "Page not found" }, 404);
+  }
+  return c.html(html);
+});
+
+// Download entire cloned site as JSON
+app.get("/clone/download/:projectId", (c) => {
+  const projectId = c.req.param("projectId");
+  const site = getSite(projectId);
+  if (!site) {
+    return c.json({ error: "Site not found" }, 404);
+  }
+  const pages: Record<string, { title: string; html: string }> = {};
+  for (const [path, page] of site.pages) {
+    pages[path] = { title: page.title, html: page.fullHtml };
+  }
+  return c.json({
+    baseUrl: site.baseUrl,
+    rootDomain: site.rootDomain,
+    pages,
+    pageCount: site.pages.size,
   });
 });
 

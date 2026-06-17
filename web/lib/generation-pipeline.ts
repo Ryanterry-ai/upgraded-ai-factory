@@ -6,6 +6,7 @@ import { validateBuild, type ValidationResult } from "./build-validator";
 import { predictQuality, extractPatterns, recordPatterns, type QualityPrediction } from "./pattern-adapter";
 import { getOptimizedBlueprintForFactory, type OptimizedBlueprint } from "./blueprint-optimizer";
 import { isUrl, scrapeSite, formatScrapedForLLM, type ScrapedSite } from "./url-scraper";
+import { storeSite } from "./clone-store";
 
 export interface GenerationRequest {
   prompt: string;
@@ -1076,7 +1077,7 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
   if (urlMatch) {
     const detectedUrl = urlMatch[1];
     try {
-      scraped = await scrapeSite(detectedUrl, 10);
+      scraped = await scrapeSite(detectedUrl, 50);
       warnings.push(`Crawled ${scraped.pages.length} pages from ${scraped.baseUrl}: Tech: ${scraped.techStack.join(", ") || "unknown"}`);
     } catch (err) {
       warnings.push(`URL scraping failed: ${err instanceof Error ? err.message : "unknown"}. Generating from prompt only.`);
@@ -1205,6 +1206,18 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
     const patternsRecorded = await recordPatterns(extractedPatterns).catch(
       () => 0
     );
+
+    // Store scraped pages for clone preview/download
+    if (scraped && scraped.pages.length > 0) {
+      storeSite(
+        projectId,
+        scraped.baseUrl,
+        scraped.rootDomain,
+        scraped.pages
+          .filter(p => p.fullHtml)
+          .map(p => ({ path: p.path, title: p.title, fullHtml: p.fullHtml! }))
+      );
+    }
 
     return {
       projectId,
