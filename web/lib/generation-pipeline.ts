@@ -5,7 +5,7 @@ import { retrieveMemory, formatMemoryContext, recordGeneration, type MemoryConte
 import { validateBuild, type ValidationResult } from "./build-validator";
 import { predictQuality, extractPatterns, recordPatterns, type QualityPrediction } from "./pattern-adapter";
 import { getOptimizedBlueprintForFactory, type OptimizedBlueprint } from "./blueprint-optimizer";
-import { isUrl, scrapeUrl, formatScrapedForLLM, type ScrapedContent } from "./url-scraper";
+import { isUrl, scrapeSite, formatScrapedForLLM, type ScrapedSite } from "./url-scraper";
 
 export interface GenerationRequest {
   prompt: string;
@@ -679,7 +679,7 @@ async function generateLLMContent(
   prompt: string,
   factory: string,
   memoryContext?: MemoryContext,
-  scraped?: ScrapedContent
+  scraped?: ScrapedSite
 ): Promise<LLMContent | null> {
   if (!isLLMAvailable()) return null;
 
@@ -725,7 +725,7 @@ Return ONLY valid JSON with this exact structure:
 No markdown. No explanation. Only JSON.`;
 
   const userContent = isUrlPrompt
-    ? `Target website to clone: ${scraped!.url}\nUser instruction: ${prompt.slice(0, 500)}${scrapedSection}${memorySection}`
+    ? `Target website to clone: ${scraped!.baseUrl}\nUser instruction: ${prompt.slice(0, 500)}${scrapedSection}${memorySection}`
     : `Project type: ${factory}\nDescription: ${prompt.slice(0, 500)}${memorySection}`;
 
   const messages: LLMMessage[] = [
@@ -859,6 +859,57 @@ function genCTALLM(text: string): string {
 `;
 }
 
+// ── Multi-Page Generation from Scraped Data ────────────────
+
+function generatePageFromScraped(
+  page: import("./url-scraper").ScrapedPage,
+  componentName: string,
+  llmContent?: LLMContent | null
+): string {
+  const imports = [`import { Header } from "@/components/Header";`, `import { Footer } from "@/components/Footer";`];
+  imports.push(`import { ${componentName} } from "@/components/${componentName}";`);
+
+  return `${imports.join("\n")}
+
+export default function ${page.title.replace(/[^a-zA-Z0-9]/g, "")}Page() {
+  return (
+    <main className="min-h-screen">
+      <Header />
+      <${componentName} />
+      <Footer />
+    </main>
+  );
+}
+`;
+}
+
+function generateSectionComponent(
+  section: { tag: string; text: string; className?: string; html?: string },
+  colors?: LLMContent["colors"]
+): string {
+  const accent = colors?.primary || "#2563eb";
+  // Extract meaningful text from the section
+  const lines = section.text.split(/\s+/).filter(w => w.length > 0);
+  const title = lines.slice(0, 5).join(" ");
+  const body = lines.slice(5).join(" ");
+
+  return `export function ContentSection() {
+  return (
+    <section className="py-12">
+      <div className="container mx-auto px-4 max-w-4xl">
+        <h2 className="text-2xl font-bold mb-4" style={{ color: "${accent}" }}>
+          ${title.replace(/"/g, '\\"')}
+        </h2>
+        <p className="text-gray-600 leading-relaxed">
+          ${body.slice(0, 500).replace(/"/g, '\\"')}
+        </p>
+      </div>
+    </section>
+  );
+}
+`;
+}
+
 const COMPONENT_GENERATORS: Record<string, (prompt?: string) => string> = {
   Header: () => genHeader("Project"),
   Footer: genFooter,
@@ -885,9 +936,8 @@ async function generateFiles(
   factory: string,
   projectName: string,
   llmContent: LLMContent | null,
-  scraped?: ScrapedContent
+  scraped?: ScrapedSite
 ): Promise<{ path: string; content: string; type: string }[]> {
-  const blueprint = buildBlueprint(prompt, factory, projectName);
   const files: { path: string; content: string; type: string }[] = [];
 
   const tailwind = genTailwindConfig();
@@ -904,62 +954,81 @@ async function generateFiles(
 
   const usedComponents = new Set<string>();
 
-  for (const page of blueprint.pages) {
-    const pagePath = page.path === "/" ? "src/app/page.tsx" : `src/app${page.path}/page.tsx`;
-    const imports = page.components
-      .map((c) => `import { ${c} } from "@/components/${c}";`)
-      .join("\n");
-    const usage = page.components.map((c) => `      <${c} />`).join("\n");
+  // If we have scraped multi-page data, generate a page for each route
+  if (scraped && scraped.pages.length > 0) {
+    const navItems = llmContent?.navigation && llmContent.navigation.length > 0
+      ? llmContent.navigation
+      : scraped.navigation.length > 0
+        ? scraped.navigation
+        : scraped.pages.map(p => p.title).slice(0, 6);
 
-    const pageContent = `${imports}\n\nexport default function ${page.name}Page() {\n  return (\n    <main className="min-h-screen">\n${usage}\n    </main>\n  );\n}\n`;
+    for (const page of scraped.pages) {
+      const routePath = page.path === "/" ? "src/app/page.tsx" : `src/app${page.path}/page.tsx`;
+      const componentName = page.path === "/"
+        ? "HomeContent"
+        : page.path.split("/").filter(Boolean).map(s => s.charAt(0).toUpperCase() + s.slice(1)).join("") + "Content";
 
-    files.push({ path: pagePath, content: pageContent, type: "page" });
-
-    for (const comp of page.components) {
-      usedComponents.add(comp);
+      // Generate page content from scraped data
+      const pageContent = generatePageFromScraped(page, componentName, llmContent);
+      files.push({ path: routePath, content: pageContent, type: "page" });
+      usedComponents.add(componentName);
     }
-  }
 
-  const navItems = llmContent?.navigation && llmContent.navigation.length > 0
-    ? llmContent.navigation
-    : scraped?.navigation && scraped.navigation.length > 0
-      ? scraped.navigation
-      : undefined;
+    // Generate Header with actual nav from scraped site
+    const headerContent = genHeader(projectName, navItems, llmContent?.colors);
+    files.push({ path: "src/components/Header.tsx", content: headerContent, type: "component" });
+    usedComponents.add("Header");
 
-  for (const compName of usedComponents) {
-    const gen = COMPONENT_GENERATORS[compName];
-    if (gen) {
-      let content = gen(prompt);
-      if (llmContent) {
-        if (compName === "Hero") {
-          content = genHeroLLM(llmContent.heroTitle, llmContent.heroSubtitle, llmContent.ctaText, llmContent.colors);
-        } else if (compName === "Features" && llmContent.features.length > 0) {
-          content = genFeaturesLLM(llmContent.features, llmContent.colors);
-        } else if (compName === "AboutContent" && llmContent.aboutText) {
-          content = genAboutLLM(llmContent.aboutText);
-        } else if (compName === "CTA" && llmContent.ctaText) {
-          content = genCTALLM(llmContent.ctaText);
-        } else if (compName === "Header") {
-          content = genHeader(projectName, navItems, llmContent.colors);
+    // Generate Footer
+    files.push({ path: "src/components/Footer.tsx", content: genFooter(), type: "component" });
+    usedComponents.add("Footer");
+
+    // Generate page-specific components from scraped sections
+    for (const page of scraped.pages) {
+      for (const section of page.sections.slice(0, 4)) {
+        const compName = `${page.path === "/" ? "Home" : page.path.split("/").filter(Boolean).join("")}${section.tag.charAt(0).toUpperCase() + section.tag.slice(1)}`;
+        if (!usedComponents.has(compName) && section.text.length > 30) {
+          const compContent = generateSectionComponent(section, llmContent?.colors);
+          files.push({ path: `src/components/${compName}.tsx`, content: compContent, type: "component" });
+          usedComponents.add(compName);
         }
       }
-      files.push({
-        path: `src/components/${compName}.tsx`,
-        content,
-        type: "component",
-      });
-    } else {
-      files.push({
-        path: `src/components/${compName}.tsx`,
-        content: `export function ${compName}() {\n  return <section className="py-12"><div className="container mx-auto px-4"><h2 className="text-2xl font-bold">${compName}</h2></div></section>;\n}\n`,
-        type: "component",
-      });
     }
-  }
+  } else {
+    // Standard generation without scraped data
+    const blueprint = buildBlueprint(prompt, factory, projectName);
+    const pages = blueprint.pages;
 
-  const headerFile = files.find((f) => f.path === "src/components/Header.tsx");
-  if (headerFile && llmContent) {
-    headerFile.content = genHeader(projectName, navItems, llmContent.colors);
+    for (const page of pages) {
+      const pagePath = page.path === "/" ? "src/app/page.tsx" : `src/app${page.path}/page.tsx`;
+      const imports = page.components.map((c) => `import { ${c} } from "@/components/${c}";`).join("\n");
+      const usage = page.components.map((c) => `      <${c} />`).join("\n");
+      const pageContent = `${imports}\n\nexport default function ${page.name}Page() {\n  return (\n    <main className="min-h-screen">\n${usage}\n    </main>\n  );\n}\n`;
+      files.push({ path: pagePath, content: pageContent, type: "page" });
+      for (const comp of page.components) usedComponents.add(comp);
+    }
+
+    const navItems = llmContent?.navigation && llmContent.navigation.length > 0 ? llmContent.navigation : undefined;
+
+    for (const compName of usedComponents) {
+      const gen = COMPONENT_GENERATORS[compName];
+      if (gen) {
+        let content = gen(prompt);
+        if (llmContent) {
+          if (compName === "Hero") content = genHeroLLM(llmContent.heroTitle, llmContent.heroSubtitle, llmContent.ctaText, llmContent.colors);
+          else if (compName === "Features" && llmContent.features.length > 0) content = genFeaturesLLM(llmContent.features, llmContent.colors);
+          else if (compName === "AboutContent" && llmContent.aboutText) content = genAboutLLM(llmContent.aboutText);
+          else if (compName === "CTA" && llmContent.ctaText) content = genCTALLM(llmContent.ctaText);
+          else if (compName === "Header") content = genHeader(projectName, navItems, llmContent.colors);
+        }
+        files.push({ path: `src/components/${compName}.tsx`, content, type: "component" });
+      } else {
+        files.push({ path: `src/components/${compName}.tsx`, content: `export function ${compName}() {\n  return <section className="py-12"><div className="container mx-auto px-4"><h2 className="text-2xl font-bold">${compName}</h2></div></section>;\n}\n`, type: "component" });
+      }
+    }
+
+    const headerFile = files.find((f) => f.path === "src/components/Header.tsx");
+    if (headerFile && llmContent) headerFile.content = genHeader(projectName, navItems, llmContent.colors);
   }
 
   return files;
@@ -1000,12 +1069,12 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
   const warnings: string[] = [];
 
   // Detect and scrape URL if present
-  let scraped: ScrapedContent | undefined;
+  let scraped: ScrapedSite | undefined;
   const promptHasUrl = isUrl(request.prompt.trim());
   if (promptHasUrl) {
     try {
-      scraped = await scrapeUrl(request.prompt.trim());
-      warnings.push(`Scraped ${scraped.url}: ${scraped.title} (${scraped.headings.length} headings, ${scraped.images.length} images, ${scraped.sections.length} sections)`);
+      scraped = await scrapeSite(request.prompt.trim(), 10);
+      warnings.push(`Crawled ${scraped.pages.length} pages from ${scraped.baseUrl}: Tech: ${scraped.techStack.join(", ") || "unknown"}`);
     } catch (err) {
       warnings.push(`URL scraping failed: ${err instanceof Error ? err.message : "unknown"}. Generating from prompt only.`);
     }

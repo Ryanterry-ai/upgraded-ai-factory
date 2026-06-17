@@ -9,6 +9,7 @@ interface ChatPanelProps {
   status: "idle" | "generating" | "completed" | "error";
   inputValue: string;
   onInputChange: (val: string) => void;
+  selectedFactory?: string;
 }
 
 const TEMPLATES = [
@@ -20,7 +21,7 @@ const TEMPLATES = [
   "Clone this website: paste URL here",
 ];
 
-export function ChatPanel({ messages, onSend, status, inputValue, onInputChange }: ChatPanelProps) {
+export function ChatPanel({ messages, onSend, status, inputValue, onInputChange, selectedFactory }: ChatPanelProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -51,11 +52,16 @@ export function ChatPanel({ messages, onSend, status, inputValue, onInputChange 
             </div>
             <p className="text-sm font-medium text-zinc-300 mb-1">What do you want to build?</p>
             <p className="text-xs text-zinc-500 mb-4">Describe your app, paste a URL, or pick a template.</p>
+            {selectedFactory && (
+              <div className="text-xs px-3 py-1 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-300 mb-4">
+                Factory: {selectedFactory}
+              </div>
+            )}
             <div className="space-y-1.5 w-full max-w-xs">
               {TEMPLATES.map((t) => (
                 <button
                   key={t}
-                  onClick={() => onSend(t)}
+                  onClick={() => onInputChange(t)}
                   className="w-full text-left text-xs px-3 py-2 rounded-lg border border-white/5 hover:border-white/15 hover:bg-white/5 transition-all text-zinc-400 hover:text-zinc-200"
                 >
                   {t}

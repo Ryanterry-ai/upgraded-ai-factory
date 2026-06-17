@@ -32,6 +32,10 @@ export default function HomePage() {
     router.push(`/projects/new?prompt=${encodeURIComponent(p.trim())}`);
   };
 
+  const handleFactoryClick = (factoryId: string) => {
+    router.push(`/projects/new?factory=${factoryId}`);
+  };
+
   return (
     <div className="min-h-screen bg-[#09090b] text-white">
       {/* Nav */}
@@ -115,7 +119,7 @@ export default function HomePage() {
               {["Paste URL", "Upload PDF", "Figma file"].map((label) => (
                 <button
                   key={label}
-                  onClick={() => handleSubmit(`Build a ${label.toLowerCase()}`)}
+                  onClick={() => router.push("/projects/new")}
                   className="px-3 py-1 rounded-full border border-white/10 hover:border-white/20 hover:text-zinc-300 transition-colors"
                 >
                   {label}
@@ -160,7 +164,7 @@ export default function HomePage() {
                 return (
                   <button
                     key={f.id}
-                    onClick={() => handleSubmit(`Build a ${f.label.toLowerCase()}`)}
+                    onClick={() => handleFactoryClick(f.id)}
                     onMouseEnter={() => setHoveredFactory(f.id)}
                     onMouseLeave={() => setHoveredFactory(null)}
                     className="relative p-4 rounded-xl border border-white/5 hover:border-white/15 bg-white/[0.02] hover:bg-white/[0.05] transition-all text-left group"

@@ -48,8 +48,10 @@ export default function WorkspacePageWrapper() {
 function WorkspacePage() {
   const searchParams = useSearchParams();
   const initialPrompt = searchParams.get("prompt") || "";
+  const initialFactory = searchParams.get("factory") || "";
   const [state, setState] = useState<WorkspaceState>(INITIAL_STATE);
   const [inputValue, setInputValue] = useState(initialPrompt);
+  const [selectedFactory, setSelectedFactory] = useState(initialFactory);
   const eventSourceRef = useRef<EventSource | null>(null);
   const abortRef = useRef<boolean>(false);
 
@@ -84,7 +86,7 @@ function WorkspacePage() {
       : "/api/generate";
     const body = isEdit
       ? { instruction: prompt }
-      : { prompt };
+      : { prompt, factory: selectedFactory || undefined };
 
     updateState({
       status: "generating",
@@ -224,12 +226,7 @@ function WorkspacePage() {
     }
   }, [state.projectId]);
 
-  // Auto-start if prompt in URL
-  useEffect(() => {
-    if (initialPrompt && state.status === "idle") {
-      startGeneration(initialPrompt);
-    }
-  }, [initialPrompt]);
+  // No auto-start — user must click Generate or press Enter
 
   return (
     <div className="h-screen flex flex-col bg-[#09090b] text-white overflow-hidden">
@@ -340,6 +337,7 @@ function WorkspacePage() {
                 status={state.status}
                 inputValue={inputValue}
                 onInputChange={setInputValue}
+                selectedFactory={selectedFactory}
               />
             </motion.div>
           )}
