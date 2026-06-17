@@ -8,6 +8,7 @@ import { getOptimizedBlueprintForFactory, type OptimizedBlueprint } from "./blue
 import { isUrl, scrapeSite, formatScrapedForLLM, type ScrapedSite } from "./url-scraper";
 import { storeSite } from "./clone-store";
 import { generatePreviewHtml } from "./preview-renderer";
+import { extractRequirements, validateRequirements, summarizeRequirements, type RequirementMatrix } from "./requirements-extractor";
 
 export interface GenerationRequest {
   prompt: string;
@@ -65,30 +66,91 @@ function extractProjectName(prompt: string, explicitName?: string): string {
   return sanitizeName(match?.[1] || "my-project");
 }
 
-function buildBlueprint(prompt: string, factory: string, projectName: string) {
+function buildBlueprint(prompt: string, factory: string, projectName: string, requirements?: RequirementMatrix) {
   const pages: Array<{ path: string; name: string; components: string[] }> = [];
   const components: string[] = [];
 
-  pages.push({ path: "/", name: "Home", components: ["Header", "Hero", "Footer"] });
-  components.push("Header", "Hero", "Footer");
+  // Use extracted requirements if available
+  if (requirements) {
+    // Build pages from requirements
+    for (const page of requirements.pages) {
+      const route = page.route === "/" ? "" : page.route;
+      const pageComponents: string[] = ["Header"];
 
-  if (/about/i.test(prompt)) {
-    pages.push({ path: "/about", name: "About", components: ["Header", "AboutContent", "Footer"] });
-    components.push("AboutContent");
-  }
-  if (/contact|form/i.test(prompt)) {
-    pages.push({ path: "/contact", name: "Contact", components: ["Header", "ContactForm", "Footer"] });
-    components.push("ContactForm");
-  }
-  if (/pricing/i.test(prompt)) {
-    pages.push({ path: "/pricing", name: "Pricing", components: ["Header", "PricingTable", "Footer"] });
-    components.push("PricingTable");
-  }
-  if (/blog|post/i.test(prompt)) {
-    pages.push({ path: "/blog", name: "Blog", components: ["Header", "BlogList", "Footer"] });
-    components.push("BlogList");
+      // Add page-specific components
+      if (page.name === "Home Page") {
+        pageComponents.push("Hero");
+        // Add section components from requirements
+        if (requirements.sections.some(s => s.name === "Testimonials")) pageComponents.push("Testimonials");
+        if (requirements.sections.some(s => s.name === "Services List")) pageComponents.push("Services");
+        if (requirements.components.some(c => c.name === "Features")) pageComponents.push("Features");
+        if (requirements.components.some(c => c.name === "CTA")) pageComponents.push("CTA");
+        if (requirements.components.some(c => c.name === "Stats")) pageComponents.push("Stats");
+      } else if (page.name === "Services Page") {
+        pageComponents.push("Services");
+      } else if (page.name === "About Page") {
+        pageComponents.push("AboutContent");
+        if (requirements.components.some(c => c.name === "Team")) pageComponents.push("Team");
+      } else if (page.name === "Contact Page") {
+        pageComponents.push("ContactForm");
+      } else if (page.name === "Blog Page") {
+        pageComponents.push("BlogList");
+      } else if (page.name === "Testimonials Page") {
+        pageComponents.push("Testimonials");
+      } else if (page.name === "Pricing Page") {
+        pageComponents.push("PricingTable");
+      } else if (page.name === "Portfolio Page") {
+        pageComponents.push("Portfolio");
+      } else if (page.name === "FAQ Page") {
+        pageComponents.push("FAQ");
+      } else if (page.name === "Team Page") {
+        pageComponents.push("Team");
+      }
+
+      pageComponents.push("Footer");
+      pages.push({ path: route || "/", name: page.name.replace(" Page", ""), components: pageComponents });
+      components.push(...pageComponents);
+    }
+
+    // Add components from requirements that aren't page-specific
+    for (const comp of requirements.components) {
+      if (!components.includes(comp.name)) {
+        components.push(comp.name);
+      }
+    }
+  } else {
+    // Fallback to regex-based detection
+    pages.push({ path: "/", name: "Home", components: ["Header", "Hero", "Footer"] });
+    components.push("Header", "Hero", "Footer");
+
+    if (/about/i.test(prompt)) {
+      pages.push({ path: "/about", name: "About", components: ["Header", "AboutContent", "Footer"] });
+      components.push("AboutContent");
+    }
+    if (/contact|form/i.test(prompt)) {
+      pages.push({ path: "/contact", name: "Contact", components: ["Header", "ContactForm", "Footer"] });
+      components.push("ContactForm");
+    }
+    if (/services?/i.test(prompt)) {
+      pages.push({ path: "/services", name: "Services", components: ["Header", "Services", "Footer"] });
+      components.push("Services");
+    }
+    if (/pricing/i.test(prompt)) {
+      pages.push({ path: "/pricing", name: "Pricing", components: ["Header", "PricingTable", "Footer"] });
+      components.push("PricingTable");
+    }
+    if (/blog|post/i.test(prompt)) {
+      pages.push({ path: "/blog", name: "Blog", components: ["Header", "BlogList", "Footer"] });
+      components.push("BlogList");
+    }
+    if (/testimonial|review/i.test(prompt)) components.push("Testimonials");
+    if (/feature/i.test(prompt)) components.push("Features");
+    if (/cta|call.?to.?action/i.test(prompt)) components.push("CTA");
+    if (/newsletter|subscribe/i.test(prompt)) components.push("Newsletter");
+    if (/team/i.test(prompt)) components.push("Team");
   }
 
+  // Factory-specific pages
   if (factory === "ecommerce") {
     pages.push(
       { path: "/products", name: "Products", components: ["Header", "ProductGrid", "Footer"] },
@@ -108,11 +170,6 @@ function buildBlueprint(prompt: string, factory: string, projectName: string) {
     );
     components.push("LoginForm", "RegisterForm", "Sidebar", "DashboardContent");
   }
-
-  if (/feature/i.test(prompt)) components.push("Features");
-  if (/testimonial|review/i.test(prompt)) components.push("Testimonials");
-  if (/cta|call.?to.?action/i.test(prompt)) components.push("CTA");
-  if (/newsletter|subscribe/i.test(prompt)) components.push("Newsletter");
 
   return {
     project: { name: projectName, description: prompt.slice(0, 200), framework: "nextjs", styling: "tailwind", language: "typescript" },
@@ -542,6 +599,150 @@ export function Newsletter() {
 `;
 }
 
+function genServices(): string {
+  return `export function Services() {
+  const services = [
+    { title: "Web Development", description: "Custom websites built with modern technologies for optimal performance." },
+    { title: "Mobile Apps", description: "Native and cross-platform mobile applications for iOS and Android." },
+    { title: "UI/UX Design", description: "User-centered design that creates engaging and intuitive experiences." },
+    { title: "Cloud Solutions", description: "Scalable cloud infrastructure and deployment solutions." },
+    { title: "Digital Marketing", description: "Data-driven marketing strategies to grow your business." },
+    { title: "Consulting", description: "Expert technical consulting to guide your digital transformation." },
+  ];
+  return (
+    <section className="py-16">
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl font-bold text-center mb-12">Our Services</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {services.map((service) => (
+            <div key={service.title} className="p-6 rounded-lg border hover:shadow-lg transition-shadow">
+              <h3 className="text-xl font-semibold mb-3">{service.title}</h3>
+              <p className="text-gray-600">{service.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+`;
+}
+
+function genTeam(): string {
+  return `export function Team() {
+  const members = [
+    { name: "Sarah Johnson", role: "CEO & Founder", bio: "Visionary leader with 15+ years in tech." },
+    { name: "Michael Chen", role: "CTO", bio: "Full-stack architect passionate about scalable systems." },
+    { name: "Emily Davis", role: "Design Director", bio: "Award-winning designer focused on user experience." },
+    { name: "James Wilson", role: "Lead Engineer", bio: "Expert in React, Node.js, and cloud architecture." },
+  ];
+  return (
+    <section className="py-16">
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl font-bold text-center mb-12">Meet Our Team</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+          {members.map((member) => (
+            <div key={member.name} className="text-center">
+              <div className="w-32 h-32 mx-auto mb-4 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-2xl font-bold">
+                {member.name.split(" ").map(n => n[0]).join("")}
+              </div>
+              <h3 className="text-lg font-semibold">{member.name}</h3>
+              <p className="text-sm text-blue-600 mb-2">{member.role}</p>
+              <p className="text-sm text-gray-600">{member.bio}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+`;
+}
+
+function genStats(): string {
+  return `export function Stats() {
+  const stats = [
+    { label: "Projects Completed", value: "250+" },
+    { label: "Happy Clients", value: "120+" },
+    { label: "Team Members", value: "40+" },
+    { label: "Years Experience", value: "10+" },
+  ];
+  return (
+    <section className="py-16 bg-gray-50 dark:bg-gray-900">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          {stats.map((stat) => (
+            <div key={stat.label}>
+              <p className="text-4xl font-bold text-blue-600 mb-2">{stat.value}</p>
+              <p className="text-gray-600">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+`;
+}
+
+function genFAQ(): string {
+  return `export function FAQ() {
+  const faqs = [
+    { q: "What services do you offer?", a: "We offer web development, mobile apps, UI/UX design, and cloud solutions." },
+    { q: "How long does a project take?", a: "Project timelines vary based on scope, typically 4-12 weeks." },
+    { q: "Do you offer ongoing support?", a: "Yes, we provide maintenance and support packages." },
+    { q: "What is your pricing model?", a: "We offer flexible pricing based on project requirements." },
+  ];
+  return (
+    <section className="py-16">
+      <div className="container mx-auto px-4 max-w-3xl">
+        <h2 className="text-3xl font-bold text-center mb-12">Frequently Asked Questions</h2>
+        <div className="space-y-6">
+          {faqs.map((faq, i) => (
+            <div key={i} className="border rounded-lg p-6">
+              <h3 className="text-lg font-semibold mb-2">{faq.q}</h3>
+              <p className="text-gray-600">{faq.a}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+`;
+}
+
+function genPortfolio(): string {
+  return `export function Portfolio() {
+  const projects = [
+    { title: "E-commerce Platform", category: "Web Development", description: "Full-stack e-commerce solution with React and Node.js." },
+    { title: "Fitness App", category: "Mobile", description: "iOS and Android app for tracking workouts and nutrition." },
+    { title: "SaaS Dashboard", category: "UI/UX Design", description: "Analytics dashboard with real-time data visualization." },
+    { title: "Corporate Website", category: "Web Design", description: "Modern responsive website for a Fortune 500 company." },
+  ];
+  return (
+    <section className="py-16">
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl font-bold text-center mb-12">Our Work</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {projects.map((project) => (
+            <div key={project.title} className="rounded-lg border overflow-hidden hover:shadow-lg transition-shadow">
+              <div className="aspect-video bg-gray-100 flex items-center justify-center text-gray-400">Project Image</div>
+              <div className="p-6">
+                <p className="text-sm text-blue-600 mb-1">{project.category}</p>
+                <h3 className="text-xl font-semibold mb-2">{project.title}</h3>
+                <p className="text-gray-600">{project.description}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+`;
+}
+
 function genStyles(colors?: LLMContent["colors"]): string {
   const bg = colors?.background || "#ffffff";
   const text = colors?.text || "#111827";
@@ -925,6 +1126,11 @@ const COMPONENT_GENERATORS: Record<string, (prompt?: string) => string> = {
   Testimonials: genTestimonials,
   CTA: genCTA,
   Newsletter: genNewsletter,
+  Services: genServices,
+  Team: genTeam,
+  Stats: genStats,
+  FAQ: genFAQ,
+  Portfolio: genPortfolio,
   ProductGrid: genProductGrid,
   CartItems: genCartItems,
   CartSummary: genCartSummary,
@@ -939,7 +1145,8 @@ async function generateFiles(
   factory: string,
   projectName: string,
   llmContent: LLMContent | null,
-  scraped?: ScrapedSite
+  scraped?: ScrapedSite,
+  requirements?: RequirementMatrix
 ): Promise<{ path: string; content: string; type: string }[]> {
   const files: { path: string; content: string; type: string }[] = [];
 
@@ -965,7 +1172,7 @@ async function generateFiles(
 
   // No scraped data — generate Next.js project from blueprint
   const usedComponents = new Set<string>();
-  const blueprint = buildBlueprint(prompt, factory, projectName);
+  const blueprint = buildBlueprint(prompt, factory, projectName, requirements);
   const pages = blueprint.pages;
 
   for (const page of pages) {
@@ -999,23 +1206,100 @@ async function generateFiles(
   const headerFile = files.find((f) => f.path === "src/components/Header.tsx");
   if (headerFile && llmContent) headerFile.content = genHeader(projectName, navItems, llmContent.colors);
 
+  // Add layout, globals.css, config files
+  files.push({ path: "src/app/layout.tsx", content: genLayout(projectName), type: "config" });
+  files.push({ path: "src/app/globals.css", content: genStyles(llmContent?.colors), type: "config" });
+
+  const config = genConfig(projectName);
+  files.push({ path: config.filename, content: config.content, type: "config" });
+
+  files.push({
+    path: "package.json",
+    content: JSON.stringify({
+      name: projectName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+      version: "0.1.0",
+      private: true,
+      scripts: { dev: "next dev", build: "next build", start: "next start", lint: "next lint" },
+      dependencies: { next: "14.2.0", react: "^18", "react-dom": "^18" },
+      devDependencies: { "@types/node": "^20", "@types/react": "^18", "@types/react-dom": "^18", autoprefixer: "^10", postcss: "^8", tailwindcss: "^3.4", typescript: "^5" },
+    }, null, 2),
+    type: "config",
+  });
+
+  files.push({
+    path: "tsconfig.json",
+    content: JSON.stringify({
+      compilerOptions: { lib: ["dom", "dom.iterable", "esnext"], allowJs: true, skipLibCheck: true, strict: true, noEmit: true, esModuleInterop: true, module: "esnext", moduleResolution: "bundler", resolveJsonModule: true, isolatedModules: true, jsx: "preserve", increment: true, plugins: [{ name: "next" }], paths: { "@/*": ["./src/*"] } },
+      include: ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+      exclude: ["node_modules"],
+    }, null, 2),
+    type: "config",
+  });
+
+  files.push({
+    path: "tailwind.config.ts",
+    content: `import type { Config } from "tailwindcss";
+const config: Config = { content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"], theme: { extend: {} }, plugins: [] };
+export default config;`,
+    type: "config",
+  });
+
+  files.push({
+    path: "postcss.config.mjs",
+    content: `const config = { plugins: { tailwindcss: {}, autoprefixer: {} } }; export default config;`,
+    type: "config",
+  });
+
+  files.push({ path: "README.md", content: `# ${projectName}\n\nGenerated by build.same\n\n## Getting Started\n\n\`\`\`bash\nnpm install\nnpm run dev\n\`\`\`\n`, type: "config" });
+
   return files;
 }
 
-function calculateQualityScore(files: { path: string; content: string; type: string }[]): number {
+function calculateQualityScore(files: { path: string; content: string; type: string }[], requirements?: RequirementMatrix): number {
   let score = 0;
-  if (files.length >= 10) score += 0.25;
-  else if (files.length >= 5) score += 0.15;
-  else if (files.length >= 3) score += 0.1;
 
-  if (files.some((f) => f.path.includes("page.tsx"))) score += 0.15;
-  if (files.some((f) => f.path.includes("layout.tsx"))) score += 0.1;
-  if (files.some((f) => f.path.includes("globals.css"))) score += 0.1;
-  if (files.some((f) => f.path.includes("package.json"))) score += 0.1;
-  if (files.some((f) => f.path.includes("tsconfig.json"))) score += 0.05;
-  if (files.some((f) => f.path.includes("tailwind.config"))) score += 0.05;
-  if (files.some((f) => f.path.includes("components/"))) score += 0.1;
-  if (files.some((f) => f.type === "page" && f.path.split("/").length > 3)) score += 0.1;
+  // File count (up to 25%)
+  if (files.length >= 20) score += 0.25;
+  else if (files.length >= 15) score += 0.20;
+  else if (files.length >= 10) score += 0.15;
+  else if (files.length >= 5) score += 0.10;
+
+  // Required files (up to 30%)
+  if (files.some((f) => f.path.includes("page.tsx"))) score += 0.10;
+  if (files.some((f) => f.path === "src/app/layout.tsx")) score += 0.05;
+  if (files.some((f) => f.path === "src/app/globals.css")) score += 0.05;
+  if (files.some((f) => f.path === "package.json")) score += 0.05;
+  if (files.some((f) => f.path === "tsconfig.json")) score += 0.03;
+  if (files.some((f) => f.path.includes("tailwind.config"))) score += 0.02;
+
+  // Component quality (up to 20%)
+  const componentCount = files.filter((f) => f.path.includes("components/")).length;
+  if (componentCount >= 8) score += 0.20;
+  else if (componentCount >= 5) score += 0.15;
+  else if (componentCount >= 3) score += 0.10;
+  else if (componentCount >= 1) score += 0.05;
+
+  // Multi-page routing (up to 15%)
+  const pageCount = files.filter((f) => f.path.includes("page.tsx")).length;
+  if (pageCount >= 5) score += 0.15;
+  else if (pageCount >= 3) score += 0.10;
+  else if (pageCount >= 2) score += 0.05;
+
+  // Requirements completeness (up to 10%)
+  if (requirements) {
+    const reqCount = requirements.all.length;
+    if (reqCount > 0) {
+      const metCount = requirements.all.filter(req => {
+        return files.some(f => {
+          const pathLower = f.path.toLowerCase();
+          const contentLower = f.content.toLowerCase();
+          return req.keywords.some(kw => pathLower.includes(kw) || contentLower.includes(kw));
+        });
+      }).length;
+      const reqScore = metCount / reqCount;
+      score += reqScore * 0.10;
+    }
+  }
 
   return Math.min(1, score);
 }
@@ -1045,9 +1329,18 @@ export async function runGeneration(
     onProgress?.(event, data);
   };
 
+  // Extract requirements from prompt (for non-URL prompts)
+  let requirements: RequirementMatrix | undefined;
+  const urlMatch = request.prompt.trim().match(/(https?:\/\/[^\s]+)/i);
+  const isUrl = !!urlMatch;
+
+  if (!isUrl) {
+    requirements = extractRequirements(request.prompt);
+    emit("thinking", { message: `Extracted requirements: ${requirements.pages.length} pages, ${requirements.components.length} components, ${requirements.features.length} features` });
+  }
+
   // Detect and scrape URL if present
   let scraped: ScrapedSite | undefined;
-  const urlMatch = request.prompt.trim().match(/(https?:\/\/[^\s]+)/i);
   if (urlMatch) {
     const detectedUrl = urlMatch[1];
     emit("thinking", { message: `Crawling ${detectedUrl} for pages and assets...` });
@@ -1084,10 +1377,10 @@ export async function runGeneration(
       retrieveMemory(request.prompt, factory),
       predictQuality(request.prompt, factory),
     ]);
-    const files = await generateFiles(request.prompt, factory, projectName, llmContent, scraped);
+    const files = await generateFiles(request.prompt, factory, projectName, llmContent, scraped, requirements);
     emit("thinking", { message: `Generated ${files.length} files. Building project structure...` });
     const blueprint = buildBlueprint(request.prompt, factory, projectName);
-    const qualityScore = calculateQualityScore(files);
+    const qualityScore = calculateQualityScore(files, requirements);
     const buildValidation = validateBuild(files);
 
     // Send early preview as soon as files are generated

@@ -176,6 +176,111 @@ function renderFooter(scraped: ScrapedSite, colors: ReturnType<typeof getColors>
     </footer>`;
 }
 
+export function generateReactPreview(
+  files: Array<{ path: string; content: string; type: string }>,
+  projectName?: string
+): string {
+  // Find the main page component
+  const pageFiles = files.filter(f =>
+    f.path.match(/src\/app\/(page\.tsx|page\.jsx|layout\.tsx|layout\.jsx)$/) ||
+    f.path.match(/src\/pages\/(index\.tsx|index\.jsx)$/) ||
+    f.path.match(/pages\/(index\.tsx|index\.jsx)$/)
+  );
+
+  // Find all page routes
+  const routeFiles = files.filter(f =>
+    f.path.match(/src\/app\/.*\/page\.(tsx|jsx)$/) ||
+    f.path.match(/src\/pages\/.*\.(tsx|jsx)$/)
+  );
+
+  // Extract component names from imports
+  const componentFiles = files.filter(f =>
+    f.path.match(/src\/components\/.*\.(tsx|jsx)$/)
+  );
+
+  // Build a simple HTML preview
+  const routes = routeFiles.map(f => {
+    const match = f.path.match(/src\/app\/(.+)\/page\.(tsx|jsx)$/);
+    if (match) {
+      const route = match[1].replace(/\/page$/, "").replace(/\(.*\)\//, "").replace(/\//g, "/");
+      return route === "page" ? "/" : `/${route}`;
+    }
+    return null;
+  }).filter(Boolean);
+
+  // Extract text content from TSX/JSX
+  function extractText(content: string): string {
+    return content
+      .replace(/import\s+.*from\s+["'].*["'];?/g, "")
+      .replace(/export\s+(default\s+)?(function|const)\s+\w+.*?\{/, "")
+      .replace(/className\s*=\s*["'][^"']*["']/g, "")
+      .replace(/<[A-Z]\w+[^>]*\/?>/g, "")
+      .replace(/<\/[A-Z]\w+>/g, "")
+      .replace(/<[^>]+>/g, " ")
+      .replace(/\{[^}]*\}/g, " ")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 500);
+  }
+
+  const mainPage = pageFiles[0];
+  const mainContent = mainPage ? extractText(mainPage.content) : "";
+  const title = projectName || "Generated Project";
+
+  // Get Tailwind-like colors from components
+  const allContent = files.map(f => f.content).join(" ");
+  const bgMatch = allContent.match(/bg-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(50|100|200|300|400|500|600|700|800|900|950)/);
+  const textMatch = allContent.match(/text-(slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-(50|100|200|300|400|500|600|700|800|900|950)/);
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${escapeHtml(title)}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+  </style>
+</head>
+<body class="bg-zinc-950 text-white min-h-screen">
+  <nav class="flex items-center justify-between px-8 py-4 border-b border-zinc-800">
+    <div class="text-xl font-bold">${escapeHtml(title)}</div>
+    <div class="flex gap-6 text-sm text-zinc-400">
+      ${routes.filter(Boolean).map(r => `<a href="#" class="hover:text-white transition-colors">${r === "/" ? "Home" : r!.replace(/^\//, "").replace(/\//g, " / ")}</a>`).join("\n      ")}
+    </div>
+  </nav>
+  <main class="max-w-6xl mx-auto px-8 py-16">
+    <h1 class="text-5xl font-bold mb-6 bg-gradient-to-r from-violet-400 to-pink-400 bg-clip-text text-transparent">${escapeHtml(title)}</h1>
+    <p class="text-xl text-zinc-400 mb-12 max-w-2xl">${mainContent ? escapeHtml(mainContent.slice(0, 200)) : "Generated project preview"}</p>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      ${routes.filter(r => r !== "/").map(r => `
+      <div class="p-6 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-colors">
+        <h3 class="text-lg font-semibold mb-2">${escapeHtml(r?.replace(/^\//, "").replace(/\//g, " / ") || "Page")}</h3>
+        <p class="text-sm text-zinc-500">View ${escapeHtml(r?.replace(/^\//, "") || "page")}</p>
+      </div>`).join("")}
+      ${componentFiles.slice(0, 3).map(f => {
+        const name = f.path.match(/components\/(.+)\.(tsx|jsx)$/)?.[1] || "Component";
+        return `
+      <div class="p-6 rounded-xl bg-zinc-900 border border-zinc-800 hover:border-zinc-700 transition-colors">
+        <h3 class="text-lg font-semibold mb-2">${escapeHtml(name)}</h3>
+        <p class="text-sm text-zinc-500">Component</p>
+      </div>`;
+      }).join("")}
+    </div>
+    <div class="mt-12 p-6 rounded-xl bg-zinc-900 border border-zinc-800">
+      <h3 class="text-lg font-semibold mb-4">Project Structure</h3>
+      <div class="text-sm text-zinc-500 font-mono">
+        ${files.slice(0, 15).map(f => `<div class="py-0.5">${escapeHtml(f.path)}</div>`).join("")}
+        ${files.length > 15 ? `<div class="py-0.5 text-zinc-600">... and ${files.length - 15} more files</div>` : ""}
+      </div>
+    </div>
+  </main>
+</body>
+</html>`;
+}
+
 export function generatePreviewHtml(scraped: ScrapedSite | null | undefined, projectName?: string): string {
   if (!scraped || scraped.pages.length === 0) {
     return `<!DOCTYPE html>
