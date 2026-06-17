@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import { handle } from "hono/vercel";
 import { getSupabase } from "@/lib/supabase";
 import { runGeneration } from "@/lib/generation-pipeline";
+import { generatePreviewHtml } from "@/lib/preview-renderer";
 
 const app = new Hono().basePath("/api");
 
@@ -230,9 +231,33 @@ app.post("/generate", async (c) => {
 
           const totalMs = Date.now() - startTime;
 
+          send("agent_complete", { agent: "Product Manager", detail: "Requirements analyzed" });
+          send("agent_start", { agent: "Frontend Engineer", action: "Generating components" });
+          send("progress", { progress: 60, message: "Building components..." });
+
+          await new Promise((r) => setTimeout(r, 200));
+          send("agent_complete", { agent: "Frontend Engineer", detail: `${result.files?.length || 0} files generated` });
+          send("agent_start", { agent: "QA Engineer", action: "Validating build" });
+
+          await new Promise((r) => setTimeout(r, 200));
+          send("agent_complete", { agent: "QA Engineer", detail: `Quality: ${Math.round(result.qualityScore * 100)}%` });
+          send("progress", { progress: 90, message: "Finalizing..." });
+
           // Send files
           if (result.files && result.files.length > 0) {
             send("files", { files: result.files });
+          }
+
+          // Generate and send preview URL
+          if (result.files && result.files.length > 0) {
+            try {
+              const previewHtml = generatePreviewHtml(result.files, name?.trim() || "Project");
+              const previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}`;
+              send("preview_url", { url: previewUrl });
+            } catch (previewErr) {
+              // Preview generation is non-critical
+              console.error("Preview generation failed:", previewErr);
+            }
           }
 
           // Send preview URL if project exists

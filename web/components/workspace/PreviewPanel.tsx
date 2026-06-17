@@ -79,7 +79,7 @@ export function PreviewPanel({ previewUrl, device, status, files }: PreviewPanel
       <div className="flex-1 overflow-hidden flex items-start justify-center p-4">
         {view === "preview" && previewUrl ? (
           <div
-            className="bg-white rounded-lg overflow-hidden shadow-2xl transition-all duration-300 h-full"
+            className="bg-[#18181b] rounded-lg overflow-hidden shadow-2xl transition-all duration-300 h-full border border-white/10"
             style={{
               width: DEVICE_WIDTHS[device],
               maxWidth: "100%",
@@ -89,6 +89,7 @@ export function PreviewPanel({ previewUrl, device, status, files }: PreviewPanel
               src={previewUrl}
               className="w-full h-full border-0"
               title="Preview"
+              sandbox="allow-scripts allow-same-origin"
             />
           </div>
         ) : view === "code" ? (
@@ -107,8 +108,10 @@ export function PreviewPanel({ previewUrl, device, status, files }: PreviewPanel
             </pre>
           </div>
         ) : (
-          <div className="text-center text-zinc-600 text-sm py-12">
-            Waiting for preview...
+          <div className="text-center text-zinc-500 py-12">
+            <Eye className="w-8 h-8 mx-auto mb-3 text-zinc-600" />
+            <p className="text-sm">No preview available</p>
+            <p className="text-xs text-zinc-600 mt-1">Preview will appear after generation completes</p>
           </div>
         )}
       </div>

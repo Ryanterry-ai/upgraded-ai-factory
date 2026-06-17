@@ -1070,10 +1070,12 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
 
   // Detect and scrape URL if present
   let scraped: ScrapedSite | undefined;
-  const promptHasUrl = isUrl(request.prompt.trim());
-  if (promptHasUrl) {
+  // Extract URL from prompt (handles "clone url: https://...", "https://...", etc.)
+  const urlMatch = request.prompt.trim().match(/(https?:\/\/[^\s]+)/i);
+  if (urlMatch) {
+    const detectedUrl = urlMatch[1];
     try {
-      scraped = await scrapeSite(request.prompt.trim(), 10);
+      scraped = await scrapeSite(detectedUrl, 10);
       warnings.push(`Crawled ${scraped.pages.length} pages from ${scraped.baseUrl}: Tech: ${scraped.techStack.join(", ") || "unknown"}`);
     } catch (err) {
       warnings.push(`URL scraping failed: ${err instanceof Error ? err.message : "unknown"}. Generating from prompt only.`);

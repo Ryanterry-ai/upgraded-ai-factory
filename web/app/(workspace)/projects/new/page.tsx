@@ -1,7 +1,7 @@
 "use client";
 import { useState, useRef, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Send, RotateCcw, Monitor, Tablet, Smartphone, ChevronDown, ChevronRight,
   FileCode, FolderTree, Layout, MessageSquare, History, Sparkles, X,
@@ -321,27 +321,18 @@ function WorkspacePage() {
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Panel — Chat + History */}
-        <AnimatePresence mode="wait">
-          {!state.leftCollapsed && (
-            <motion.div
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 360, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="border-r border-white/5 flex flex-col bg-[#0f0f12] overflow-hidden"
-              style={{ minWidth: 360, maxWidth: 360 }}
-            >
-              <ChatPanel
-                messages={state.chatMessages}
-                onSend={sendMessage}
-                status={state.status}
-                inputValue={inputValue}
-                onInputChange={setInputValue}
-                selectedFactory={selectedFactory}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {!state.leftCollapsed && (
+          <div className="w-[360px] shrink-0 border-r border-white/5 flex flex-col bg-[#0f0f12] overflow-hidden">
+            <ChatPanel
+              messages={state.chatMessages}
+              onSend={sendMessage}
+              status={state.status}
+              inputValue={inputValue}
+              onInputChange={setInputValue}
+              selectedFactory={selectedFactory}
+            />
+          </div>
+        )}
 
         {/* Center — Preview */}
         <div className="flex-1 flex flex-col min-w-0 bg-[#09090b]">
@@ -392,25 +383,16 @@ function WorkspacePage() {
         </div>
 
         {/* Right Panel — Files + Code */}
-        <AnimatePresence mode="wait">
-          {!state.rightCollapsed && (
-            <motion.div
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 380, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ duration: 0.2 }}
-              className="border-l border-white/5 flex flex-col bg-[#0f0f12] overflow-hidden"
-              style={{ minWidth: 380, maxWidth: 380 }}
-            >
-              <FilePanel
-                files={state.files}
-                selectedFile={state.selectedFile}
-                onSelectFile={(path) => updateState({ selectedFile: path })}
-                projectId={state.projectId}
-              />
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {!state.rightCollapsed && (
+          <div className="w-[380px] shrink-0 border-l border-white/5 flex flex-col bg-[#0f0f12] overflow-hidden">
+            <FilePanel
+              files={state.files}
+              selectedFile={state.selectedFile}
+              onSelectFile={(path) => updateState({ selectedFile: path })}
+              projectId={state.projectId}
+            />
+          </div>
+        )}
       </div>
     </div>
   );
