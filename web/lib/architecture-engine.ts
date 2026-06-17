@@ -171,7 +171,7 @@ export function analyzeRequirements(prompt: string): RequirementMatrix {
     { pattern: /\b(admin\s*(dashboard|panel|page)?)\b/i, name: "Admin", route: "/admin", keywords: ["admin", "admin dashboard", "admin panel"] },
     { pattern: /\b(wishlist|wish\s*list)\b/i, name: "Wishlist", route: "/wishlist", keywords: ["wishlist", "wish list", "saved"] },
     { pattern: /\b(reviews?\s*(page|section)?)\b/i, name: "Reviews", route: "/reviews", keywords: ["reviews", "ratings", "feedback"] },
-    { pattern: /\b(reports?\s*(page|dashboard)?)\b/i, name: "Reports", route: "/reports", keywords: ["reports", "analytics", "insights"] },
+    { pattern: /\b(reports?|reporting|analytics|insights?)\s*(page|dashboard)?\b/i, name: "Reports", route: "/reports", keywords: ["reports", "analytics", "insights", "reporting"] },
     { pattern: /\b(members?|memberships?)\b/i, name: "Members", route: "/members", keywords: ["members", "membership", "subscribers"] },
     { pattern: /\b(attendance|check.?in)\b/i, name: "Attendance", route: "/attendance", keywords: ["attendance", "check-in", "checkin"] },
     { pattern: /\b(billing|invoices?|payments?)\b/i, name: "Billing", route: "/billing", keywords: ["billing", "invoices", "payments"] },
