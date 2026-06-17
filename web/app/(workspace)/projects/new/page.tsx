@@ -85,7 +85,7 @@ function WorkspacePage() {
       ? `/api/projects/${state.projectId}/edit`
       : "/api/generate";
     const body = isEdit
-      ? { instruction: prompt }
+      ? { instruction: prompt, files: state.files }
       : { prompt, factory: selectedFactory || undefined };
 
     updateState({

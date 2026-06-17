@@ -475,7 +475,7 @@ app.get("/projects/:id/files", async (c) => {
 app.post("/projects/:id/edit", async (c) => {
   const projectId = c.req.param("id");
   const body = await c.req.json();
-  const { instruction } = body;
+  const { instruction, files: currentFiles } = body;
 
   if (!instruction || typeof instruction !== "string") {
     return c.json({ error: "Instruction is required" }, 400);
@@ -521,14 +521,18 @@ app.post("/projects/:id/edit", async (c) => {
           send("agent_start", { agent: "Frontend Engineer", action: "Applying changes" });
 
           // Use LLM to generate code modifications
-          const systemPrompt = `You are a frontend engineer. Given an existing project and an edit instruction, generate the modified files.
+          const systemPrompt = `You are a frontend engineer. Given an existing project, its current files, and an edit instruction, generate the modified files.
 Return ONLY valid JSON array of files to update:
 [{"path": "src/components/Hero.tsx", "content": "full updated file content"}]
 Only include files that need to change. Do not include unchanged files.`;
 
+          const filesContext = currentFiles && Array.isArray(currentFiles)
+            ? currentFiles.map((f: { path: string; content: string }) => `\n--- ${f.path} ---\n${f.content}`).join("\n")
+            : "No current files provided.";
+
           const messages = [
             { role: "system" as const, content: systemPrompt },
-            { role: "user" as const, content: `Project: ${project.name}\nFactory: ${project.factory}\nOriginal prompt: ${project.prompt}\n\nEdit instruction: ${instruction}\n\nReturn the modified files as JSON.` },
+            { role: "user" as const, content: `Project: ${project.name}\nFactory: ${project.factory}\nOriginal prompt: ${project.prompt}\n\nCurrent files:\n${filesContext}\n\nEdit instruction: ${instruction}\n\nReturn only the modified files as JSON.` },
           ];
 
           const { content } = await callLLMWithFallback(messages, {
@@ -540,9 +544,24 @@ Only include files that need to change. Do not include unchanged files.`;
           if (content) {
             const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
             try {
-              const files = JSON.parse(cleaned);
-              if (Array.isArray(files)) {
-                send("files", { files });
+              const updatedFiles = JSON.parse(cleaned);
+              if (Array.isArray(updatedFiles)) {
+                send("files", { files: updatedFiles });
+
+                // Generate preview from HTML files
+                const htmlFile = updatedFiles.find((f: { path: string; content: string }) =>
+                  f.path.endsWith(".html") || f.path.endsWith("/index.html")
+                );
+                if (htmlFile) {
+                  send("preview_url", { url: `data:text/html;charset=utf-8,${encodeURIComponent(htmlFile.content)}` });
+                } else {
+                  // Try to generate preview from the first file
+                  const firstFile = updatedFiles[0];
+                  if (firstFile && firstFile.path.endsWith(".tsx")) {
+                    // For React files, send a placeholder preview
+                    send("preview_url", { url: `data:text/html;charset=utf-8,${encodeURIComponent(`<html><body><h1>${firstFile.path}</h1><p>File updated successfully. Check the code panel for changes.</p></body></html>`)}` });
+                  }
+                }
               }
             } catch {
               send("error", { message: "Failed to parse edit response" });
