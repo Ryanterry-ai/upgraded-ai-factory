@@ -192,7 +192,6 @@ function WorkspacePage() {
         updateState({
           status: "completed",
           progress: 100,
-          previewUrl: event.previewUrl as string || null,
         });
         const assistantMsg: ChatMessage = {
           id: crypto.randomUUID(), role: "assistant",
