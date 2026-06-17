@@ -335,26 +335,28 @@ app.post("/generate", async (c) => {
             send("files", { files: result.files });
           }
 
-          // Generate and send preview URL — multi-page if available
+          // Generate and send preview URL
           if (result.files && result.files.length > 0) {
             try {
               let previewUrl: string;
               const scraped = result.scraped;
-              const pagesWithHtml = scraped?.pages?.filter(p => p.fullHtml) || [];
+              const homePage = scraped?.pages?.find(p => p.path === "/") || scraped?.pages?.[0];
 
-              if (pagesWithHtml.length > 1) {
-                // Multi-page preview with navigation
-                const multiHtml = createMultiPagePreview(pagesWithHtml, name?.trim() || "Project");
-                previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(multiHtml)}`;
-              } else if (pagesWithHtml.length === 1 && pagesWithHtml[0].fullHtml) {
-                // Single page — use directly
-                previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(pagesWithHtml[0].fullHtml)}`;
+              if (homePage?.fullHtml) {
+                // Use actual site HTML for pixel-perfect preview
+                previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(homePage.fullHtml)}`;
               } else {
                 // Fallback to reconstructed preview
                 const previewHtml = generatePreviewHtml(scraped || null, name?.trim() || "Project");
                 previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}`;
               }
               send("preview_url", { url: previewUrl });
+
+              // Send page paths for on-demand navigation
+              const pagePaths = scraped?.pages?.filter(p => p.fullHtml).map(p => p.path) || [];
+              if (pagePaths.length > 1) {
+                send("page_paths", { paths: pagePaths });
+              }
             } catch (previewErr) {
               console.error("Preview generation failed:", previewErr);
             }
