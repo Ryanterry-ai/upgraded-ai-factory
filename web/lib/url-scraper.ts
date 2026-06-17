@@ -28,6 +28,7 @@ export interface ScrapedSite {
   globalFonts: string[];
   techStack: string[];
   images: { src: string; alt: string; localPath: string }[];
+  homepageHtml?: string;
 }
 
 // ── Helpers ────────────────────────────────────────────────
@@ -330,6 +331,32 @@ export async function scrapeSite(startUrl: string, maxPages = 10): Promise<Scrap
     }
   }
 
+  // Fetch full homepage HTML for preview
+  let homepageHtml: string | undefined;
+  try {
+    const resp = await fetch(normalizedUrl, {
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+      signal: AbortSignal.timeout(15000),
+    });
+    if (resp.ok) {
+      let html = await resp.text();
+      // Rewrite relative URLs to absolute
+      const baseUrlObj = new URL(normalizedUrl);
+      const origin = baseUrlObj.origin;
+      // Fix src="/..." and href="/..."
+      html = html.replace(/(src|href|action)=["']\/(?!\/)/g, `$1="${origin}/`);
+      // Fix url("/...")
+      html = html.replace(/url\(["']\/(?!\/)/g, `url("${origin}/`);
+      // Remove base tags that might interfere
+      html = html.replace(/<base[^>]*>/gi, "");
+      // Add base tag for relative paths
+      html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${normalizedUrl}">`);
+      homepageHtml = html;
+    }
+  } catch {
+    // Non-critical — fallback to reconstructed preview
+  }
+
   return {
     baseUrl: normalizedUrl,
     rootDomain,
@@ -339,6 +366,7 @@ export async function scrapeSite(startUrl: string, maxPages = 10): Promise<Scrap
     globalFonts: Array.from(globalFonts),
     techStack: Array.from(globalTech),
     images: Array.from(allImages.values()),
+    homepageHtml,
   };
 }
 

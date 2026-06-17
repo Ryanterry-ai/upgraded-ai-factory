@@ -248,14 +248,20 @@ app.post("/generate", async (c) => {
             send("files", { files: result.files });
           }
 
-          // Generate and send preview URL
+          // Generate and send preview URL — use full HTML if available
           if (result.files && result.files.length > 0) {
             try {
-              const previewHtml = generatePreviewHtml(result.scraped || null, name?.trim() || "Project");
-              const previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}`;
+              let previewUrl: string;
+              if (result.scraped?.homepageHtml) {
+                // Use actual site HTML for pixel-perfect preview
+                previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(result.scraped.homepageHtml)}`;
+              } else {
+                // Fallback to reconstructed preview
+                const previewHtml = generatePreviewHtml(result.scraped || null, name?.trim() || "Project");
+                previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}`;
+              }
               send("preview_url", { url: previewUrl });
             } catch (previewErr) {
-              // Preview generation is non-critical
               console.error("Preview generation failed:", previewErr);
             }
           }
