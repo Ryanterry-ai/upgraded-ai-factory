@@ -8,7 +8,15 @@ import { getOptimizedBlueprintForFactory, type OptimizedBlueprint } from "./blue
 import { isUrl, scrapeSite, formatScrapedForLLM, type ScrapedSite } from "./url-scraper";
 import { storeSite } from "./clone-store";
 import { generatePreviewHtml } from "./preview-renderer";
-import { extractRequirements, validateRequirements, summarizeRequirements, type RequirementMatrix } from "./requirements-extractor";
+import {
+  analyzeRequirements,
+  planArchitecture,
+  validateRequirements,
+  calculateQualityScores,
+  type RequirementMatrix,
+  type ArchitecturePlan,
+  type QualityScores,
+} from "./architecture-engine";
 
 export interface GenerationRequest {
   prompt: string;
@@ -78,17 +86,16 @@ function buildBlueprint(prompt: string, factory: string, projectName: string, re
       const pageComponents: string[] = ["Header"];
 
       // Add page-specific components
-      if (page.name === "Home Page") {
+      if (page.name === "Home") {
         pageComponents.push("Hero");
-        // Add section components from requirements
-        if (requirements.sections.some(s => s.name === "Testimonials")) pageComponents.push("Testimonials");
-        if (requirements.sections.some(s => s.name === "Services List")) pageComponents.push("Services");
+        if (requirements.components.some(c => c.name === "Testimonials")) pageComponents.push("Testimonials");
+        if (requirements.components.some(c => c.name === "Services")) pageComponents.push("Services");
         if (requirements.components.some(c => c.name === "Features")) pageComponents.push("Features");
         if (requirements.components.some(c => c.name === "CTA")) pageComponents.push("CTA");
         if (requirements.components.some(c => c.name === "Stats")) pageComponents.push("Stats");
-      } else if (page.name === "Services Page") {
+      } else if (page.name === "Services") {
         pageComponents.push("Services");
-      } else if (page.name === "About Page") {
+      } else if (page.name === "About") {
         pageComponents.push("AboutContent");
         if (requirements.components.some(c => c.name === "Team")) pageComponents.push("Team");
       } else if (page.name === "Contact Page") {
@@ -1146,7 +1153,7 @@ async function generateFiles(
   projectName: string,
   llmContent: LLMContent | null,
   scraped?: ScrapedSite,
-  requirements?: RequirementMatrix
+  architecture?: ArchitecturePlan
 ): Promise<{ path: string; content: string; type: string }[]> {
   const files: { path: string; content: string; type: string }[] = [];
 
@@ -1160,7 +1167,6 @@ async function generateFiles(
       files.push({ path: filePath, content: page.fullHtml, type: "html" });
     }
 
-    // Add a README
     files.push({
       path: "README.md",
       content: `# ${projectName}\n\nCloned from: ${scraped.baseUrl}\nPages: ${scraped.pages.length}\nAssets: ${(scraped.assets || []).length}\n\n## Deployment\n\nThis is a static HTML site. Deploy to any static hosting:\n- Netlify: drag & drop this folder\n- Vercel: \`vercel deploy\`\n- GitHub Pages: push to gh-pages branch\n- Any web server: copy files to public_html/\n`,
@@ -1170,43 +1176,92 @@ async function generateFiles(
     return files;
   }
 
-  // No scraped data — generate Next.js project from blueprint
-  const usedComponents = new Set<string>();
-  const blueprint = buildBlueprint(prompt, factory, projectName, requirements);
-  const pages = blueprint.pages;
+  // ═══ ARCHITECTURE-DRIVEN GENERATION ═══
+  if (!architecture) return files;
 
-  for (const page of pages) {
-    const pagePath = page.path === "/" ? "src/app/page.tsx" : `src/app${page.path}/page.tsx`;
-    const imports = page.components.map((c) => `import { ${c} } from "@/components/${c}";`).join("\n");
-    const usage = page.components.map((c) => `      <${c} />`).join("\n");
-    const pageContent = `${imports}\n\nexport default function ${page.name}Page() {\n  return (\n    <main className="min-h-screen">\n${usage}\n    </main>\n  );\n}\n`;
+  const navItems = architecture.navigation.map(n => n.label);
+
+  // ─── GENERATE PAGES FROM ARCHITECTURE ───
+  for (const route of architecture.routes) {
+    const pagePath = route.path === "/" ? "src/app/page.tsx" : `src/app${route.path}/page.tsx`;
+    const imports = route.components.map(c => `import { ${c} } from "@/components/${c}";`).join("\n");
+    const usage = route.components.map(c => `      <${c} />`).join("\n");
+    const pageName = route.name.replace(/\s+/g, "");
+
+    const pageContent = `${imports}
+
+export default function ${pageName}Page() {
+  return (
+    <main className="min-h-screen">
+${usage}
+    </main>
+  );
+}
+`;
     files.push({ path: pagePath, content: pageContent, type: "page" });
-    for (const comp of page.components) usedComponents.add(comp);
   }
 
-  const navItems = llmContent?.navigation && llmContent.navigation.length > 0 ? llmContent.navigation : undefined;
+  // ─── GENERATE COMPONENTS FROM ARCHITECTURE ───
+  const generatedComponents = new Set<string>();
 
-  for (const compName of usedComponents) {
-    const gen = COMPONENT_GENERATORS[compName];
-    if (gen) {
-      let content = gen(prompt);
-      if (llmContent) {
-        if (compName === "Hero") content = genHeroLLM(llmContent.heroTitle, llmContent.heroSubtitle, llmContent.ctaText, llmContent.colors);
-        else if (compName === "Features" && llmContent.features.length > 0) content = genFeaturesLLM(llmContent.features, llmContent.colors);
-        else if (compName === "AboutContent" && llmContent.aboutText) content = genAboutLLM(llmContent.aboutText);
-        else if (compName === "CTA" && llmContent.ctaText) content = genCTALLM(llmContent.ctaText);
-        else if (compName === "Header") content = genHeader(projectName, navItems, llmContent.colors);
+  // Generate page-specific components
+  for (const route of architecture.routes) {
+    for (const compName of route.components) {
+      if (generatedComponents.has(compName)) continue;
+      generatedComponents.add(compName);
+
+      const gen = COMPONENT_GENERATORS[compName];
+      if (gen) {
+        let content = gen(prompt);
+        // Use LLM content for Hero and Features
+        if (llmContent) {
+          if (compName === "Hero") content = genHeroLLM(llmContent.heroTitle, llmContent.heroSubtitle, llmContent.ctaText, llmContent.colors);
+          else if (compName === "Features" && llmContent.features.length > 0) content = genFeaturesLLM(llmContent.features, llmContent.colors);
+          else if (compName === "CTA" && llmContent.ctaText) content = genCTALLM(llmContent.ctaText);
+          else if (compName === "Header") content = genHeader(projectName, navItems, llmContent.colors);
+        }
+        files.push({ path: `src/components/${compName}.tsx`, content, type: "component" });
+      } else {
+        // Generate a generic component for missing ones
+        files.push({
+          path: `src/components/${compName}.tsx`,
+          content: genGenericComponent(compName, prompt),
+          type: "component",
+        });
       }
-      files.push({ path: `src/components/${compName}.tsx`, content, type: "component" });
-    } else {
-      files.push({ path: `src/components/${compName}.tsx`, content: `export function ${compName}() {\n  return <section className="py-12"><div className="container mx-auto px-4"><h2 className="text-2xl font-bold">${compName}</h2></div></section>;\n}\n`, type: "component" });
     }
   }
 
-  const headerFile = files.find((f) => f.path === "src/components/Header.tsx");
-  if (headerFile && llmContent) headerFile.content = genHeader(projectName, navItems, llmContent.colors);
+  // Generate additional components from architecture that aren't page-specific
+  for (const comp of architecture.components) {
+    if (generatedComponents.has(comp.name)) continue;
+    generatedComponents.add(comp.name);
 
-  // Add layout, globals.css, config files
+    const gen = COMPONENT_GENERATORS[comp.name];
+    if (gen) {
+      files.push({ path: `src/components/${comp.name}.tsx`, content: gen(prompt), type: "component" });
+    } else {
+      files.push({
+        path: `src/components/${comp.name}.tsx`,
+        content: genGenericComponent(comp.name, prompt),
+        type: "component",
+      });
+    }
+  }
+
+  // ─── HEADER WITH CORRECT NAVIGATION ───
+  const headerFile = files.find(f => f.path === "src/components/Header.tsx");
+  if (headerFile) {
+    headerFile.content = genHeaderWithNav(projectName, architecture.navigation, llmContent?.colors);
+  } else {
+    files.push({
+      path: "src/components/Header.tsx",
+      content: genHeaderWithNav(projectName, architecture.navigation, llmContent?.colors),
+      type: "component",
+    });
+  }
+
+  // ─── CONFIG FILES ───
   files.push({ path: "src/app/layout.tsx", content: genLayout(projectName), type: "config" });
   files.push({ path: "src/app/globals.css", content: genStyles(llmContent?.colors), type: "config" });
 
@@ -1255,16 +1310,166 @@ export default config;`,
   return files;
 }
 
-function calculateQualityScore(files: { path: string; content: string; type: string }[], requirements?: RequirementMatrix): number {
+/**
+ * Generate a generic component with project-specific content (no prompt echoing).
+ */
+function genGenericComponent(name: string, prompt: string): string {
+  // Extract project context from prompt (without echoing the raw prompt)
+  const projectContext = extractProjectContext(prompt);
+
+  const contentMap: Record<string, string> = {
+    Services: `export function Services() {
+  const services = [
+    { title: "${projectContext.serviceType || "Service"} 1", description: "Professional ${projectContext.serviceType || "service"} tailored to your needs." },
+    { title: "${projectContext.serviceType || "Service"} 2", description: "Expert ${projectContext.serviceType || "service"} solutions for growth." },
+    { title: "${projectContext.serviceType || "Service"} 3", description: "Innovative ${projectContext.serviceType || "service"} for modern businesses." },
+  ];
+  return (
+    <section className="py-16">
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl font-bold text-center mb-12">Our Services</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {services.map((s) => (
+            <div key={s.title} className="p-6 rounded-lg border hover:shadow-lg transition-shadow">
+              <h3 className="text-xl font-semibold mb-3">{s.title}</h3>
+              <p className="text-gray-600">{s.description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}`,
+    Team: `export function Team() {
+  const members = [
+    { name: "Sarah Johnson", role: "CEO & Founder" },
+    { name: "Michael Chen", role: "CTO" },
+    { name: "Emily Davis", role: "Design Director" },
+  ];
+  return (
+    <section className="py-16">
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl font-bold text-center mb-12">Our Team</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-8">
+          {members.map((m) => (
+            <div key={m.name} className="text-center">
+              <div className="w-32 h-32 mx-auto mb-4 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-2xl font-bold">
+                {m.name.split(" ").map(n => n[0]).join("")}
+              </div>
+              <h3 className="text-lg font-semibold">{m.name}</h3>
+              <p className="text-sm text-blue-600">{m.role}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}`,
+    Stats: `export function Stats() {
+  const stats = [
+    { label: "Projects", value: "250+" },
+    { label: "Clients", value: "120+" },
+    { label: "Team", value: "40+" },
+    { label: "Experience", value: "10+" },
+  ];
+  return (
+    <section className="py-16 bg-gray-50 dark:bg-gray-900">
+      <div className="container mx-auto px-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          {stats.map((s) => (
+            <div key={s.label}>
+              <p className="text-4xl font-bold text-blue-600 mb-2">{s.value}</p>
+              <p className="text-gray-600">{s.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}`,
+  };
+
+  return contentMap[name] || `export function ${name}() {
+  return (
+    <section className="py-12">
+      <div className="container mx-auto px-4">
+        <h2 className="text-2xl font-bold">${name}</h2>
+      </div>
+    </section>
+  );
+}`;
+}
+
+/**
+ * Extract project context from prompt without echoing raw text.
+ */
+function extractProjectContext(prompt: string): Record<string, string> {
+  const lower = prompt.toLowerCase();
+  const context: Record<string, string> = {};
+
+  if (/\b(gym|fitness|health|wellness)\b/.test(lower)) {
+    context.serviceType = "fitness";
+    context.industry = "health & fitness";
+  } else if (/\b(marketing|agency|digital)\b/.test(lower)) {
+    context.serviceType = "marketing";
+    context.industry = "digital marketing";
+  } else if (/\b(saas|software|tech)\b/.test(lower)) {
+    context.serviceType = "software";
+    context.industry = "technology";
+  } else if (/\b(ecommerce|shop|store)\b/.test(lower)) {
+    context.serviceType = "product";
+    context.industry = "ecommerce";
+  } else {
+    context.serviceType = "professional";
+    context.industry = "business";
+  }
+
+  // Extract the project name (usually after "for", "called", "named")
+  const nameMatch = prompt.match(/(?:for|called|named)\s+(?:a\s+)?(?:the\s+)?["']?([^"'.]+?)["']?\s*(?:\.|,|$)/i);
+  if (nameMatch) {
+    context.projectName = nameMatch[1].trim();
+  }
+
+  return context;
+}
+
+/**
+ * Generate Header with actual navigation routes (fixes /home bug).
+ */
+function genHeaderWithNav(name: string, navigation: Array<{ label: string; href: string }>, colors?: LLMContent["colors"]): string {
+  const links = navigation.map(n => {
+    const href = n.href === "/" ? "/" : n.href;
+    return `<Link href="${href}" className="text-sm font-medium hover:opacity-80 transition-opacity">${n.label}</Link>`;
+  }).join("\n          ");
+
+  const accent = colors?.primary || "#2563eb";
+
+  return `"use client";
+import Link from "next/link";
+
+export function Header() {
+  return (
+    <header className="sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-white/80">
+      <nav className="container mx-auto flex h-16 items-center justify-between px-4">
+        <Link href="/" className="text-xl font-bold" style={{ color: "${accent}" }}>${name}</Link>
+        <div className="hidden md:flex gap-6">
+          ${links}
+        </div>
+      </nav>
+    </header>
+  );
+}
+`;
+}
+
+function calculateQualityScore(files: { path: string; content: string; type: string }[]): number {
   let score = 0;
 
-  // File count (up to 25%)
   if (files.length >= 20) score += 0.25;
   else if (files.length >= 15) score += 0.20;
   else if (files.length >= 10) score += 0.15;
   else if (files.length >= 5) score += 0.10;
 
-  // Required files (up to 30%)
   if (files.some((f) => f.path.includes("page.tsx"))) score += 0.10;
   if (files.some((f) => f.path === "src/app/layout.tsx")) score += 0.05;
   if (files.some((f) => f.path === "src/app/globals.css")) score += 0.05;
@@ -1272,34 +1477,16 @@ function calculateQualityScore(files: { path: string; content: string; type: str
   if (files.some((f) => f.path === "tsconfig.json")) score += 0.03;
   if (files.some((f) => f.path.includes("tailwind.config"))) score += 0.02;
 
-  // Component quality (up to 20%)
   const componentCount = files.filter((f) => f.path.includes("components/")).length;
   if (componentCount >= 8) score += 0.20;
   else if (componentCount >= 5) score += 0.15;
   else if (componentCount >= 3) score += 0.10;
   else if (componentCount >= 1) score += 0.05;
 
-  // Multi-page routing (up to 15%)
   const pageCount = files.filter((f) => f.path.includes("page.tsx")).length;
   if (pageCount >= 5) score += 0.15;
   else if (pageCount >= 3) score += 0.10;
   else if (pageCount >= 2) score += 0.05;
-
-  // Requirements completeness (up to 10%)
-  if (requirements) {
-    const reqCount = requirements.all.length;
-    if (reqCount > 0) {
-      const metCount = requirements.all.filter(req => {
-        return files.some(f => {
-          const pathLower = f.path.toLowerCase();
-          const contentLower = f.content.toLowerCase();
-          return req.keywords.some(kw => pathLower.includes(kw) || contentLower.includes(kw));
-        });
-      }).length;
-      const reqScore = metCount / reqCount;
-      score += reqScore * 0.10;
-    }
-  }
 
   return Math.min(1, score);
 }
@@ -1329,14 +1516,22 @@ export async function runGeneration(
     onProgress?.(event, data);
   };
 
-  // Extract requirements from prompt (for non-URL prompts)
+  // ═══ ARCHITECTURE-DRIVEN GENERATION ═══
   let requirements: RequirementMatrix | undefined;
+  let architecture: ArchitecturePlan | undefined;
   const urlMatch = request.prompt.trim().match(/(https?:\/\/[^\s]+)/i);
   const isUrl = !!urlMatch;
 
   if (!isUrl) {
-    requirements = extractRequirements(request.prompt);
-    emit("thinking", { message: `Extracted requirements: ${requirements.pages.length} pages, ${requirements.components.length} components, ${requirements.features.length} features` });
+    // Step 1: Analyze requirements
+    emit("thinking", { message: "Analyzing requirements from your prompt..." });
+    requirements = analyzeRequirements(request.prompt);
+    emit("thinking", { message: `Found ${requirements.pages.length} pages, ${requirements.components.length} components, ${requirements.features.length} features, ${requirements.entities.length} entities` });
+
+    // Step 2: Plan architecture
+    emit("thinking", { message: "Planning project architecture..." });
+    architecture = planArchitecture(requirements, projectName);
+    emit("thinking", { message: `Planned ${architecture.routes.length} routes, ${architecture.navigation.length} nav items, ${architecture.dataModels.length} data models` });
   }
 
   // Detect and scrape URL if present
@@ -1377,10 +1572,9 @@ export async function runGeneration(
       retrieveMemory(request.prompt, factory),
       predictQuality(request.prompt, factory),
     ]);
-    const files = await generateFiles(request.prompt, factory, projectName, llmContent, scraped, requirements);
-    emit("thinking", { message: `Generated ${files.length} files. Building project structure...` });
-    const blueprint = buildBlueprint(request.prompt, factory, projectName);
-    const qualityScore = calculateQualityScore(files, requirements);
+    const files = await generateFiles(request.prompt, factory, projectName, llmContent, scraped, architecture);
+    emit("thinking", { message: `Generated ${files.length} files. Validating against requirements...` });
+    const qualityScore = calculateQualityScore(files);
     const buildValidation = validateBuild(files);
 
     // Send early preview as soon as files are generated
@@ -1398,20 +1592,17 @@ export async function runGeneration(
       }
     }
 
-    // Optimize blueprint based on feedback
-    const optimizedBlueprint = await getOptimizedBlueprintForFactory(factory, {
-      pages: blueprint.pages,
-      components: blueprint.components,
-    }).catch(() => ({ pages: blueprint.pages, components: blueprint.components, optimizations: [] }));
-
-    const { error: bpError } = await supabase.from("blueprints").insert({
-      project_id: projectId,
-      json: blueprint,
-    });
-    if (bpError) {
-      const msg = `Blueprint insert failed: ${bpError.message}`;
-      errors.push(msg);
-      console.error(msg);
+    // Store architecture plan in blueprints table
+    if (architecture) {
+      const { error: bpError } = await supabase.from("blueprints").insert({
+        project_id: projectId,
+        json: architecture,
+      });
+      if (bpError) {
+        const msg = `Blueprint insert failed: ${bpError.message}`;
+        errors.push(msg);
+        console.error(msg);
+      }
     }
 
     const { error: genError } = await supabase.from("generations").insert({
@@ -1589,7 +1780,7 @@ export async function runGeneration(
       status,
       factory,
       files,
-      blueprint,
+      blueprint: architecture,
       qualityScore,
       buildSuccess: buildValidation.buildSuccess,
       errors,
@@ -1601,7 +1792,7 @@ export async function runGeneration(
       memoryContext,
       buildValidation,
       qualityPrediction,
-      optimizedBlueprint,
+      optimizedBlueprint: undefined,
       scraped,
     };
   } catch (err) {
