@@ -1207,7 +1207,7 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
       () => 0
     );
 
-    // Store scraped pages for clone preview/download
+    // Store scraped pages + assets for clone preview/download
     if (scraped && scraped.pages.length > 0) {
       storeSite(
         projectId,
@@ -1215,7 +1215,8 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
         scraped.rootDomain,
         scraped.pages
           .filter(p => p.fullHtml)
-          .map(p => ({ path: p.path, title: p.title, fullHtml: p.fullHtml! }))
+          .map(p => ({ path: p.path, title: p.title, fullHtml: p.fullHtml! })),
+        scraped.assets || []
       );
     }
 

@@ -543,8 +543,65 @@ Only include files that need to change. Do not include unchanged files.`;
 
 app.get("/projects/:id/download", async (c) => {
   const id = c.req.param("id");
-  const supabase = getSupabase();
+  const { getSite } = await import("@/lib/clone-store");
+  const { default: JSZip } = await import("jszip");
 
+  const site = getSite(id);
+
+  if (site && site.pages.size > 0) {
+    // Build a complete static site from scraped data
+    const zip = new JSZip();
+
+    // Add all HTML pages
+    for (const [path, page] of site.pages) {
+      const filePath = path === "/" ? "index.html" : `${path.replace(/^\//, "").replace(/\/$/, "")}/index.html`;
+      zip.file(filePath, page.fullHtml);
+    }
+
+    // Add all assets (images, CSS, JS, fonts)
+    for (const [assetPath, asset] of site.assets) {
+      const cleanPath = assetPath.startsWith("/") ? assetPath.slice(1) : assetPath;
+      zip.file(cleanPath, Buffer.from(asset.buffer));
+    }
+
+    // Add a README
+    zip.file("README.md", `# Cloned Website
+
+Source: ${site.baseUrl}
+Pages: ${site.pages.size}
+Assets: ${site.assets.size}
+
+## How to use
+
+This is a static HTML clone of the website. You can:
+
+1. Open index.html in your browser to view the site
+2. Deploy to any static hosting (Netlify, Vercel, GitHub Pages, S3)
+3. Edit the HTML files directly
+
+## Files
+
+- \`index.html\` — Homepage
+- Other pages in their respective directories
+- \`/images/\` — Downloaded images
+- \`/css/\` — Stylesheets
+- \`/js/\` — JavaScript files
+- \`/fonts/\` — Web fonts
+`);
+
+    const zipBuffer = await zip.generateAsync({ type: "uint8array" });
+
+    return new Response(new Uint8Array(zipBuffer), {
+      headers: {
+        "Content-Type": "application/zip",
+        "Content-Disposition": `attachment; filename="cloned-site-${id}.zip"`,
+        "Content-Length": zipBuffer.byteLength.toString(),
+      },
+    });
+  }
+
+  // Fallback: download generated Next.js project from Supabase
+  const supabase = getSupabase();
   const { data, error } = await supabase.storage
     .from("generated-projects")
     .download(`${id}/project.zip`);
@@ -554,13 +611,12 @@ app.get("/projects/:id/download", async (c) => {
   }
 
   const arrayBuffer = await data.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
 
-  return new Response(buffer, {
+  return new Response(new Uint8Array(arrayBuffer), {
     headers: {
       "Content-Type": "application/zip",
       "Content-Disposition": `attachment; filename="project-${id}.zip"`,
-      "Content-Length": buffer.length.toString(),
+      "Content-Length": arrayBuffer.byteLength.toString(),
     },
   });
 });
