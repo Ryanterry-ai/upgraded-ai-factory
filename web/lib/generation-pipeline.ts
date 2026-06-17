@@ -7,6 +7,7 @@ import { predictQuality, extractPatterns, recordPatterns, type QualityPrediction
 import { getOptimizedBlueprintForFactory, type OptimizedBlueprint } from "./blueprint-optimizer";
 import { isUrl, scrapeSite, formatScrapedForLLM, type ScrapedSite } from "./url-scraper";
 import { storeSite } from "./clone-store";
+import { generatePreviewHtml } from "./preview-renderer";
 
 export interface GenerationRequest {
   prompt: string;
@@ -1028,23 +1029,34 @@ async function createZip(files: { path: string; content: string }[]): Promise<Bu
   return (await zip.generateAsync({ type: "nodebuffer" })) as Buffer;
 }
 
-export async function runGeneration(request: GenerationRequest): Promise<GenerationResult> {
+export type ProgressCallback = (event: string, data: Record<string, unknown>) => void;
+
+export async function runGeneration(
+  request: GenerationRequest,
+  onProgress?: ProgressCallback
+): Promise<GenerationResult> {
   const supabase = getSupabase();
   const factory = detectFactory(request.prompt, request.factory);
   const projectName = extractProjectName(request.prompt, request.name);
   const errors: string[] = [];
   const warnings: string[] = [];
 
+  const emit = (event: string, data: Record<string, unknown>) => {
+    onProgress?.(event, data);
+  };
+
   // Detect and scrape URL if present
   let scraped: ScrapedSite | undefined;
-  // Extract URL from prompt (handles "clone url: https://...", "https://...", etc.)
   const urlMatch = request.prompt.trim().match(/(https?:\/\/[^\s]+)/i);
   if (urlMatch) {
     const detectedUrl = urlMatch[1];
+    emit("thinking", { message: `Crawling ${detectedUrl} for pages and assets...` });
     try {
       scraped = await scrapeSite(detectedUrl, 50);
+      emit("thinking", { message: `Found ${scraped.pages.length} pages, ${(scraped.assets || []).length} assets from ${scraped.baseUrl}` });
       warnings.push(`Crawled ${scraped.pages.length} pages from ${scraped.baseUrl}: Tech: ${scraped.techStack.join(", ") || "unknown"}`);
     } catch (err) {
+      emit("thinking", { message: `Scraping failed: ${err instanceof Error ? err.message : "unknown"}. Generating from prompt only.` });
       warnings.push(`URL scraping failed: ${err instanceof Error ? err.message : "unknown"}. Generating from prompt only.`);
     }
   }
@@ -1073,9 +1085,25 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
       predictQuality(request.prompt, factory),
     ]);
     const files = await generateFiles(request.prompt, factory, projectName, llmContent, scraped);
+    emit("thinking", { message: `Generated ${files.length} files. Building project structure...` });
     const blueprint = buildBlueprint(request.prompt, factory, projectName);
     const qualityScore = calculateQualityScore(files);
     const buildValidation = validateBuild(files);
+
+    // Send early preview as soon as files are generated
+    if (files.length > 0) {
+      try {
+        const homePage = scraped?.pages?.find(p => p.path === "/") || scraped?.pages?.[0];
+        if (homePage?.fullHtml) {
+          emit("preview_url", { url: `data:text/html;charset=utf-8,${encodeURIComponent(homePage.fullHtml)}` });
+        } else if (scraped && scraped.pages.length > 0) {
+          const previewHtml = generatePreviewHtml(scraped, projectName);
+          emit("preview_url", { url: `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}` });
+        }
+      } catch (err) {
+        console.error("Early preview generation failed:", err);
+      }
+    }
 
     // Optimize blueprint based on feedback
     const optimizedBlueprint = await getOptimizedBlueprintForFactory(factory, {

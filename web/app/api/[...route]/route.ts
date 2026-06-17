@@ -327,6 +327,9 @@ app.post("/generate", async (c) => {
             prompt: prompt.trim(),
             factory,
             name: name?.trim(),
+          }, (event, data) => {
+            // Forward progress events from the pipeline as SSE
+            send(event, data);
           });
 
           const totalMs = Date.now() - startTime;
