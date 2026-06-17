@@ -18,9 +18,8 @@ export interface AgentResult {
   tokenUsage: number;
 }
 
-// Subset of 32 agents that run during generation
-// Full definitions in src/runtime/agents/agent-definitions.ts
-export const GENERATION_AGENTS: AgentDefinition[] = [
+// Core agents that always run during generation
+const CORE_AGENTS: AgentDefinition[] = [
   {
     id: "product-manager",
     name: "Product Manager",
@@ -47,19 +46,6 @@ Return ONLY valid JSON: {"scope": "string", "features": ["string"], "audience": 
 Return ONLY valid JSON: {"components": [{"name": "string", "purpose": "string", "children": ["string"]}], "stateManagement": "string", "interactions": ["string"]}`,
   },
   {
-    id: "seo-specialist",
-    name: "SEO Specialist",
-    department: "growth",
-    role: "Optimize metadata and content structure for search engines",
-    capabilities: ["seo_optimization", "metadata", "content_structure"],
-    systemPrompt: `You are an SEO Specialist agent. For the given project, provide:
-1. Recommended page title (max 60 chars)
-2. Meta description (max 160 chars)
-3. Suggested URL structure
-4. Keywords (3-5)
-Return ONLY valid JSON: {"title": "string", "description": "string", "urlStructure": "string", "keywords": ["string"]}`,
-  },
-  {
     id: "qa-engineer",
     name: "QA Engineer",
     department: "quality",
@@ -71,30 +57,135 @@ Return ONLY valid JSON: {"title": "string", "description": "string", "urlStructu
 3. Quality score (0-100)
 Return ONLY valid JSON: {"issues": ["string"], "missingBestPractices": ["string"], "qualityScore": number}`,
   },
-  {
-    id: "security-agent",
-    name: "Security Agent",
-    department: "quality",
-    role: "Identify security vulnerabilities and suggest fixes",
-    capabilities: ["security_audit", "vulnerability_assessment"],
-    systemPrompt: `You are a Security Agent. Analyze the project for security concerns:
-1. Potential vulnerabilities (list of strings)
-2. Recommended security headers
-3. Security score (0-100)
-Return ONLY valid JSON: {"vulnerabilities": ["string"], "headers": ["string"], "securityScore": number}`,
-  },
-  {
-    id: "performance-agent",
-    name: "Performance Agent",
-    department: "quality",
-    role: "Optimize for Core Web Vitals and performance",
-    capabilities: ["performance_optimization", "core_web_vitals"],
-    systemPrompt: `You are a Performance Agent. Analyze the project for performance:
+];
+
+// Factory-specific agents that activate based on project type
+const SPECIALIZED_AGENTS: Record<string, AgentDefinition[]> = {
+  website: [
+    {
+      id: "seo-specialist",
+      name: "SEO Specialist",
+      department: "growth",
+      role: "Optimize metadata and content structure for search engines",
+      capabilities: ["seo_optimization", "metadata", "content_structure"],
+      systemPrompt: `You are an SEO Specialist agent. For the given project, provide:
+1. Recommended page title (max 60 chars)
+2. Meta description (max 160 chars)
+3. Suggested URL structure
+4. Keywords (3-5)
+Return ONLY valid JSON: {"title": "string", "description": "string", "urlStructure": "string", "keywords": ["string"]}`,
+    },
+    {
+      id: "design-system",
+      name: "Design System Agent",
+      department: "design",
+      role: "Define visual design tokens and component patterns",
+      capabilities: ["design_tokens", "visual_system", "component_patterns"],
+      systemPrompt: `You are a Design System Agent. For the given website project, provide:
+1. Color palette (primary, secondary, accent, background, text - all hex)
+2. Typography scale (headings, body, small - font sizes)
+3. Spacing scale (xs, sm, md, lg, xl - pixel values)
+4. Border radius convention
+Return ONLY valid JSON: {"colors": {"primary": "hex", "secondary": "hex", "accent": "hex", "background": "hex", "text": "hex"}, "typography": {"heading": "string", "body": "string", "small": "string"}, "spacing": {"xs": "string", "sm": "string", "md": "string", "lg": "string", "xl": "string"}, "borderRadius": "string"}`,
+    },
+  ],
+  ecommerce: [
+    {
+      id: "conversion-optimizer",
+      name: "Conversion Optimization Agent",
+      department: "growth",
+      role: "Optimize product pages and checkout for conversions",
+      capabilities: ["conversion_optimization", "checkout_flow", "product_page"],
+      systemPrompt: `You are a Conversion Optimization Agent. For the ecommerce project, provide:
+1. Product page best practices (list of 3-5)
+2. Checkout flow recommendations (list of 3-5)
+3. Trust signals to include (list of 3-5)
+4. CTA optimization suggestions (list of 2-3)
+Return ONLY valid JSON: {"productPage": ["string"], "checkout": ["string"], "trustSignals": ["string"], "ctaOptimization": ["string"]}`,
+    },
+    {
+      id: "seo-specialist",
+      name: "SEO Specialist",
+      department: "growth",
+      role: "Optimize product and category pages for search",
+      capabilities: ["seo_optimization", "product_schema", "structured_data"],
+      systemPrompt: `You are an SEO Specialist for ecommerce. Provide:
+1. Product schema markup recommendations
+2. Category page SEO structure
+3. Internal linking strategy
+4. Keywords for product pages
+Return ONLY valid JSON: {"productSchema": "string", "categoryStructure": "string", "internalLinking": "string", "keywords": ["string"]}`,
+    },
+  ],
+  saas: [
+    {
+      id: "security-agent",
+      name: "Security Agent",
+      department: "quality",
+      role: "Identify security vulnerabilities and suggest fixes",
+      capabilities: ["security_audit", "vulnerability_assessment", "auth_security"],
+      systemPrompt: `You are a Security Agent for SaaS. Analyze for security:
+1. Authentication security recommendations
+2. Data protection measures
+3. API security concerns
+4. Security headers needed
+Return ONLY valid JSON: {"auth": ["string"], "dataProtection": ["string"], "apiSecurity": ["string"], "headers": ["string"]}`,
+    },
+    {
+      id: "performance-agent",
+      name: "Performance Agent",
+      department: "quality",
+      role: "Optimize for Core Web Vitals and performance",
+      capabilities: ["performance_optimization", "core_web_vitals"],
+      systemPrompt: `You are a Performance Agent. Analyze the project for performance:
 1. Performance recommendations (list of strings)
 2. Core Web Vitals concerns (list of strings)
 3. Performance score (0-100)
 Return ONLY valid JSON: {"recommendations": ["string"], "coreWebVitals": ["string"], "performanceScore": number}`,
-  },
+    },
+  ],
+  dashboard: [
+    {
+      id: "performance-agent",
+      name: "Performance Agent",
+      department: "quality",
+      role: "Optimize dashboard for data-heavy rendering",
+      capabilities: ["performance_optimization", "data_rendering"],
+      systemPrompt: `You are a Performance Agent for dashboards. Analyze for:
+1. Data table virtualization recommendations
+2. Chart rendering optimizations
+3. State management for real-time data
+4. Memory management tips
+Return ONLY valid JSON: {"tableOptimization": ["string"], "chartOptimization": ["string"], "stateManagement": ["string"], "memoryManagement": ["string"]}`,
+    },
+  ],
+  agent: [
+    {
+      id: "security-agent",
+      name: "Security Agent",
+      department: "quality",
+      role: "Secure AI agent implementation",
+      capabilities: ["security_audit", "ai_security"],
+      systemPrompt: `You are a Security Agent for AI projects. Analyze for:
+1. API key security
+2. Rate limiting recommendations
+3. Input validation concerns
+4. Data privacy measures
+Return ONLY valid JSON: {"apiKeySecurity": ["string"], "rateLimiting": ["string"], "inputValidation": ["string"], "dataPrivacy": ["string"]}`,
+    },
+  ],
+};
+
+// Combine core + specialized agents based on factory type
+export function getAgentsForFactory(factory: string): AgentDefinition[] {
+  const specialized = SPECIALIZED_AGENTS[factory] || [];
+  return [...CORE_AGENTS, ...specialized];
+}
+
+// Backward-compatible export: all agents (core + all specialized)
+export const GENERATION_AGENTS: AgentDefinition[] = [
+  ...CORE_AGENTS,
+  ...Object.values(SPECIALIZED_AGENTS).flat(),
 ];
 
 const AGENT_TIMEOUT_MS = 10000;
@@ -170,25 +261,43 @@ export interface WorkflowResult {
     securityScore?: number;
     performanceScore?: number;
     issues?: string[];
+    designTokens?: Record<string, unknown>;
+    conversionTips?: string[];
+    securityRecommendations?: Record<string, string[]>;
+    performanceRecommendations?: Record<string, string[]>;
   };
 }
 
 export async function runAgentWorkflow(
   prompt: string,
   factory: string,
-  projectName: string
+  projectName: string,
+  onProgress?: (event: string, data: Record<string, unknown>) => void
 ): Promise<WorkflowResult> {
   const context = `Project: ${projectName}\nFactory: ${factory}\nDescription: ${prompt.slice(0, 500)}`;
   const startTime = Date.now();
   const results: AgentResult[] = [];
 
+  // Run only relevant agents for this factory type
+  const agents = getAgentsForFactory(factory);
+
+  // Emit agent start events
+  for (const agent of agents) {
+    onProgress?.("agent_start", { agent: agent.name, action: agent.role });
+  }
+
   // Run agents in parallel for speed
-  const agentPromises = GENERATION_AGENTS.map((agent) => runAgent(agent, context));
+  const agentPromises = agents.map((agent) => runAgent(agent, context));
   const agentResults = await Promise.allSettled(agentPromises);
 
   for (const result of agentResults) {
     if (result.status === "fulfilled") {
       results.push(result.value);
+      // Emit agent complete event
+      const detail = result.value.success
+        ? `Done in ${result.value.duration}ms`
+        : "Failed or timed out";
+      onProgress?.("agent_complete", { agent: result.value.agentName, detail });
     }
   }
 
@@ -220,9 +329,21 @@ export async function runAgentWorkflow(
           break;
         case "security-agent":
           insights.securityScore = parsed.securityScore;
+          insights.securityRecommendations = parsed;
           break;
         case "performance-agent":
           insights.performanceScore = parsed.performanceScore;
+          insights.performanceRecommendations = parsed;
+          break;
+        case "design-system":
+          insights.designTokens = parsed;
+          break;
+        case "conversion-optimizer":
+          insights.conversionTips = [
+            ...(parsed.productPage || []),
+            ...(parsed.checkout || []),
+            ...(parsed.trustSignals || []),
+          ];
           break;
       }
     } catch {

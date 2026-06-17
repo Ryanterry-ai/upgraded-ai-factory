@@ -322,6 +322,7 @@ app.post("/generate", async (c) => {
 
           // Step 3: Run the actual generation
           const startTime = Date.now();
+          let allFiles: { path: string; content: string; type: string }[] = [];
 
           send("agent_start", { agent: "Product Manager", action: "Analyzing requirements" });
 
@@ -332,6 +333,19 @@ app.post("/generate", async (c) => {
           }, (event, data) => {
             // Forward progress events from the pipeline as SSE
             send(event, data);
+          }, (files) => {
+            // Emit files incrementally as they're generated
+            allFiles = [...allFiles, ...files];
+            send("files", { files: allFiles });
+
+            // Regenerate preview from accumulated files
+            try {
+              const { generateReactPreview } = require("@/lib/preview-renderer");
+              const previewHtml = generateReactPreview(allFiles, name?.trim() || "Project");
+              send("preview_url", { url: `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}` });
+            } catch (err) {
+              console.error("Live preview generation failed:", err);
+            }
           });
 
           const totalMs = Date.now() - startTime;
@@ -361,23 +375,21 @@ app.post("/generate", async (c) => {
             send("thinking", { message: `Build completed with ${result.errors.length} warning(s). Quality: ${quality}%` });
           }
 
-          // Send files
-          if (result.files && result.files.length > 0) {
+          // Send final files (in case incremental sending was skipped)
+          if (result.files && result.files.length > 0 && allFiles.length === 0) {
             send("files", { files: result.files });
           }
 
-          // Generate and send preview URL
-          if (result.files && result.files.length > 0) {
+          // Send preview URL if not already sent incrementally
+          if (allFiles.length === 0 && result.files && result.files.length > 0) {
             try {
               const scraped = result.scraped;
               const homePage = scraped?.pages?.find(p => p.path === "/") || scraped?.pages?.[0];
 
               if (homePage?.fullHtml) {
-                // Embed homepage HTML directly as data URL — works everywhere
                 const previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(homePage.fullHtml)}`;
                 send("preview_url", { url: previewUrl });
               } else {
-                // Fallback to reconstructed preview
                 const previewHtml = generatePreviewHtml(scraped || null, name?.trim() || "Project");
                 const previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}`;
                 send("preview_url", { url: previewUrl });

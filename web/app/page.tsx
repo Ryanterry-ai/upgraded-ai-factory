@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, ArrowUp, User, Sparkles } from "lucide-react";
+import { Plus, ArrowUp, User, Sparkles, Globe, ShoppingCart, LayoutDashboard, Palette, Bot, GraduationCap } from "lucide-react";
 
 const PROMPT_SUGGESTIONS = [
   "make a customer support ticket system with live chat",
@@ -16,6 +16,51 @@ const PROMPT_SUGGESTIONS = [
   "build an AI-powered personal finance tracker with expense categorization",
   "make a workout tracking app with progress visualization",
   "build a habit tracking app with streak visualization and social features",
+];
+
+const TEMPLATE_GALLERY = [
+  {
+    title: "Marketing Site",
+    description: "Landing page with hero, features, testimonials, and CTA",
+    prompt: "Build a modern marketing website with hero section, features grid, testimonials carousel, pricing table, and contact form",
+    icon: Globe,
+    color: "from-blue-500 to-cyan-500",
+  },
+  {
+    title: "Ecommerce Store",
+    description: "Product listings, cart, checkout, and admin",
+    prompt: "Build an ecommerce store with product grid, shopping cart, checkout flow, user accounts, and admin dashboard",
+    icon: ShoppingCart,
+    color: "from-emerald-500 to-teal-500",
+  },
+  {
+    title: "SaaS Dashboard",
+    description: "Analytics dashboard with charts and data tables",
+    prompt: "Build a SaaS dashboard with analytics charts, data tables, user management, settings page, and billing",
+    icon: LayoutDashboard,
+    color: "from-violet-500 to-purple-500",
+  },
+  {
+    title: "Portfolio",
+    description: "Creative portfolio with project showcase and blog",
+    prompt: "Build a creative portfolio with project gallery, about page, blog with CMS, and contact form",
+    icon: Palette,
+    color: "from-pink-500 to-rose-500",
+  },
+  {
+    title: "AI Chatbot",
+    description: "Conversational AI interface with streaming",
+    prompt: "Build an AI chatbot interface with message history, streaming responses, file upload, and conversation management",
+    icon: Bot,
+    color: "from-amber-500 to-orange-500",
+  },
+  {
+    title: "Learning Platform",
+    description: "Course platform with video, quizzes, and progress",
+    prompt: "Build a learning management system with video courses, interactive quizzes, progress tracking, and certificates",
+    icon: GraduationCap,
+    color: "from-indigo-500 to-blue-500",
+  },
 ];
 
 const TYPING_SPEED = 40;
@@ -125,6 +170,10 @@ export default function HomePage() {
     inputRef.current?.focus();
   }, [carouselText]);
 
+  const handleTemplateClick = useCallback((templatePrompt: string) => {
+    router.push(`/projects/new?prompt=${encodeURIComponent(templatePrompt)}`);
+  }, [router]);
+
   const placeholderText = isUserTyping ? "" : carouselText;
   const showPlaceholder = !isUserTyping && !prompt;
 
@@ -177,10 +226,10 @@ export default function HomePage() {
       <main className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 -mt-16">
         {/* Heading */}
         <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-gray-900 mb-3">
-          Make anything
+          Describe anything.
         </h1>
         <p className="text-lg text-gray-500 mb-10">
-          Build websites by chatting with AI
+          Get production-ready software in minutes.
         </p>
 
         {/* Prompt input box */}
@@ -249,8 +298,28 @@ export default function HomePage() {
 
           {/* Social proof */}
           <p className="text-center text-sm text-gray-400 mt-5">
-            over 600,000+ projects built with Same
+            12,000+ projects built with Same
           </p>
+        </div>
+
+        {/* Template Gallery */}
+        <div className="w-full max-w-[800px] mt-12">
+          <p className="text-center text-xs text-gray-400 mb-4 uppercase tracking-wider font-medium">Start from a template</p>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+            {TEMPLATE_GALLERY.map((template) => (
+              <button
+                key={template.title}
+                onClick={() => handleTemplateClick(template.prompt)}
+                className="group text-left p-4 rounded-xl border border-gray-200 bg-white/50 hover:bg-white hover:shadow-md hover:border-gray-300 transition-all"
+              >
+                <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${template.color} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform`}>
+                  <template.icon className="w-4 h-4 text-white" />
+                </div>
+                <p className="text-sm font-medium text-gray-900 mb-0.5">{template.title}</p>
+                <p className="text-xs text-gray-500 leading-relaxed">{template.description}</p>
+              </button>
+            ))}
+          </div>
         </div>
       </main>
     </div>

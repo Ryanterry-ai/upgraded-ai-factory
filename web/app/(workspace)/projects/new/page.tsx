@@ -6,14 +6,15 @@ import {
   Send, RotateCcw, Monitor, Tablet, Smartphone, ChevronDown, ChevronRight,
   FileCode, FolderTree, Layout, MessageSquare, History, Sparkles, X,
   Download, Share2, Rocket, Terminal, Eye, Code2, PanelLeftClose, PanelRightClose,
-  Loader2, CheckCircle2, AlertCircle, Clock, Zap, Bot
+  Loader2, CheckCircle2, AlertCircle, Clock, Zap, Bot, BarChart3
 } from "lucide-react";
 import { ChatPanel } from "@/components/workspace/ChatPanel";
 import { PreviewPanel } from "@/components/workspace/PreviewPanel";
 import { FilePanel } from "@/components/workspace/FilePanel";
 import { AgentTimeline } from "@/components/workspace/AgentTimeline";
 import { BuildLogs } from "@/components/workspace/BuildLogs";
-import type { ChatMessage, AgentEvent, GeneratedFile, WorkspaceState } from "@/components/workspace/types";
+import { CoverageReport } from "@/components/workspace/CoverageReport";
+import type { ChatMessage, AgentEvent, GeneratedFile, WorkspaceState, CoverageCategory } from "@/components/workspace/types";
 
 const INITIAL_STATE: WorkspaceState = {
   status: "idle",
@@ -31,6 +32,7 @@ const INITIAL_STATE: WorkspaceState = {
   showBuildLogs: false,
   leftCollapsed: false,
   rightCollapsed: false,
+  coverageReport: null,
 };
 
 export default function WorkspacePageWrapper() {
@@ -195,6 +197,21 @@ function WorkspacePage() {
       case "preview_url":
         updateState({ previewUrl: event.url as string });
         addBuildLog("Preview available");
+        break;
+      case "coverage_report":
+        const coverageReport = {
+          overallCoverage: event.overallCoverage as number,
+          passed: event.passed as boolean,
+          pages: event.pages as CoverageCategory,
+          components: event.components as CoverageCategory,
+          features: event.features as CoverageCategory,
+          routes: event.routes as CoverageCategory,
+          entities: event.entities as CoverageCategory,
+          missingItems: event.missingItems as string[],
+        };
+        updateState({ coverageReport });
+        const coveragePct = Math.round((event.overallCoverage as number) * 100);
+        addBuildLog(`Requirement coverage: ${coveragePct}%`);
         break;
       case "project_id":
         updateState({ projectId: event.projectId as string });
@@ -367,8 +384,8 @@ function WorkspacePage() {
             />
           </div>
 
-          {/* Bottom: Agent Timeline + Build Logs */}
-          {(state.agentEvents.length > 0 || state.buildLogs.length > 0) && (
+          {/* Bottom: Agent Timeline + Build Logs + Coverage */}
+          {(state.agentEvents.length > 0 || state.buildLogs.length > 0 || state.coverageReport) && (
             <div className="border-t border-white/5 shrink-0">
               <div className="flex items-center gap-2 px-3 py-1.5 bg-[#0f0f12]">
                 <button
@@ -383,10 +400,23 @@ function WorkspacePage() {
                 >
                   <Terminal className="w-3 h-3" /> Logs ({state.buildLogs.length})
                 </button>
+                {state.coverageReport && (
+                  <button
+                    onClick={() => updateState({ showBuildLogs: false, showAgentTimeline: false })}
+                    className={`flex items-center gap-1.5 px-2 py-1 rounded text-xs transition-colors ${
+                      !state.showBuildLogs && !state.showAgentTimeline ? "bg-white/10 text-white" : "text-zinc-500 hover:text-zinc-300"
+                    }`}
+                  >
+                    <BarChart3 className="w-3 h-3" /> Coverage ({Math.round(state.coverageReport.overallCoverage * 100)}%)
+                  </button>
+                )}
               </div>
-              <div className="h-32 overflow-auto bg-[#0a0a0c]">
+              <div className="h-40 overflow-auto bg-[#0a0a0c]">
                 {state.showAgentTimeline && <AgentTimeline events={state.agentEvents} />}
                 {state.showBuildLogs && <BuildLogs logs={state.buildLogs} />}
+                {!state.showAgentTimeline && !state.showBuildLogs && state.coverageReport && (
+                  <CoverageReport report={state.coverageReport} />
+                )}
               </div>
             </div>
           )}

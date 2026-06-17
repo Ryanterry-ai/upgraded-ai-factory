@@ -22,6 +22,25 @@ export interface GeneratedFile {
   type: string;
 }
 
+export interface CoverageCategory {
+  type: string;
+  required: string[];
+  generated: string[];
+  missing: string[];
+  coverage: number;
+}
+
+export interface CoverageReport {
+  overallCoverage: number;
+  passed: boolean;
+  pages: CoverageCategory;
+  components: CoverageCategory;
+  features: CoverageCategory;
+  routes: CoverageCategory;
+  entities: CoverageCategory;
+  missingItems: string[];
+}
+
 export interface WorkspaceState {
   status: "idle" | "generating" | "completed" | "error";
   projectId: string | null;
@@ -38,4 +57,5 @@ export interface WorkspaceState {
   showBuildLogs: boolean;
   leftCollapsed: boolean;
   rightCollapsed: boolean;
+  coverageReport: CoverageReport | null;
 }

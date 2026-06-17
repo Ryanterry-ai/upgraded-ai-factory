@@ -1551,10 +1551,12 @@ async function createZip(files: { path: string; content: string }[]): Promise<Bu
 }
 
 export type ProgressCallback = (event: string, data: Record<string, unknown>) => void;
+export type FilesCallback = (files: { path: string; content: string; type: string }[]) => void;
 
 export async function runGeneration(
   request: GenerationRequest,
-  onProgress?: ProgressCallback
+  onProgress?: ProgressCallback,
+  onFiles?: FilesCallback
 ): Promise<GenerationResult> {
   const supabase = getSupabase();
   const factory = detectFactory(request.prompt, request.factory);
@@ -1618,27 +1620,79 @@ export async function runGeneration(
   try {
     const [llmContent, agentResults, memoryContext, qualityPrediction] = await Promise.all([
       generateLLMContent(request.prompt, factory, undefined, scraped),
-      runAgentWorkflow(request.prompt, factory, projectName),
+      runAgentWorkflow(request.prompt, factory, projectName, emit),
       retrieveMemory(request.prompt, factory),
       predictQuality(request.prompt, factory),
     ]);
     const files = await generateFiles(request.prompt, factory, projectName, llmContent, scraped, architecture);
     emit("thinking", { message: `Generated ${files.length} files. Validating against requirements...` });
+
+    // Emit files incrementally in batches for live preview
+    if (onFiles && files.length > 0) {
+      const pageFiles = files.filter(f => f.type === "page");
+      const componentFiles = files.filter(f => f.type === "component");
+      const configFiles = files.filter(f => f.type === "config");
+
+      // Batch 1: Pages
+      if (pageFiles.length > 0) {
+        emit("thinking", { message: `Emitting ${pageFiles.length} page files...` });
+        onFiles(pageFiles);
+        await new Promise(r => setTimeout(r, 50));
+      }
+
+      // Batch 2: Components (in chunks of 5)
+      for (let i = 0; i < componentFiles.length; i += 5) {
+        const batch = componentFiles.slice(i, i + 5);
+        emit("thinking", { message: `Emitting components ${i + 1}-${Math.min(i + 5, componentFiles.length)} of ${componentFiles.length}...` });
+        onFiles(batch);
+        await new Promise(r => setTimeout(r, 50));
+      }
+
+      // Batch 3: Config files
+      if (configFiles.length > 0) {
+        emit("thinking", { message: `Emitting ${configFiles.length} config files...` });
+        onFiles(configFiles);
+        await new Promise(r => setTimeout(r, 50));
+      }
+    }
+
     const qualityScore = calculateQualityScore(files);
     const buildValidation = validateBuild(files);
 
-    // Send early preview as soon as files are generated
+    // Emit requirement coverage report
+    if (requirements && architecture) {
+      const coverage = validateRequirements(files, requirements, architecture);
+      emit("coverage_report", {
+        overallCoverage: coverage.overallCoverage,
+        passed: coverage.passed,
+        pages: coverage.pages,
+        components: coverage.components,
+        features: coverage.features,
+        routes: coverage.routes,
+        entities: coverage.entities,
+        missingItems: coverage.missingItems,
+      });
+    }
+
+    // Generate preview from files (React preview for non-scraped, HTML for scraped)
     if (files.length > 0) {
       try {
-        const homePage = scraped?.pages?.find(p => p.path === "/") || scraped?.pages?.[0];
-        if (homePage?.fullHtml) {
-          emit("preview_url", { url: `data:text/html;charset=utf-8,${encodeURIComponent(homePage.fullHtml)}` });
-        } else if (scraped && scraped.pages.length > 0) {
-          const previewHtml = generatePreviewHtml(scraped, projectName);
+        if (scraped && scraped.pages.length > 0) {
+          const homePage = scraped.pages.find(p => p.path === "/") || scraped.pages[0];
+          if (homePage?.fullHtml) {
+            emit("preview_url", { url: `data:text/html;charset=utf-8,${encodeURIComponent(homePage.fullHtml)}` });
+          } else {
+            const previewHtml = generatePreviewHtml(scraped, projectName);
+            emit("preview_url", { url: `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}` });
+          }
+        } else {
+          // Generate React preview from the component files
+          const { generateReactPreview } = await import("./preview-renderer");
+          const previewHtml = generateReactPreview(files, projectName);
           emit("preview_url", { url: `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}` });
         }
       } catch (err) {
-        console.error("Early preview generation failed:", err);
+        console.error("Preview generation failed:", err);
       }
     }
 
