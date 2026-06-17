@@ -1131,9 +1131,15 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
           urlToLocal.set(asset.url, asset.localPath.startsWith("/") ? asset.localPath.slice(1) : asset.localPath);
         }
 
+        console.log(`[Clone ZIP] Creating ZIP with ${scraped.pages.length} pages, ${urlToLocal.size} assets`);
+
         // Add all HTML pages with rewritten asset URLs
+        let pagesAdded = 0;
         for (const page of scraped.pages) {
-          if (!page.fullHtml) continue;
+          if (!page.fullHtml) {
+            console.log(`[Clone ZIP] Skipping page ${page.path} — no fullHtml`);
+            continue;
+          }
           const filePath = page.path === "/"
             ? "index.html"
             : `${page.path.replace(/^\//, "").replace(/\/$/, "")}/index.html`;
@@ -1141,34 +1147,54 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
           let html = page.fullHtml;
           // Rewrite absolute asset URLs to relative local paths
           for (const [absoluteUrl, localPath] of urlToLocal) {
-            const escaped = absoluteUrl.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
             html = html.split(absoluteUrl).join(localPath);
           }
           // Remove base tag (no longer needed with relative paths)
           html = html.replace(/<base[^>]*>/gi, "");
 
           cloneZip.file(filePath, html);
+          pagesAdded++;
         }
 
         // Add all assets
+        let assetsAdded = 0;
         for (const asset of scraped.assets || []) {
-          const cleanPath = asset.localPath.startsWith("/") ? asset.localPath.slice(1) : asset.localPath;
-          cloneZip.file(cleanPath, Buffer.from(asset.buffer));
+          try {
+            const cleanPath = asset.localPath.startsWith("/") ? asset.localPath.slice(1) : asset.localPath;
+            cloneZip.file(cleanPath, Buffer.from(asset.buffer));
+            assetsAdded++;
+          } catch (err) {
+            console.error(`[Clone ZIP] Failed to add asset ${asset.url}:`, err);
+          }
         }
 
         // Add README
-        cloneZip.file("README.md", `# Cloned Website\n\nSource: ${scraped.baseUrl}\nPages: ${scraped.pages.length}\nAssets: ${(scraped.assets || []).length}\n\n## Deployment\n\nDeploy to any static hosting:\n- Netlify: drag & drop this folder\n- Vercel: \`vercel deploy\`\n- GitHub Pages: push to gh-pages branch\n- Any web server: copy to public_html/\n`);
+        cloneZip.file("README.md", `# Cloned Website\n\nSource: ${scraped.baseUrl}\nPages: ${pagesAdded}\nAssets: ${assetsAdded}\n\n## Deployment\n\nDeploy to any static hosting:\n- Netlify: drag & drop this folder\n- Vercel: \`vercel deploy\`\n- GitHub Pages: push to gh-pages branch\n- Any web server: copy to public_html/\n`);
+
+        console.log(`[Clone ZIP] ZIP contents: ${pagesAdded} pages, ${assetsAdded} assets`);
 
         const cloneBuffer = await cloneZip.generateAsync({ type: "uint8array" });
-        await supabase.storage
+        console.log(`[Clone ZIP] ZIP size: ${cloneBuffer.byteLength} bytes`);
+
+        const { error: uploadErr } = await supabase.storage
           .from("generated-projects")
           .upload(`${projectId}/clone.zip`, Buffer.from(cloneBuffer), {
             contentType: "application/zip",
             upsert: true,
           });
+
+        if (uploadErr) {
+          console.error(`[Clone ZIP] Upload failed:`, uploadErr);
+          errors.push(`Clone ZIP upload failed: ${uploadErr.message}`);
+        } else {
+          console.log(`[Clone ZIP] Upload successful: ${projectId}/clone.zip`);
+        }
       } catch (err) {
-        console.error("Clone ZIP creation failed:", err);
+        console.error("[Clone ZIP] Creation failed:", err);
+        errors.push(`Clone ZIP creation failed: ${err instanceof Error ? err.message : "unknown"}`);
       }
+    } else {
+      console.log(`[Clone ZIP] Skipping — scraped: ${!!scraped}, pages: ${scraped?.pages.length || 0}`);
     }
 
     const { error: updateError } = await supabase

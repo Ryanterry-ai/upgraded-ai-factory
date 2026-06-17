@@ -3,6 +3,7 @@ export interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
   timestamp: number;
+  type?: "thinking" | "error" | "success";
   agentEvents?: AgentEvent[];
 }
 

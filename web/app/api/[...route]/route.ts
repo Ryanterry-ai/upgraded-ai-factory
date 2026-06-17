@@ -299,16 +299,29 @@ app.post("/generate", async (c) => {
         };
 
         try {
-          send("progress", { progress: 10, message: "Analyzing input..." });
+          // Step 1: Analyze input
+          send("thinking", { message: `I need to build: ${prompt.trim().slice(0, 100)}${prompt.length > 100 ? "..." : ""}` });
+          await new Promise((r) => setTimeout(r, 200));
 
-          send("agent_start", { agent: "Router", action: "Detecting factory type" });
-          await new Promise((r) => setTimeout(r, 300));
-          send("agent_complete", { agent: "Router", detail: "Factory detected" });
+          // Step 2: Detect if URL — plan the approach
+          const isUrl = /https?:\/\//i.test(prompt.trim());
+          if (isUrl) {
+            const url = prompt.trim().match(/(https?:\/\/[^\s]+)/i)?.[1];
+            send("thinking", { message: `I'll clone the website at ${url}. Let me start by crawling all pages and downloading assets.` });
+            send("agent_start", { agent: "Web Crawler", action: `Scraping ${url}` });
+            send("thinking", { message: "Discovering all internal links, navigation, and asset URLs..." });
+          } else {
+            send("thinking", { message: "Let me analyze what you want and plan the project structure." });
+            send("agent_start", { agent: "Router", action: "Detecting project type" });
+            await new Promise((r) => setTimeout(r, 300));
+            send("agent_complete", { agent: "Router", detail: "Project type identified" });
+          }
 
+          // Step 3: Run the actual generation
           const startTime = Date.now();
 
           send("agent_start", { agent: "Product Manager", action: "Analyzing requirements" });
-          send("progress", { progress: 20, message: "Running AI agents..." });
+          send("thinking", { message: "I'm analyzing the requirements and planning the architecture..." });
 
           const result = await runGeneration({
             prompt: prompt.trim(),
@@ -318,17 +331,33 @@ app.post("/generate", async (c) => {
 
           const totalMs = Date.now() - startTime;
 
-          send("agent_complete", { agent: "Product Manager", detail: "Requirements analyzed" });
+          // Step 4: Report results based on what was generated
+          if (isUrl && result.scraped) {
+            const pageCount = result.scraped.pages.length;
+            const assetCount = (result.scraped.assets || []).length;
+            send("agent_complete", { agent: "Web Crawler", detail: `Found ${pageCount} pages, ${assetCount} assets` });
+            send("thinking", { message: `Crawled ${pageCount} pages and downloaded ${assetCount} assets. Now building the clone...` });
+          } else {
+            send("agent_complete", { agent: "Product Manager", detail: "Requirements analyzed" });
+          }
+
           send("agent_start", { agent: "Frontend Engineer", action: "Generating components" });
-          send("progress", { progress: 60, message: "Building components..." });
+          send("thinking", { message: `Generating ${result.files?.length || 0} files...` });
 
           await new Promise((r) => setTimeout(r, 200));
           send("agent_complete", { agent: "Frontend Engineer", detail: `${result.files?.length || 0} files generated` });
           send("agent_start", { agent: "QA Engineer", action: "Validating build" });
+          send("thinking", { message: "Validating the build and checking for errors..." });
 
           await new Promise((r) => setTimeout(r, 200));
-          send("agent_complete", { agent: "QA Engineer", detail: `Quality: ${Math.round(result.qualityScore * 100)}%` });
-          send("progress", { progress: 90, message: "Finalizing..." });
+          const quality = Math.round(result.qualityScore * 100);
+          send("agent_complete", { agent: "QA Engineer", detail: `Quality: ${quality}%` });
+
+          if (result.errors && result.errors.length > 0) {
+            send("thinking", { message: `Build completed with ${result.errors.length} warning(s). Quality score: ${quality}%` });
+          } else {
+            send("thinking", { message: `Build passed with quality score: ${quality}%. Everything looks good!` });
+          }
 
           // Send files
           if (result.files && result.files.length > 0) {

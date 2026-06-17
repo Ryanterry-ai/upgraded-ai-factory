@@ -158,6 +158,17 @@ function WorkspacePage() {
 
   const handleSSEEvent = useCallback((event: Record<string, unknown>) => {
     switch (event.type) {
+      case "thinking":
+        // Show AI thinking as a chat message
+        const thinkingMsg: ChatMessage = {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          content: event.message as string,
+          timestamp: Date.now(),
+          type: "thinking",
+        };
+        setState((prev) => ({ ...prev, chatMessages: [...prev.chatMessages, thinkingMsg] }));
+        break;
       case "progress":
         updateState({ progress: (event.progress as number) || 0 });
         addBuildLog(`Progress: ${event.message || "Processing..."}`);

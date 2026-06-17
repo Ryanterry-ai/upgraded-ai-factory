@@ -464,30 +464,49 @@ export async function scrapeSite(startUrl: string, maxPages = 50): Promise<Scrap
     const page = await scrapePage(currentUrl, rootDomain);
 
     // Fetch full HTML for this page and discover assets
-    try {
-      const resp = await fetch(currentUrl, {
-        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
-        signal: AbortSignal.timeout(15000),
-      });
-      if (resp.ok) {
-        let html = await resp.text();
+    let htmlFetched = false;
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try {
+        const resp = await fetch(currentUrl, {
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+          },
+          signal: AbortSignal.timeout(20000),
+          redirect: "follow",
+        });
+        if (resp.ok) {
+          let html = await resp.text();
+          if (html.length < 100 && attempt === 0) {
+            // Too short, likely blocked — retry
+            await new Promise(r => setTimeout(r, 1000));
+            continue;
+          }
 
-        // Discover ALL asset URLs from this page
-        const assetUrls = discoverAssets(html, currentUrl);
-        for (const url of assetUrls) {
-          allAssetUrls.add(url);
+          // Discover ALL asset URLs from this page
+          const assetUrls = discoverAssets(html, currentUrl);
+          for (const url of assetUrls) {
+            allAssetUrls.add(url);
+          }
+
+          // Rewrite relative URLs to absolute for preview
+          const origin = new URL(currentUrl).origin;
+          html = html.replace(/(src|href|action)=["']\/(?!\/)/g, `$1="${origin}/`);
+          html = html.replace(/url\(["']\/(?!\/)/g, `url("${origin}/`);
+          html = html.replace(/<base[^>]*>/gi, "");
+          html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${currentUrl}">`);
+          page.fullHtml = html;
+          htmlFetched = true;
+          break;
         }
-
-        // Rewrite relative URLs to absolute for preview
-        const origin = new URL(currentUrl).origin;
-        html = html.replace(/(src|href|action)=["']\/(?!\/)/g, `$1="${origin}/`);
-        html = html.replace(/url\(["']\/(?!\/)/g, `url("${origin}/`);
-        html = html.replace(/<base[^>]*>/gi, "");
-        html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${currentUrl}">`);
-        page.fullHtml = html;
+      } catch (err) {
+        console.error(`[Scraper] Attempt ${attempt + 1} failed for ${currentUrl}:`, err instanceof Error ? err.message : err);
+        if (attempt === 0) await new Promise(r => setTimeout(r, 1000));
       }
-    } catch (err) {
-      console.error(`[Scraper] Failed to fetch full HTML for ${currentUrl}:`, err instanceof Error ? err.message : err);
+    }
+    if (!htmlFetched) {
+      console.error(`[Scraper] All attempts failed for ${currentUrl}`);
     }
 
     pages.push(page);
@@ -518,66 +537,97 @@ export async function scrapeSite(startUrl: string, maxPages = 50): Promise<Scrap
   // Download all discovered assets in parallel batches
   const downloadedAssets: ScrapedAsset[] = [];
   const assetArray = Array.from(allAssetUrls);
-  const BATCH_SIZE = 8;
+  const BATCH_SIZE = 6;
+  let totalDownloaded = 0;
+  let totalFailed = 0;
+
+  console.log(`[Scraper] Downloading ${assetArray.length} assets...`);
 
   for (let i = 0; i < assetArray.length; i += BATCH_SIZE) {
     const batch = assetArray.slice(i, i + BATCH_SIZE);
     const results = await Promise.allSettled(
       batch.map(async (assetUrl) => {
-        try {
-          const resp = await fetch(assetUrl, {
-            headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
-            signal: AbortSignal.timeout(10000),
-          });
-          if (!resp.ok) return null;
-          const contentType = resp.headers.get("content-type") || "";
-          const buffer = await resp.arrayBuffer();
-          const ext = getExtFromUrl(assetUrl);
-          const ct = contentType || getContentTypeFromExt(ext);
+        for (let attempt = 0; attempt < 2; attempt++) {
+          try {
+            const resp = await fetch(assetUrl, {
+              headers: {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "*/*",
+              },
+              signal: AbortSignal.timeout(15000),
+              redirect: "follow",
+            });
+            if (!resp.ok) {
+              if (attempt === 0) await new Promise(r => setTimeout(r, 500));
+              continue;
+            }
+            const contentType = resp.headers.get("content-type") || "";
+            const buffer = await resp.arrayBuffer();
+            if (buffer.byteLength < 10) return null; // Skip empty/tiny files
+            const ext = getExtFromUrl(assetUrl);
+            const ct = contentType || getContentTypeFromExt(ext);
 
-          // Determine local path based on content type
-          let kind: "images" | "css" | "js" | "fonts" | "videos" | "media" = "media";
-          if (ct.startsWith("image/")) kind = "images";
-          else if (ct.startsWith("font/") || ct.includes("font")) kind = "fonts";
-          else if (ct.includes("css")) kind = "css";
-          else if (ct.includes("javascript") || ct.includes("ecmascript")) kind = "js";
-          else if (ct.startsWith("video/")) kind = "videos";
-          else if (ext.match(/^\.(png|jpe?g|gif|webp|svg|ico)$/)) kind = "images";
-          else if (ext.match(/^\.(woff2?|ttf|eot|otf)$/)) kind = "fonts";
-          else if (ext === ".css") kind = "css";
-          else if (ext.match(/^\.(js|mjs)$/)) kind = "js";
-          else if (ext.match(/^\.(mp4|webm)$/)) kind = "videos";
+            // Determine local path based on content type
+            let kind: "images" | "css" | "js" | "fonts" | "videos" | "media" = "media";
+            if (ct.startsWith("image/")) kind = "images";
+            else if (ct.startsWith("font/") || ct.includes("font")) kind = "fonts";
+            else if (ct.includes("css")) kind = "css";
+            else if (ct.includes("javascript") || ct.includes("ecmascript")) kind = "js";
+            else if (ct.startsWith("video/")) kind = "videos";
+            else if (ext.match(/^\.(png|jpe?g|gif|webp|svg|ico)$/)) kind = "images";
+            else if (ext.match(/^\.(woff2?|ttf|eot|otf)$/)) kind = "fonts";
+            else if (ext === ".css") kind = "css";
+            else if (ext.match(/^\.(js|mjs)$/)) kind = "js";
+            else if (ext.match(/^\.(mp4|webm)$/)) kind = "videos";
 
-          const localPath = getLocalPath(assetUrl, kind);
-          return { url: assetUrl, localPath, buffer, contentType: ct };
-        } catch {
-          return null;
+            const localPath = getLocalPath(assetUrl, kind);
+            return { url: assetUrl, localPath, buffer, contentType: ct };
+          } catch {
+            if (attempt === 0) await new Promise(r => setTimeout(r, 500));
+          }
         }
+        return null;
       })
     );
     for (const r of results) {
-      if (r.status === "fulfilled" && r.value) downloadedAssets.push(r.value);
+      if (r.status === "fulfilled" && r.value) {
+        downloadedAssets.push(r.value);
+        totalDownloaded++;
+      } else {
+        totalFailed++;
+      }
     }
   }
 
-  // Fetch full homepage HTML for preview
+  console.log(`[Scraper] Assets downloaded: ${totalDownloaded}, failed: ${totalFailed}`);
+
+  // Fetch full homepage HTML for preview (if not already fetched)
   let homepageHtml: string | undefined;
-  try {
-    const resp = await fetch(normalizedUrl, {
-      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
-      signal: AbortSignal.timeout(15000),
-    });
-    if (resp.ok) {
-      let html = await resp.text();
-      const baseUrlObj = new URL(normalizedUrl);
-      const origin = baseUrlObj.origin;
-      html = html.replace(/(src|href|action)=["']\/(?!\/)/g, `$1="${origin}/`);
-      html = html.replace(/url\(["']\/(?!\/)/g, `url("${origin}/`);
-      html = html.replace(/<base[^>]*>/gi, "");
-      html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${normalizedUrl}">`);
-      homepageHtml = html;
-    }
-  } catch {}
+  const homePage = pages.find(p => p.path === "/");
+  if (homePage?.fullHtml) {
+    homepageHtml = homePage.fullHtml;
+  } else {
+    try {
+      const resp = await fetch(normalizedUrl, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+          "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        },
+        signal: AbortSignal.timeout(20000),
+        redirect: "follow",
+      });
+      if (resp.ok) {
+        let html = await resp.text();
+        const baseUrlObj = new URL(normalizedUrl);
+        const origin = baseUrlObj.origin;
+        html = html.replace(/(src|href|action)=["']\/(?!\/)/g, `$1="${origin}/`);
+        html = html.replace(/url\(["']\/(?!\/)/g, `url("${origin}/`);
+        html = html.replace(/<base[^>]*>/gi, "");
+        html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${normalizedUrl}">`);
+        homepageHtml = html;
+      }
+    } catch {}
+  }
 
   return {
     baseUrl: normalizedUrl,

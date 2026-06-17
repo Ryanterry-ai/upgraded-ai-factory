@@ -73,21 +73,31 @@ export function ChatPanel({ messages, onSend, status, inputValue, onInputChange,
 
         {messages.map((msg) => (
           <div key={msg.id} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div
-              className={`max-w-[85%] rounded-xl px-3 py-2 text-sm ${
-                msg.role === "user"
-                  ? "bg-white/10 text-white"
-                  : "bg-white/5 text-zinc-300"
-              }`}
-            >
-              {msg.role === "assistant" && (
+            {msg.type === "thinking" ? (
+              <div className="max-w-[85%] rounded-xl px-3 py-2 text-sm bg-violet-500/5 border border-violet-500/10 text-zinc-400">
                 <div className="flex items-center gap-1.5 mb-1">
-                  <Sparkles className="w-3 h-3 text-violet-400" />
-                  <span className="text-[10px] text-violet-400 font-medium">build.same</span>
+                  <div className="w-2 h-2 rounded-full bg-violet-400 animate-pulse" />
+                  <span className="text-[10px] text-violet-400 font-medium">thinking...</span>
                 </div>
-              )}
-              <p className="whitespace-pre-wrap">{msg.content}</p>
-            </div>
+                <p className="whitespace-pre-wrap text-xs leading-relaxed">{msg.content}</p>
+              </div>
+            ) : (
+              <div
+                className={`max-w-[85%] rounded-xl px-3 py-2 text-sm ${
+                  msg.role === "user"
+                    ? "bg-white/10 text-white"
+                    : "bg-white/5 text-zinc-300"
+                }`}
+              >
+                {msg.role === "assistant" && (
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <Sparkles className="w-3 h-3 text-violet-400" />
+                    <span className="text-[10px] text-violet-400 font-medium">build.same</span>
+                  </div>
+                )}
+                <p className="whitespace-pre-wrap">{msg.content}</p>
+              </div>
+            )}
           </div>
         ))}
         <div ref={messagesEndRef} />
@@ -123,7 +133,7 @@ export function ChatPanel({ messages, onSend, status, inputValue, onInputChange,
           </button>
         </div>
         <p className="text-[10px] text-zinc-600 mt-1.5 text-center">
-          {status === "generating" ? "AI agents are working..." : "Press Enter to send"}
+          {status === "generating" ? "AI is thinking..." : status === "completed" ? "Ready for your next instruction" : "Press Enter to send"}
         </p>
       </div>
     </div>
