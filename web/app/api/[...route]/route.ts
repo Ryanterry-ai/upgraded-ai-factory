@@ -307,6 +307,9 @@ app.post("/generate", async (c) => {
           const isUrl = /https?:\/\//i.test(prompt.trim());
           if (isUrl) {
             const url = prompt.trim().match(/(https?:\/\/[^\s]+)/i)?.[1];
+            send("agent_start", { agent: "Router", action: "Detecting project type" });
+            await new Promise((r) => setTimeout(r, 200));
+            send("agent_complete", { agent: "Router", detail: "URL clone detected" });
             send("thinking", { message: `I'll clone the website at ${url}. Let me start by crawling all pages and downloading assets.` });
             send("agent_start", { agent: "Web Crawler", action: `Scraping ${url}` });
             send("thinking", { message: "Discovering all internal links, navigation, and asset URLs..." });
@@ -321,7 +324,6 @@ app.post("/generate", async (c) => {
           const startTime = Date.now();
 
           send("agent_start", { agent: "Product Manager", action: "Analyzing requirements" });
-          send("thinking", { message: "I'm analyzing the requirements and planning the architecture..." });
 
           const result = await runGeneration({
             prompt: prompt.trim(),
@@ -339,27 +341,24 @@ app.post("/generate", async (c) => {
             const pageCount = result.scraped.pages.length;
             const assetCount = (result.scraped.assets || []).length;
             send("agent_complete", { agent: "Web Crawler", detail: `Found ${pageCount} pages, ${assetCount} assets` });
+            send("agent_complete", { agent: "Product Manager", detail: "URL clone analyzed" });
             send("thinking", { message: `Crawled ${pageCount} pages and downloaded ${assetCount} assets. Now building the clone...` });
           } else {
             send("agent_complete", { agent: "Product Manager", detail: "Requirements analyzed" });
           }
 
           send("agent_start", { agent: "Frontend Engineer", action: "Generating components" });
-          send("thinking", { message: `Generating ${result.files?.length || 0} files...` });
 
           await new Promise((r) => setTimeout(r, 200));
           send("agent_complete", { agent: "Frontend Engineer", detail: `${result.files?.length || 0} files generated` });
           send("agent_start", { agent: "QA Engineer", action: "Validating build" });
-          send("thinking", { message: "Validating the build and checking for errors..." });
 
           await new Promise((r) => setTimeout(r, 200));
           const quality = Math.round(result.qualityScore * 100);
           send("agent_complete", { agent: "QA Engineer", detail: `Quality: ${quality}%` });
 
           if (result.errors && result.errors.length > 0) {
-            send("thinking", { message: `Build completed with ${result.errors.length} warning(s). Quality score: ${quality}%` });
-          } else {
-            send("thinking", { message: `Build passed with quality score: ${quality}%. Everything looks good!` });
+            send("thinking", { message: `Build completed with ${result.errors.length} warning(s). Quality: ${quality}%` });
           }
 
           // Send files

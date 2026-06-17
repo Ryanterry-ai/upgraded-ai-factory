@@ -27,6 +27,49 @@ export function validateBuild(
   const checks: CheckResult[] = [];
   let hasErrors = false;
 
+  // Detect if this is a static HTML site (scraped) vs React project
+  const isStaticSite = files.some(f => f.path.endsWith(".html")) &&
+    !files.some(f => f.path.endsWith(".tsx") || f.path.endsWith(".jsx"));
+
+  if (isStaticSite) {
+    // Static HTML site — only check for HTML files and an index
+    const htmlFiles = files.filter(f => f.path.endsWith(".html"));
+    checks.push({
+      name: "html_files_exist",
+      passed: htmlFiles.length > 0,
+      message: htmlFiles.length > 0 ? `${htmlFiles.length} HTML files found` : "No HTML files found",
+      severity: "error",
+    });
+    if (htmlFiles.length === 0) hasErrors = true;
+
+    const hasIndex = htmlFiles.some(f => f.path === "index.html" || f.path.endsWith("/index.html"));
+    checks.push({
+      name: "index_html_exists",
+      passed: hasIndex,
+      message: hasIndex ? "index.html found" : "Missing index.html",
+      severity: "error",
+    });
+    if (!hasIndex) hasErrors = true;
+
+    // Check for linked assets (CSS, JS)
+    const assetFiles = files.filter(f => f.path.endsWith(".css") || f.path.endsWith(".js"));
+    checks.push({
+      name: "assets_exist",
+      passed: assetFiles.length > 0,
+      message: assetFiles.length > 0 ? `${assetFiles.length} asset files found` : "No CSS/JS assets found",
+      severity: "warning",
+    });
+
+    return {
+      passed: !hasErrors,
+      score: hasErrors ? 0 : 1,
+      checks,
+      buildSuccess: !hasErrors,
+    };
+  }
+
+  // React/Next.js project — existing checks
+
   // Check required files exist
   for (const reqFile of REQUIRED_FILES) {
     const exists = files.some((f) => f.path === reqFile);
