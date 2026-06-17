@@ -14,7 +14,7 @@ import { FilePanel } from "@/components/workspace/FilePanel";
 import { AgentTimeline } from "@/components/workspace/AgentTimeline";
 import { BuildLogs } from "@/components/workspace/BuildLogs";
 import { CoverageReport } from "@/components/workspace/CoverageReport";
-import type { ChatMessage, AgentEvent, GeneratedFile, WorkspaceState, CoverageCategory } from "@/components/workspace/types";
+import type { ChatMessage, AgentEvent, GeneratedFile, WorkspaceState, CoverageCategory, CoverageReport as CoverageReportType } from "@/components/workspace/types";
 
 const INITIAL_STATE: WorkspaceState = {
   status: "idle",
