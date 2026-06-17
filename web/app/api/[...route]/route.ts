@@ -3,11 +3,98 @@ import { handle } from "hono/vercel";
 import { getSupabase } from "@/lib/supabase";
 import { runGeneration } from "@/lib/generation-pipeline";
 import { generatePreviewHtml } from "@/lib/preview-renderer";
+import { createMultiPagePreview } from "@/lib/multipage-preview";
+import {
+  createProject,
+  startDevServer,
+  stopDevServer,
+  getRuntime,
+  updateProjectFile,
+  getProjectFile,
+  listProjectFiles,
+} from "@/lib/project-runtime";
 
 const app = new Hono().basePath("/api");
 
 app.get("/health", (c) => {
   return c.json({ status: "ok", timestamp: new Date().toISOString() });
+});
+
+// ── Project Runtime ────────────────────────────────────────
+
+app.post("/projects/:id/runtime/start", async (c) => {
+  const projectId = c.req.param("id");
+  const body = await c.req.json().catch(() => ({}));
+  const files = body.files as { path: string; content: string; type: string }[] | undefined;
+
+  try {
+    // Create project with files if provided
+    if (files && files.length > 0) {
+      createProject(projectId, files);
+    }
+
+    // Start dev server
+    const runtime = await startDevServer(projectId);
+    return c.json({ status: "ok", url: runtime.url, port: runtime.port });
+  } catch (err) {
+    return c.json({ status: "error", message: err instanceof Error ? err.message : "Failed to start runtime" }, 500);
+  }
+});
+
+app.post("/projects/:id/runtime/stop", async (c) => {
+  const projectId = c.req.param("id");
+  try {
+    await stopDevServer(projectId);
+    return c.json({ status: "ok" });
+  } catch (err) {
+    return c.json({ status: "error", message: err instanceof Error ? err.message : "Failed to stop runtime" }, 500);
+  }
+});
+
+app.get("/projects/:id/runtime", (c) => {
+  const projectId = c.req.param("id");
+  const runtime = getRuntime(projectId);
+  if (!runtime) {
+    return c.json({ status: "not_found" }, 404);
+  }
+  return c.json({
+    status: "ok",
+    runtime: {
+      port: runtime.port,
+      url: runtime.url,
+      status: runtime.status,
+      startedAt: runtime.startedAt,
+    },
+  });
+});
+
+app.post("/projects/:id/files", async (c) => {
+  const projectId = c.req.param("id");
+  const body = await c.req.json();
+  const { path: filePath, content } = body;
+
+  if (!filePath || content === undefined) {
+    return c.json({ status: "error", message: "path and content required" }, 400);
+  }
+
+  const success = updateProjectFile(projectId, filePath, content);
+  return c.json({ status: success ? "ok" : "error" });
+});
+
+app.get("/projects/:id/files", (c) => {
+  const projectId = c.req.param("id");
+  const files = listProjectFiles(projectId);
+  return c.json({ status: "ok", files });
+});
+
+app.get("/projects/:id/files/:path{.+}", (c) => {
+  const projectId = c.req.param("id");
+  const filePath = c.req.param("path");
+  const content = getProjectFile(projectId, filePath);
+  if (content === null) {
+    return c.json({ status: "error", message: "File not found" }, 404);
+  }
+  return c.json({ status: "ok", content });
 });
 
 // ── Stats ──────────────────────────────────────────────────
@@ -248,16 +335,23 @@ app.post("/generate", async (c) => {
             send("files", { files: result.files });
           }
 
-          // Generate and send preview URL — use full HTML if available
+          // Generate and send preview URL — multi-page if available
           if (result.files && result.files.length > 0) {
             try {
               let previewUrl: string;
-              if (result.scraped?.homepageHtml) {
-                // Use actual site HTML for pixel-perfect preview
-                previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(result.scraped.homepageHtml)}`;
+              const scraped = result.scraped;
+              const pagesWithHtml = scraped?.pages?.filter(p => p.fullHtml) || [];
+
+              if (pagesWithHtml.length > 1) {
+                // Multi-page preview with navigation
+                const multiHtml = createMultiPagePreview(pagesWithHtml, name?.trim() || "Project");
+                previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(multiHtml)}`;
+              } else if (pagesWithHtml.length === 1 && pagesWithHtml[0].fullHtml) {
+                // Single page — use directly
+                previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(pagesWithHtml[0].fullHtml)}`;
               } else {
                 // Fallback to reconstructed preview
-                const previewHtml = generatePreviewHtml(result.scraped || null, name?.trim() || "Project");
+                const previewHtml = generatePreviewHtml(scraped || null, name?.trim() || "Project");
                 previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}`;
               }
               send("preview_url", { url: previewUrl });

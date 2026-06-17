@@ -17,6 +17,7 @@ export interface ScrapedPage {
   metaTags: Record<string, string>;
   structuredData: unknown[];
   techStack: string[];
+  fullHtml?: string;
 }
 
 export interface ScrapedSite {
@@ -303,6 +304,27 @@ export async function scrapeSite(startUrl: string, maxPages = 10): Promise<Scrap
     visited.add(normalized);
 
     const page = await scrapePage(currentUrl, rootDomain);
+
+    // Fetch full HTML for this page for preview
+    try {
+      const resp = await fetch(currentUrl, {
+        headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (resp.ok) {
+        let html = await resp.text();
+        // Rewrite relative URLs to absolute
+        const origin = new URL(currentUrl).origin;
+        html = html.replace(/(src|href|action)=["']\/(?!\/)/g, `$1="${origin}/`);
+        html = html.replace(/url\(["']\/(?!\/)/g, `url("${origin}/`);
+        html = html.replace(/<base[^>]*>/gi, "");
+        html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${currentUrl}">`);
+        page.fullHtml = html;
+      }
+    } catch {
+      // Non-critical
+    }
+
     pages.push(page);
 
     // Collect global data
