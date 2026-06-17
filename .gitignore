@@ -11,3 +11,5 @@ web/.next/
 
 .vercel
 .env.vercel
+
+clone-audit/
