@@ -70,8 +70,16 @@ function detectFactory(prompt: string, explicit?: string): string {
 
 function extractProjectName(prompt: string, explicitName?: string): string {
   if (explicitName) return sanitizeName(explicitName);
-  const match = prompt.match(/(?:called?|named?|titled?|for)\s+["']?([A-Z][^"']+)["']?/i);
-  return sanitizeName(match?.[1] || "my-project");
+  // Try explicit patterns first
+  const explicitMatch = prompt.match(/(?:called?|named?|titled?|for)\s+["']?([A-Z][^"'.]+)["']?/i);
+  if (explicitMatch) return sanitizeName(explicitMatch[1]);
+  // Try to extract a brand-like name (capitalized words before "website"/"app"/"platform"/"system")
+  const brandMatch = prompt.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+(?:website|app|platform|system|site|store|shop)/i);
+  if (brandMatch) return sanitizeName(brandMatch[1]);
+  // Try "a X agency/business/company" pattern
+  const typeMatch = prompt.match(/(?:a|an|the)\s+(?:modern\s+|professional\s+|creative\s+)?(\w+(?:\s+\w+)?)\s+(?:website|app|platform|agency|business|company|store|shop|system|project)/i);
+  if (typeMatch) return sanitizeName(typeMatch[1]);
+  return "my-project";
 }
 
 function buildBlueprint(prompt: string, factory: string, projectName: string, requirements?: RequirementMatrix) {
