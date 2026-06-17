@@ -39,6 +39,19 @@ export interface CoverageReport {
   routes: CoverageCategory;
   entities: CoverageCategory;
   missingItems: string[];
+  qualityScores?: {
+    coverage: number;
+    architecture: number;
+    feature: number;
+    build: number;
+    ux: number;
+    overall: number;
+  };
+  componentDepth?: {
+    score: number;
+    placeholderCount: number;
+    avgScore: number;
+  };
 }
 
 export interface WorkspaceState {

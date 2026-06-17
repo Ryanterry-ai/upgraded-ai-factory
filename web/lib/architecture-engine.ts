@@ -665,13 +665,16 @@ export function validateRequirements(
 
 /**
  * Calculate comprehensive quality scores.
+ * Uses component depth validation for honest scoring.
  */
 export function calculateQualityScores(
   files: Array<{ path: string; content: string; type: string }>,
   validation: ValidationResult,
-  buildSuccess: boolean
+  buildSuccess: boolean,
+  componentDepthScore?: number,
+  placeholderCount?: number
 ): QualityScores {
-  // Coverage score (requirement fulfillment)
+  // Coverage score (requirement fulfillment) — only counts files with real content
   const coverage = Math.round(validation.overallCoverage * 100);
 
   // Architecture score (file structure quality)
@@ -703,24 +706,28 @@ export function calculateQualityScores(
   // Build score
   const buildScore = buildSuccess ? 100 : 0;
 
-  // UX score (based on component quality)
+  // Component depth score (real completeness vs placeholder stubs)
+  const depthScore = componentDepthScore ?? 0;
+
+  // UX score (based on component quality + depth)
   let uxScore = 0;
   const hasDarkMode = files.some(f => f.content.includes("dark") || f.content.includes("Dark"));
   const hasResponsive = files.some(f => f.content.includes("responsive") || f.content.includes("md:") || f.content.includes("lg:"));
   const hasTransitions = files.some(f => f.content.includes("transition") || f.content.includes("hover:"));
 
-  if (hasDarkMode) uxScore += 30;
-  if (hasResponsive) uxScore += 30;
-  if (hasTransitions) uxScore += 20;
-  if (componentCount >= 5) uxScore += 20;
+  if (hasDarkMode) uxScore += 20;
+  if (hasResponsive) uxScore += 20;
+  if (hasTransitions) uxScore += 15;
+  uxScore += Math.round(depthScore * 0.45); // 45% of UX is component depth
 
-  // Overall (weighted)
+  // Overall (weighted) — component depth is the dominant factor
   const overall = Math.round(
-    coverage * 0.30 +
-    architectureScore * 0.25 +
-    featureScore * 0.20 +
-    buildScore * 0.15 +
-    uxScore * 0.10
+    coverage * 0.15 +
+    architectureScore * 0.15 +
+    featureScore * 0.10 +
+    buildScore * 0.10 +
+    depthScore * 0.35 +
+    uxScore * 0.15
   );
 
   return {

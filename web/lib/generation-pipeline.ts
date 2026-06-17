@@ -8,6 +8,8 @@ import { getOptimizedBlueprintForFactory, type OptimizedBlueprint } from "./blue
 import { isUrl, scrapeSite, formatScrapedForLLM, type ScrapedSite } from "./url-scraper";
 import { storeSite } from "./clone-store";
 import { generatePreviewHtml } from "./preview-renderer";
+import { detectBlueprint, type DomainBlueprint } from "./domain-blueprints";
+import { calculateComponentDepthScore } from "./component-depth-validator";
 import {
   analyzeRequirements,
   planArchitecture,
@@ -1171,6 +1173,998 @@ function generateSectionComponent(
 `;
 }
 
+// ═══════════════════════════════════════════════════════════
+// DOMAIN-SPECIFIC COMPONENT GENERATORS (Real implementations)
+// ═══════════════════════════════════════════════════════════
+
+function genAttendanceCalendar(): string {
+  return `"use client";
+import { useState, useMemo } from "react";
+
+interface AttendanceRecord {
+  memberId: string;
+  memberName: string;
+  date: string;
+  status: "present" | "absent" | "late";
+}
+
+const MOCK_ATTENDANCE: AttendanceRecord[] = [
+  { memberId: "1", memberName: "John Smith", date: new Date().toISOString().split("T")[0], status: "present" },
+  { memberId: "2", memberName: "Sarah Johnson", date: new Date().toISOString().split("T")[0], status: "late" },
+  { memberId: "3", memberName: "Mike Wilson", date: new Date().toISOString().split("T")[0], status: "absent" },
+];
+
+const STATUS_COLORS: Record<string, string> = {
+  present: "bg-green-100 text-green-800",
+  absent: "bg-red-100 text-red-800",
+  late: "bg-yellow-100 text-yellow-800",
+};
+
+export function AttendanceCalendar() {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [filterMember, setFilterMember] = useState("");
+  const [attendance, setAttendance] = useState<AttendanceRecord[]>(MOCK_ATTENDANCE);
+
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
+
+  const days = useMemo(() => {
+    const result: (number | null)[] = [];
+    for (let i = 0; i < firstDayOfWeek; i++) result.push(null);
+    for (let d = 1; d <= daysInMonth; d++) result.push(d);
+    return result;
+  }, [daysInMonth, firstDayOfWeek]);
+
+  const getAttendanceForDay = (day: number) => {
+    const dateStr = \`\${year}-\${String(month + 1).padStart(2, "0")}-\${String(day).padStart(2, "0")}\`;
+    return attendance.filter((a) => a.date === dateStr && (!filterMember || a.memberName.toLowerCase().includes(filterMember.toLowerCase())));
+  };
+
+  const markAttendance = (day: number, status: "present" | "absent" | "late") => {
+    const dateStr = \`\${year}-\${String(month + 1).padStart(2, "0")}-\${String(day).padStart(2, "0")}\`;
+    const newRecord: AttendanceRecord = {
+      memberId: String(attendance.length + 1),
+      memberName: "New Member",
+      date: dateStr,
+      status,
+    };
+    setAttendance((prev) => [...prev, newRecord]);
+  };
+
+  const monthName = currentMonth.toLocaleString("default", { month: "long", year: "numeric" });
+  const selectedDayRecords = getAttendanceForDay(parseInt(selectedDate.split("-")[2]) || 0);
+  const presentCount = attendance.filter((a) => a.status === "present").length;
+  const absentCount = attendance.filter((a) => a.status === "absent").length;
+  const lateCount = attendance.filter((a) => a.status === "late").length;
+
+  return (
+    <div className="space-y-6">
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="p-4 rounded-lg bg-green-50 border border-green-200">
+          <p className="text-sm text-green-600">Present</p>
+          <p className="text-2xl font-bold text-green-700">{presentCount}</p>
+        </div>
+        <div className="p-4 rounded-lg bg-yellow-50 border border-yellow-200">
+          <p className="text-sm text-yellow-600">Late</p>
+          <p className="text-2xl font-bold text-yellow-700">{lateCount}</p>
+        </div>
+        <div className="p-4 rounded-lg bg-red-50 border border-red-200">
+          <p className="text-sm text-red-600">Absent</p>
+          <p className="text-2xl font-bold text-red-700">{absentCount}</p>
+        </div>
+      </div>
+
+      {/* Filter */}
+      <input
+        type="text"
+        placeholder="Filter by member name..."
+        value={filterMember}
+        onChange={(e) => setFilterMember(e.target.value)}
+        className="w-full md:w-64 px-4 py-2 border rounded-lg text-sm"
+      />
+
+      {/* Calendar */}
+      <div className="border rounded-lg p-4">
+        <div className="flex items-center justify-between mb-4">
+          <button onClick={() => setCurrentMonth(new Date(year, month - 1))} className="px-3 py-1 rounded border hover:bg-gray-50 text-sm">&larr; Prev</button>
+          <h3 className="font-semibold">{monthName}</h3>
+          <button onClick={() => setCurrentMonth(new Date(year, month + 1))} className="px-3 py-1 rounded border hover:bg-gray-50 text-sm">Next &rarr;</button>
+        </div>
+        <div className="grid grid-cols-7 gap-1 text-center text-xs">
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+            <div key={d} className="font-medium text-gray-500 py-2">{d}</div>
+          ))}
+          {days.map((day, i) => {
+            if (day === null) return <div key={\`empty-\${i}\`} />;
+            const dateStr = \`\${year}-\${String(month + 1).padStart(2, "0")}-\${String(day).padStart(2, "0")}\`;
+            const records = getAttendanceForDay(day);
+            const isSelected = dateStr === selectedDate;
+            return (
+              <div
+                key={day}
+                onClick={() => setSelectedDate(dateStr)}
+                className={\`p-2 rounded-lg cursor-pointer transition-colors \${isSelected ? "bg-blue-100 border-2 border-blue-500" : "hover:bg-gray-50 border-2 border-transparent"}\`}
+              >
+                <div className="font-medium">{day}</div>
+                {records.length > 0 && (
+                  <div className="flex gap-0.5 justify-center mt-1">
+                    {records.slice(0, 3).map((r, j) => (
+                      <div key={j} className={\`w-1.5 h-1.5 rounded-full \${r.status === "present" ? "bg-green-500" : r.status === "late" ? "bg-yellow-500" : "bg-red-500"}\`} />
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Selected Day Details */}
+      {selectedDayRecords.length > 0 && (
+        <div className="border rounded-lg overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="text-left px-4 py-2">Member</th>
+                <th className="text-left px-4 py-2">Status</th>
+                <th className="text-left px-4 py-2">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {selectedDayRecords.map((r, i) => (
+                <tr key={i} className="border-t">
+                  <td className="px-4 py-2 font-medium">{r.memberName}</td>
+                  <td className="px-4 py-2">
+                    <span className={\`px-2 py-1 rounded-full text-xs font-medium \${STATUS_COLORS[r.status]}\`}>{r.status}</span>
+                  </td>
+                  <td className="px-4 py-2">
+                    <select
+                      value={r.status}
+                      onChange={(e) => {
+                        const newStatus = e.target.value as "present" | "absent" | "late";
+                        setAttendance((prev) => prev.map((a, idx) => (idx === i ? { ...a, status: newStatus } : a)));
+                      }}
+                      className="text-xs border rounded px-2 py-1"
+                    >
+                      <option value="present">Present</option>
+                      <option value="absent">Absent</option>
+                      <option value="late">Late</option>
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Quick Mark */}
+      <div className="border rounded-lg p-4">
+        <h4 className="font-medium mb-3">Quick Mark for {selectedDate}</h4>
+        <div className="flex gap-2">
+          <button onClick={() => markAttendance(parseInt(selectedDate.split("-")[2]) || 0, "present")} className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700">Mark Present</button>
+          <button onClick={() => markAttendance(parseInt(selectedDate.split("-")[2]) || 0, "late")} className="px-4 py-2 bg-yellow-500 text-white rounded-lg text-sm hover:bg-yellow-600">Mark Late</button>
+          <button onClick={() => markAttendance(parseInt(selectedDate.split("-")[2]) || 0, "absent")} className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Mark Absent</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+`;
+}
+
+function genAttendanceTable(): string {
+  return `"use client";
+import { useState, useMemo } from "react";
+
+interface AttendanceRecord {
+  id: string;
+  memberName: string;
+  checkIn: string;
+  checkOut: string | null;
+  date: string;
+  status: "present" | "absent" | "late";
+  duration: string;
+}
+
+const MOCK_DATA: AttendanceRecord[] = [
+  { id: "1", memberName: "John Smith", checkIn: "08:00", checkOut: "09:30", date: "2025-01-15", status: "present", duration: "1h 30m" },
+  { id: "2", memberName: "Sarah Johnson", checkIn: "08:15", checkOut: "09:45", date: "2025-01-15", status: "late", duration: "1h 30m" },
+  { id: "3", memberName: "Mike Wilson", checkIn: "07:50", checkOut: "09:20", date: "2025-01-15", status: "present", duration: "1h 30m" },
+  { id: "4", memberName: "Emily Davis", checkIn: "08:05", checkOut: null, date: "2025-01-15", status: "present", duration: "Ongoing" },
+  { id: "5", memberName: "James Brown", checkIn: "08:30", checkOut: "09:00", date: "2025-01-14", status: "late", duration: "30m" },
+];
+
+const STATUS_BADGE: Record<string, string> = {
+  present: "bg-green-100 text-green-800",
+  absent: "bg-red-100 text-red-800",
+  late: "bg-yellow-100 text-yellow-800",
+};
+
+export function AttendanceTable() {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [dateFilter, setDateFilter] = useState("");
+  const [sortField, setSortField] = useState<keyof AttendanceRecord>("date");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
+
+  const filtered = useMemo(() => {
+    let result = [...MOCK_DATA];
+    if (search) result = result.filter((r) => r.memberName.toLowerCase().includes(search.toLowerCase()));
+    if (statusFilter !== "all") result = result.filter((r) => r.status === statusFilter);
+    if (dateFilter) result = result.filter((r) => r.date === dateFilter);
+    result.sort((a, b) => {
+      const aVal = String(a[sortField]);
+      const bVal = String(b[sortField]);
+      return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+    });
+    return result;
+  }, [search, statusFilter, dateFilter, sortField, sortDir]);
+
+  const toggleSort = (field: keyof AttendanceRecord) => {
+    if (sortField === field) setSortDir((d) => (d === "asc" ? "desc" : "asc"));
+    else { setSortField(field); setSortDir("asc"); }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <input type="text" placeholder="Search members..." value={search} onChange={(e) => setSearch(e.target.value)} className="px-4 py-2 border rounded-lg text-sm flex-1 min-w-[200px]" />
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-4 py-2 border rounded-lg text-sm">
+          <option value="all">All Status</option>
+          <option value="present">Present</option>
+          <option value="late">Late</option>
+          <option value="absent">Absent</option>
+        </select>
+        <input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} className="px-4 py-2 border rounded-lg text-sm" />
+      </div>
+      <div className="border rounded-lg overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              {[{ key: "memberName", label: "Member" }, { key: "date", label: "Date" }, { key: "checkIn", label: "Check In" }, { key: "checkOut", label: "Check Out" }, { key: "duration", label: "Duration" }, { key: "status", label: "Status" }].map((col) => (
+                <th key={col.key} onClick={() => toggleSort(col.key as keyof AttendanceRecord)} className="text-left px-4 py-3 font-medium text-gray-600 cursor-pointer hover:bg-gray-100">
+                  {col.label} {sortField === col.key ? (sortDir === "asc" ? "↑" : "↓") : ""}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((r) => (
+              <tr key={r.id} className="border-t hover:bg-gray-50">
+                <td className="px-4 py-3 font-medium">{r.memberName}</td>
+                <td className="px-4 py-3 text-gray-600">{r.date}</td>
+                <td className="px-4 py-3">{r.checkIn}</td>
+                <td className="px-4 py-3">{r.checkOut || "—"}</td>
+                <td className="px-4 py-3 text-gray-600">{r.duration}</td>
+                <td className="px-4 py-3"><span className={\`px-2 py-1 rounded-full text-xs font-medium \${STATUS_BADGE[r.status]}\`}>{r.status}</span></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-sm text-gray-500">Showing {filtered.length} of {MOCK_DATA.length} records</p>
+    </div>
+  );
+}
+`;
+}
+
+function genMemberTable(): string {
+  return `"use client";
+import { useState, useMemo } from "react";
+
+interface Member {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  membershipType: "basic" | "premium" | "vip";
+  status: "active" | "inactive" | "expired";
+  joinDate: string;
+  lastVisit: string;
+}
+
+const MOCK_MEMBERS: Member[] = [
+  { id: "1", name: "John Smith", email: "john@email.com", phone: "555-0101", membershipType: "premium", status: "active", joinDate: "2024-06-15", lastVisit: "2025-01-15" },
+  { id: "2", name: "Sarah Johnson", email: "sarah@email.com", phone: "555-0102", membershipType: "vip", status: "active", joinDate: "2024-03-10", lastVisit: "2025-01-14" },
+  { id: "3", name: "Mike Wilson", email: "mike@email.com", phone: "555-0103", membershipType: "basic", status: "inactive", joinDate: "2024-09-01", lastVisit: "2024-12-20" },
+  { id: "4", name: "Emily Davis", email: "emily@email.com", phone: "555-0104", membershipType: "premium", status: "active", joinDate: "2024-01-20", lastVisit: "2025-01-15" },
+  { id: "5", name: "James Brown", email: "james@email.com", phone: "555-0105", membershipType: "basic", status: "expired", joinDate: "2023-11-05", lastVisit: "2024-08-10" },
+];
+
+const STATUS_COLORS: Record<string, string> = { active: "bg-green-100 text-green-800", inactive: "bg-gray-100 text-gray-800", expired: "bg-red-100 text-red-800" };
+const PLAN_COLORS: Record<string, string> = { basic: "bg-blue-100 text-blue-800", premium: "bg-purple-100 text-purple-800", vip: "bg-amber-100 text-amber-800" };
+
+export function MemberTable() {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [planFilter, setPlanFilter] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const perPage = 10;
+
+  const filtered = useMemo(() => {
+    let result = [...MOCK_MEMBERS];
+    if (search) result = result.filter((m) => m.name.toLowerCase().includes(search.toLowerCase()) || m.email.toLowerCase().includes(search.toLowerCase()));
+    if (statusFilter !== "all") result = result.filter((m) => m.status === statusFilter);
+    if (planFilter !== "all") result = result.filter((m) => m.membershipType === planFilter);
+    return result;
+  }, [search, statusFilter, planFilter]);
+
+  const paginated = filtered.slice((currentPage - 1) * perPage, currentPage * perPage);
+  const totalPages = Math.ceil(filtered.length / perPage);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <input type="text" placeholder="Search by name or email..." value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }} className="px-4 py-2 border rounded-lg text-sm flex-1 min-w-[200px]" />
+        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }} className="px-4 py-2 border rounded-lg text-sm">
+          <option value="all">All Status</option>
+          <option value="active">Active</option>
+          <option value="inactive">Inactive</option>
+          <option value="expired">Expired</option>
+        </select>
+        <select value={planFilter} onChange={(e) => { setPlanFilter(e.target.value); setCurrentPage(1); }} className="px-4 py-2 border rounded-lg text-sm">
+          <option value="all">All Plans</option>
+          <option value="basic">Basic</option>
+          <option value="premium">Premium</option>
+          <option value="vip">VIP</option>
+        </select>
+      </div>
+      <div className="border rounded-lg overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Member</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Contact</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Plan</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Joined</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Last Visit</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {paginated.map((m) => (
+              <tr key={m.id} className="border-t hover:bg-gray-50">
+                <td className="px-4 py-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">{m.name.split(" ").map((n) => n[0]).join("")}</div>
+                    <span className="font-medium">{m.name}</span>
+                  </div>
+                </td>
+                <td className="px-4 py-3 text-gray-600">{m.email}</td>
+                <td className="px-4 py-3"><span className={\`px-2 py-1 rounded-full text-xs font-medium \${PLAN_COLORS[m.membershipType]}\`}>{m.membershipType}</span></td>
+                <td className="px-4 py-3"><span className={\`px-2 py-1 rounded-full text-xs font-medium \${STATUS_COLORS[m.status]}\`}>{m.status}</span></td>
+                <td className="px-4 py-3 text-gray-600">{m.joinDate}</td>
+                <td className="px-4 py-3 text-gray-600">{m.lastVisit}</td>
+                <td className="px-4 py-3">
+                  <div className="flex gap-2">
+                    <button className="text-blue-600 hover:text-blue-800 text-xs">Edit</button>
+                    <button className="text-red-600 hover:text-red-800 text-xs">Remove</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {totalPages > 1 && (
+        <div className="flex justify-between items-center">
+          <p className="text-sm text-gray-500">Showing {(currentPage - 1) * perPage + 1}-{Math.min(currentPage * perPage, filtered.length)} of {filtered.length}</p>
+          <div className="flex gap-1">
+            <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 rounded border text-sm disabled:opacity-50">Prev</button>
+            <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 rounded border text-sm disabled:opacity-50">Next</button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+`;
+}
+
+function genLeadPipeline(): string {
+  return `"use client";
+import { useState } from "react";
+
+interface Lead {
+  id: string;
+  name: string;
+  email: string;
+  value: number;
+  stage: "new" | "contacted" | "qualified" | "proposal" | "closed-won" | "closed-lost";
+  source: string;
+}
+
+const STAGES = [
+  { id: "new", label: "New Leads", color: "bg-blue-500" },
+  { id: "contacted", label: "Contacted", color: "bg-yellow-500" },
+  { id: "qualified", label: "Qualified", color: "bg-purple-500" },
+  { id: "proposal", label: "Proposal", color: "bg-orange-500" },
+  { id: "closed-won", label: "Closed Won", color: "bg-green-500" },
+  { id: "closed-lost", label: "Closed Lost", color: "bg-red-500" },
+];
+
+const MOCK_LEADS: Lead[] = [
+  { id: "1", name: "Acme Corp", email: "info@acme.com", value: 15000, stage: "new", source: "Website" },
+  { id: "2", name: "TechStart Inc", email: "hello@techstart.io", value: 8500, stage: "contacted", source: "Referral" },
+  { id: "3", name: "Global Solutions", email: "contact@globalsol.com", value: 22000, stage: "qualified", source: "LinkedIn" },
+  { id: "4", name: "NextGen Labs", email: "sales@nextgen.dev", value: 12000, stage: "proposal", source: "Cold Email" },
+  { id: "5", name: "Prime Holdings", email: "info@primeholdings.com", value: 35000, stage: "closed-won", source: "Conference" },
+  { id: "6", name: "SkyHigh Media", email: "team@skyhigh.co", value: 6000, stage: "new", source: "Google Ads" },
+  { id: "7", name: "OceanTrade", email: "biz@oceantrade.com", value: 18000, stage: "closed-lost", source: "Cold Call" },
+];
+
+export function LeadPipeline() {
+  const [leads, setLeads] = useState<Lead[]>(MOCK_LEADS);
+  const [draggedLead, setDraggedLead] = useState<Lead | null>(null);
+
+  const moveLead = (leadId: string, newStage: Lead["stage"]) => {
+    setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, stage: newStage } : l)));
+  };
+
+  const totalValue = leads.filter((l) => l.stage !== "closed-lost").reduce((sum, l) => sum + l.value, 0);
+  const wonValue = leads.filter((l) => l.stage === "closed-won").reduce((sum, l) => sum + l.value, 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-4 mb-4">
+        <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+          <p className="text-xs text-blue-600">Total Pipeline</p>
+          <p className="text-xl font-bold text-blue-700">\${totalValue.toLocaleString()}</p>
+        </div>
+        <div className="p-3 rounded-lg bg-green-50 border border-green-200">
+          <p className="text-xs text-green-600">Won Deals</p>
+          <p className="text-xl font-bold text-green-700">\${wonValue.toLocaleString()}</p>
+        </div>
+        <div className="p-3 rounded-lg bg-purple-50 border border-purple-200">
+          <p className="text-xs text-purple-600">Win Rate</p>
+          <p className="text-xl font-bold text-purple-700">{leads.length > 0 ? Math.round((leads.filter((l) => l.stage === "closed-won").length / leads.length) * 100) : 0}%</p>
+        </div>
+      </div>
+      <div className="flex gap-4 overflow-x-auto pb-4">
+        {STAGES.map((stage) => {
+          const stageLeads = leads.filter((l) => l.stage === stage.id);
+          return (
+            <div key={stage.id} className="min-w-[250px] flex-1">
+              <div className="flex items-center gap-2 mb-3">
+                <div className={\`w-2 h-2 rounded-full \${stage.color}\`} />
+                <h3 className="font-medium text-sm">{stage.label}</h3>
+                <span className="text-xs text-gray-500 bg-gray-100 px-1.5 rounded">{stageLeads.length}</span>
+              </div>
+              <div
+                className="space-y-2 min-h-[200px] p-2 rounded-lg bg-gray-50 border-2 border-dashed border-gray-200"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  if (draggedLead) moveLead(draggedLead.id, stage.id as Lead["stage"]);
+                  setDraggedLead(null);
+                }}
+              >
+                {stageLeads.map((lead) => (
+                  <div
+                    key={lead.id}
+                    draggable
+                    onDragStart={() => setDraggedLead(lead)}
+                    className="bg-white p-3 rounded-lg border shadow-sm cursor-grab hover:shadow-md transition-shadow"
+                  >
+                    <p className="font-medium text-sm">{lead.name}</p>
+                    <p className="text-xs text-gray-500 mt-1">{lead.email}</p>
+                    <div className="flex justify-between items-center mt-2">
+                      <span className="text-sm font-semibold text-green-600">\${lead.value.toLocaleString()}</span>
+                      <span className="text-xs text-gray-400">{lead.source}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+`;
+}
+
+function genRevenueChart(): string {
+  return `"use client";
+import { useState, useMemo } from "react";
+
+const MOCK_DATA = [
+  { month: "Jan", revenue: 12500, expenses: 8200 },
+  { month: "Feb", revenue: 15800, expenses: 9100 },
+  { month: "Mar", revenue: 18200, expenses: 10500 },
+  { month: "Apr", revenue: 14600, expenses: 8800 },
+  { month: "May", revenue: 21300, expenses: 11200 },
+  { month: "Jun", revenue: 19800, expenses: 10800 },
+  { month: "Jul", revenue: 23500, expenses: 12000 },
+  { month: "Aug", revenue: 20100, expenses: 10500 },
+  { month: "Sep", revenue: 24800, expenses: 13000 },
+  { month: "Oct", revenue: 22400, expenses: 11800 },
+  { month: "Nov", revenue: 26100, expenses: 13500 },
+  { month: "Dec", revenue: 28900, expenses: 14200 },
+];
+
+export function RevenueChart() {
+  const [period, setPeriod] = useState<"monthly" | "quarterly" | "yearly">("monthly");
+  const [showExpenses, setShowExpenses] = useState(true);
+
+  const chartData = useMemo(() => {
+    if (period === "quarterly") {
+      const quarters: { label: string; revenue: number; expenses: number }[] = [];
+      for (let i = 0; i < MOCK_DATA.length; i += 3) {
+        const q = MOCK_DATA.slice(i, i + 3);
+        quarters.push({
+          label: \`Q\${Math.floor(i / 3) + 1}\`,
+          revenue: q.reduce((s, d) => s + d.revenue, 0),
+          expenses: q.reduce((s, d) => s + d.expenses, 0),
+        });
+      }
+      return quarters;
+    }
+    return MOCK_DATA.map((d) => ({ label: d.month, revenue: d.revenue, expenses: d.expenses }));
+  }, [period]);
+
+  const maxValue = Math.max(...chartData.map((d) => Math.max(d.revenue, showExpenses ? d.expenses : 0)));
+  const totalRevenue = chartData.reduce((s, d) => s + d.revenue, 0);
+  const totalExpenses = chartData.reduce((s, d) => s + d.expenses, 0);
+  const profit = totalRevenue - totalExpenses;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <div className="flex gap-2">
+          {(["monthly", "quarterly", "yearly"] as const).map((p) => (
+            <button key={p} onClick={() => setPeriod(p)} className={\`px-3 py-1 rounded-lg text-sm \${period === p ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}\`}>{p.charAt(0).toUpperCase() + p.slice(1)}</button>
+          ))}
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input type="checkbox" checked={showExpenses} onChange={(e) => setShowExpenses(e.target.checked)} className="rounded" />
+          Show Expenses
+        </label>
+      </div>
+      <div className="flex gap-4 mb-4">
+        <div className="p-3 rounded-lg bg-green-50 border border-green-200 flex-1">
+          <p className="text-xs text-green-600">Total Revenue</p>
+          <p className="text-xl font-bold text-green-700">\${totalRevenue.toLocaleString()}</p>
+        </div>
+        <div className="p-3 rounded-lg bg-red-50 border border-red-200 flex-1">
+          <p className="text-xs text-red-600">Total Expenses</p>
+          <p className="text-xl font-bold text-red-700">\${totalExpenses.toLocaleString()}</p>
+        </div>
+        <div className="p-3 rounded-lg bg-blue-50 border border-blue-200 flex-1">
+          <p className="text-xs text-blue-600">Net Profit</p>
+          <p className="text-xl font-bold text-blue-700">\${profit.toLocaleString()}</p>
+        </div>
+      </div>
+      <div className="border rounded-lg p-4">
+        <div className="flex items-end gap-2 h-48">
+          {chartData.map((d) => (
+            <div key={d.label} className="flex-1 flex flex-col items-center gap-1">
+              <div className="w-full flex gap-0.5 items-end" style={{ height: "160px" }}>
+                <div className="flex-1 bg-green-500 rounded-t" style={{ height: \`\${(d.revenue / maxValue) * 100}%\` }} title={\`Revenue: \${d.revenue.toLocaleString()}\`} />
+                {showExpenses && (
+                  <div className="flex-1 bg-red-400 rounded-t" style={{ height: \`\${(d.expenses / maxValue) * 100}%\` }} title={\`Expenses: \${d.expenses.toLocaleString()}\`} />
+                )}
+              </div>
+              <span className="text-xs text-gray-500">{d.label}</span>
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-center gap-4 mt-3">
+          <div className="flex items-center gap-1"><div className="w-3 h-3 bg-green-500 rounded" /><span className="text-xs text-gray-600">Revenue</span></div>
+          {showExpenses && <div className="flex items-center gap-1"><div className="w-3 h-3 bg-red-400 rounded" /><span className="text-xs text-gray-600">Expenses</span></div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+`;
+}
+
+function genInvoiceTable(): string {
+  return `"use client";
+import { useState, useMemo } from "react";
+
+interface Invoice {
+  id: string;
+  memberName: string;
+  amount: number;
+  status: "paid" | "pending" | "overdue";
+  dueDate: string;
+  paidDate: string | null;
+  plan: string;
+}
+
+const MOCK_INVOICES: Invoice[] = [
+  { id: "INV-001", memberName: "John Smith", amount: 49.99, status: "paid", dueDate: "2025-01-01", paidDate: "2024-12-28", plan: "Premium" },
+  { id: "INV-002", memberName: "Sarah Johnson", amount: 99.99, status: "paid", dueDate: "2025-01-01", paidDate: "2025-01-01", plan: "VIP" },
+  { id: "INV-003", memberName: "Mike Wilson", amount: 29.99, status: "overdue", dueDate: "2025-01-01", paidDate: null, plan: "Basic" },
+  { id: "INV-004", memberName: "Emily Davis", amount: 49.99, status: "pending", dueDate: "2025-02-01", paidDate: null, plan: "Premium" },
+  { id: "INV-005", memberName: "James Brown", amount: 29.99, status: "paid", dueDate: "2025-01-01", paidDate: "2024-12-30", plan: "Basic" },
+];
+
+const STATUS_COLORS: Record<string, string> = { paid: "bg-green-100 text-green-800", pending: "bg-yellow-100 text-yellow-800", overdue: "bg-red-100 text-red-800" };
+
+export function InvoiceTable() {
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [search, setSearch] = useState("");
+
+  const filtered = useMemo(() => {
+    let result = [...MOCK_INVOICES];
+    if (statusFilter !== "all") result = result.filter((i) => i.status === statusFilter);
+    if (search) result = result.filter((i) => i.memberName.toLowerCase().includes(search.toLowerCase()));
+    return result;
+  }, [statusFilter, search]);
+
+  const totalPaid = MOCK_INVOICES.filter((i) => i.status === "paid").reduce((s, i) => s + i.amount, 0);
+  const totalPending = MOCK_INVOICES.filter((i) => i.status === "pending" || i.status === "overdue").reduce((s, i) => s + i.amount, 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-4">
+        <div className="p-3 rounded-lg bg-green-50 border border-green-200 flex-1">
+          <p className="text-xs text-green-600">Total Paid</p>
+          <p className="text-xl font-bold text-green-700">\${totalPaid.toFixed(2)}</p>
+        </div>
+        <div className="p-3 rounded-lg bg-yellow-50 border border-yellow-200 flex-1">
+          <p className="text-xs text-yellow-600">Pending/Overdue</p>
+          <p className="text-xl font-bold text-yellow-700">\${totalPending.toFixed(2)}</p>
+        </div>
+      </div>
+      <div className="flex gap-3">
+        <input type="text" placeholder="Search member..." value={search} onChange={(e) => setSearch(e.target.value)} className="px-4 py-2 border rounded-lg text-sm flex-1" />
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-4 py-2 border rounded-lg text-sm">
+          <option value="all">All Status</option>
+          <option value="paid">Paid</option>
+          <option value="pending">Pending</option>
+          <option value="overdue">Overdue</option>
+        </select>
+      </div>
+      <div className="border rounded-lg overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Invoice</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Member</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Plan</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Amount</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Due Date</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((inv) => (
+              <tr key={inv.id} className="border-t hover:bg-gray-50">
+                <td className="px-4 py-3 font-mono text-xs">{inv.id}</td>
+                <td className="px-4 py-3 font-medium">{inv.memberName}</td>
+                <td className="px-4 py-3 text-gray-600">{inv.plan}</td>
+                <td className="px-4 py-3 font-semibold">\${inv.amount.toFixed(2)}</td>
+                <td className="px-4 py-3 text-gray-600">{inv.dueDate}</td>
+                <td className="px-4 py-3"><span className={\`px-2 py-1 rounded-full text-xs font-medium \${STATUS_COLORS[inv.status]}\`}>{inv.status}</span></td>
+                <td className="px-4 py-3">
+                  <div className="flex gap-2">
+                    {inv.status !== "paid" && <button className="text-green-600 hover:text-green-800 text-xs">Mark Paid</button>}
+                    <button className="text-blue-600 hover:text-blue-800 text-xs">View</button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+`;
+}
+
+function genClassSchedule(): string {
+  return `"use client";
+import { useState } from "react";
+
+interface ClassItem {
+  id: string;
+  name: string;
+  instructor: string;
+  day: string;
+  time: string;
+  duration: string;
+  capacity: number;
+  booked: number;
+  category: string;
+}
+
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+const MOCK_CLASSES: ClassItem[] = [
+  { id: "1", name: "Morning Yoga", instructor: "Lisa Chen", day: "Monday", time: "07:00", duration: "60min", capacity: 20, booked: 15, category: "Yoga" },
+  { id: "2", name: "HIIT Blast", instructor: "Mike Torres", day: "Monday", time: "08:00", duration: "45min", capacity: 25, booked: 22, category: "Cardio" },
+  { id: "3", name: "Strength Training", instructor: "James Park", day: "Monday", time: "10:00", duration: "60min", capacity: 15, booked: 12, category: "Strength" },
+  { id: "4", name: "Spin Class", instructor: "Sarah Kim", day: "Tuesday", time: "07:00", duration: "45min", capacity: 30, booked: 28, category: "Cardio" },
+  { id: "5", name: "Pilates", instructor: "Lisa Chen", day: "Tuesday", time: "09:00", duration: "60min", capacity: 18, booked: 10, category: "Flexibility" },
+  { id: "6", name: "Boxing", instructor: "Mike Torres", day: "Wednesday", time: "18:00", duration: "60min", capacity: 16, booked: 14, category: "Combat" },
+  { id: "7", name: "CrossFit", instructor: "James Park", day: "Thursday", time: "06:30", duration: "60min", capacity: 20, booked: 19, category: "Functional" },
+  { id: "8", name: "Zumba", instructor: "Sarah Kim", day: "Friday", time: "17:00", duration: "45min", capacity: 30, booked: 25, category: "Dance" },
+];
+
+const CATEGORY_COLORS: Record<string, string> = { Yoga: "bg-purple-100 text-purple-800", Cardio: "bg-red-100 text-red-800", Strength: "bg-blue-100 text-blue-800", Flexibility: "bg-green-100 text-green-800", Combat: "bg-orange-100 text-orange-800", Functional: "bg-yellow-100 text-yellow-800", Dance: "bg-pink-100 text-pink-800" };
+
+export function ClassSchedule() {
+  const [selectedDay, setSelectedDay] = useState("Monday");
+  const [selectedCategory, setSelectedCategory] = useState("all");
+
+  const dayClasses = MOCK_CLASSES.filter(
+    (c) => c.day === selectedDay && (selectedCategory === "all" || c.category === selectedCategory)
+  );
+
+  const categories = [...new Set(MOCK_CLASSES.map((c) => c.category))];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2 overflow-x-auto pb-2">
+        {DAYS.map((day) => (
+          <button key={day} onClick={() => setSelectedDay(day)} className={\`px-4 py-2 rounded-lg text-sm whitespace-nowrap \${selectedDay === day ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}\`}>{day}</button>
+        ))}
+      </div>
+      <div className="flex gap-2">
+        <button onClick={() => setSelectedCategory("all")} className={\`px-3 py-1 rounded-full text-xs \${selectedCategory === "all" ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-600"}\`}>All</button>
+        {categories.map((cat) => (
+          <button key={cat} onClick={() => setSelectedCategory(cat)} className={\`px-3 py-1 rounded-full text-xs \${selectedCategory === cat ? "bg-gray-800 text-white" : "bg-gray-100 text-gray-600"}\`}>{cat}</button>
+        ))}
+      </div>
+      <div className="grid gap-3">
+        {dayClasses.map((cls) => {
+          const spotsLeft = cls.capacity - cls.booked;
+          const isFull = spotsLeft === 0;
+          return (
+            <div key={cls.id} className="border rounded-lg p-4 flex justify-between items-center hover:shadow-md transition-shadow">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-semibold">{cls.name}</h3>
+                  <span className={\`px-2 py-0.5 rounded-full text-xs \${CATEGORY_COLORS[cls.category] || "bg-gray-100"}\`}>{cls.category}</span>
+                </div>
+                <p className="text-sm text-gray-600">with {cls.instructor}</p>
+                <p className="text-sm text-gray-500">{cls.time} · {cls.duration}</p>
+              </div>
+              <div className="text-right">
+                <div className={\`text-sm font-medium \${isFull ? "text-red-600" : spotsLeft <= 3 ? "text-orange-600" : "text-green-600"}\`}>
+                  {isFull ? "Full" : \`\${spotsLeft} spots left\`}
+                </div>
+                <button disabled={isFull} className={\`mt-2 px-4 py-1.5 rounded-lg text-sm \${isFull ? "bg-gray-200 text-gray-500 cursor-not-allowed" : "bg-blue-600 text-white hover:bg-blue-700"}\`}>
+                  {isFull ? "Waitlist" : "Book"}
+                </button>
+              </div>
+            </div>
+          );
+        })}
+        {dayClasses.length === 0 && <p className="text-center text-gray-500 py-8">No classes scheduled for {selectedDay}</p>}
+      </div>
+    </div>
+  );
+}
+`;
+}
+
+function genDashboardStats(): string {
+  return `"use client";
+import { useState } from "react";
+
+const MOCK_STATS = {
+  totalMembers: 342,
+  activeToday: 89,
+  revenue: 24850,
+  newLeads: 18,
+  classesBooked: 156,
+  attendanceRate: 78,
+};
+
+const MOCK_ACTIVIVITY = [
+  { id: "1", text: "John Smith checked in", time: "2 min ago", type: "checkin" },
+  { id: "2", text: "New lead: Acme Corp", time: "15 min ago", type: "lead" },
+  { id: "3", text: "Sarah Johnson booked Yoga", time: "30 min ago", type: "booking" },
+  { id: "4", text: "Invoice INV-003 marked overdue", time: "1 hour ago", type: "payment" },
+  { id: "5", text: "Mike Wilson renewed membership", time: "2 hours ago", type: "renewal" },
+];
+
+const ACTIVITY_ICONS: Record<string, string> = { checkin: "🟢", lead: "🔵", booking: "📅", payment: "💰", renewal: "🔄" };
+
+export function DashboardStats() {
+  const [period, setPeriod] = useState<"today" | "week" | "month">("today");
+
+  const stats = [
+    { label: "Total Members", value: MOCK_STATS.totalMembers, change: "+12%", up: true, color: "blue" },
+    { label: "Active Today", value: MOCK_STATS.activeToday, change: "+5%", up: true, color: "green" },
+    { label: "Revenue", value: \`$\${MOCK_STATS.revenue.toLocaleString()}\`, change: "+18%", up: true, color: "purple" },
+    { label: "New Leads", value: MOCK_STATS.newLeads, change: "+3", up: true, color: "amber" },
+    { label: "Classes Booked", value: MOCK_STATS.classesBooked, change: "+22%", up: true, color: "pink" },
+    { label: "Attendance Rate", value: \`\${MOCK_STATS.attendanceRate}%\`, change: "+2%", up: true, color: "emerald" },
+  ];
+
+  const COLOR_MAP: Record<string, string> = {
+    blue: "bg-blue-50 border-blue-200",
+    green: "bg-green-50 border-green-200",
+    purple: "bg-purple-50 border-purple-200",
+    amber: "bg-amber-50 border-amber-200",
+    pink: "bg-pink-50 border-pink-200",
+    emerald: "bg-emerald-50 border-emerald-200",
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-bold">Dashboard</h2>
+        <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
+          {(["today", "week", "month"] as const).map((p) => (
+            <button key={p} onClick={() => setPeriod(p)} className={\`px-3 py-1 rounded-md text-sm \${period === p ? "bg-white shadow text-gray-900" : "text-gray-500"}\`}>{p.charAt(0).toUpperCase() + p.slice(1)}</button>
+          ))}
+        </div>
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {stats.map((s) => (
+          <div key={s.label} className={\`p-4 rounded-xl border \${COLOR_MAP[s.color]}\`}>
+            <p className="text-xs text-gray-600 mb-1">{s.label}</p>
+            <p className="text-2xl font-bold">{s.value}</p>
+            <p className="text-xs text-green-600 mt-1">{s.change} vs last {period}</p>
+          </div>
+        ))}
+      </div>
+      <div className="border rounded-xl p-4">
+        <h3 className="font-semibold mb-3">Recent Activity</h3>
+        <div className="space-y-3">
+          {MOCK_ACTIVITY.map((a) => (
+            <div key={a.id} className="flex items-center gap-3 text-sm">
+              <span>{ACTIVITY_ICONS[a.type]}</span>
+              <span className="flex-1">{a.text}</span>
+              <span className="text-gray-400 text-xs">{a.time}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+`;
+}
+
+function genFilterSidebar(): string {
+  return `"use client";
+import { useState } from "react";
+
+interface FilterState {
+  categories: string[];
+  priceRange: [number, number];
+  brands: string[];
+  ratings: number;
+  inStock: boolean;
+}
+
+interface FilterSidebarProps {
+  onFilter: (filters: FilterState) => void;
+}
+
+const CATEGORIES = ["Supplements", "Protein", "Vitamins", "Pre-Workout", "Recovery", "Accessories"];
+const BRANDS = ["Optimum Nutrition", "MyProtein", "BSN", "Dymatize", "MuscleTech"];
+
+export function FilterSidebar({ onFilter }: FilterSidebarProps) {
+  const [filters, setFilters] = useState<FilterState>({
+    categories: [],
+    priceRange: [0, 200],
+    brands: [],
+    ratings: 0,
+    inStock: false,
+  });
+
+  const updateFilter = <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
+    const newFilters = { ...filters, [key]: value };
+    setFilters(newFilters);
+    onFilter(newFilters);
+  };
+
+  const toggleArrayItem = (arr: string[], item: string) =>
+    arr.includes(item) ? arr.filter((i) => i !== item) : [...arr, item];
+
+  return (
+    <div className="space-y-6 p-4 border rounded-lg bg-white">
+      <h3 className="font-semibold">Filters</h3>
+
+      <div>
+        <h4 className="text-sm font-medium mb-2">Category</h4>
+        <div className="space-y-1">
+          {CATEGORIES.map((cat) => (
+            <label key={cat} className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={filters.categories.includes(cat)} onChange={() => updateFilter("categories", toggleArrayItem(filters.categories, cat))} className="rounded" />
+              {cat}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h4 className="text-sm font-medium mb-2">Price Range</h4>
+        <div className="flex gap-2 items-center">
+          <input type="number" value={filters.priceRange[0]} onChange={(e) => updateFilter("priceRange", [Number(e.target.value), filters.priceRange[1]])} className="w-20 px-2 py-1 border rounded text-sm" min={0} />
+          <span className="text-gray-400">—</span>
+          <input type="number" value={filters.priceRange[1]} onChange={(e) => updateFilter("priceRange", [filters.priceRange[0], Number(e.target.value)])} className="w-20 px-2 py-1 border rounded text-sm" min={0} />
+        </div>
+      </div>
+
+      <div>
+        <h4 className="text-sm font-medium mb-2">Brand</h4>
+        <div className="space-y-1">
+          {BRANDS.map((brand) => (
+            <label key={brand} className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={filters.brands.includes(brand)} onChange={() => updateFilter("brands", toggleArrayItem(filters.brands, brand))} className="rounded" />
+              {brand}
+            </label>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <h4 className="text-sm font-medium mb-2">Minimum Rating</h4>
+        <div className="flex gap-1">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button key={star} onClick={() => updateFilter("ratings", filters.ratings === star ? 0 : star)} className={\`text-lg \${star <= filters.ratings ? "text-yellow-400" : "text-gray-300"}\`}>★</button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input type="checkbox" checked={filters.inStock} onChange={(e) => updateFilter("inStock", e.target.checked)} className="rounded" />
+          In Stock Only
+        </label>
+      </div>
+
+      <button onClick={() => setFilters({ categories: [], priceRange: [0, 200], brands: [], ratings: 0, inStock: false })} className="w-full py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">
+        Clear All Filters
+      </button>
+    </div>
+  );
+}
+`;
+}
+
+function genProductGallery(): string {
+  return `"use client";
+import { useState } from "react";
+
+const MOCK_IMAGES = [
+  { id: "1", url: "/api/placeholder/600/600", alt: "Product front view" },
+  { id: "2", url: "/api/placeholder/600/600", alt: "Product side view" },
+  { id: "3", url: "/api/placeholder/600/600", alt: "Product back view" },
+  { id: "4", url: "/api/placeholder/600/600", alt: "Nutrition label" },
+];
+
+export function ProductGallery() {
+  const [activeImage, setActiveImage] = useState(0);
+
+  return (
+    <div className="space-y-3">
+      <div className="aspect-square rounded-xl overflow-hidden border bg-gray-100">
+        <img src={MOCK_IMAGES[activeImage].url} alt={MOCK_IMAGES[activeImage].alt} className="w-full h-full object-cover" />
+      </div>
+      <div className="grid grid-cols-4 gap-2">
+        {MOCK_IMAGES.map((img, i) => (
+          <button key={img.id} onClick={() => setActiveImage(i)} className={\`aspect-square rounded-lg overflow-hidden border-2 transition-colors \${i === activeImage ? "border-blue-500" : "border-transparent hover:border-gray-300"}\`}>
+            <img src={img.url} alt={img.alt} className="w-full h-full object-cover" />
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+`;
+}
+
 const COMPONENT_GENERATORS: Record<string, (prompt?: string) => string> = {
   Header: () => genHeader("Project"),
   Footer: genFooter,
@@ -1195,6 +2189,17 @@ const COMPONENT_GENERATORS: Record<string, (prompt?: string) => string> = {
   DashboardContent: genDashboardContent,
   LoginForm: genLoginForm,
   RegisterForm: genRegisterForm,
+  // Domain-specific generators (REAL implementations)
+  AttendanceCalendar: genAttendanceCalendar,
+  AttendanceTable: genAttendanceTable,
+  MemberTable: genMemberTable,
+  LeadPipeline: genLeadPipeline,
+  RevenueChart: genRevenueChart,
+  InvoiceTable: genInvoiceTable,
+  ClassSchedule: genClassSchedule,
+  DashboardStats: genDashboardStats,
+  FilterSidebar: genFilterSidebar,
+  ProductGallery: genProductGallery,
 };
 
 async function generateFiles(
@@ -1228,6 +2233,45 @@ async function generateFiles(
 
   // ═══ ARCHITECTURE-DRIVEN GENERATION ═══
   if (!architecture) return files;
+
+  // ═══ DOMAIN BLUEPRINT OVERLAY ═══
+  // Detect blueprint and merge its required components into the architecture
+  const blueprint = detectBlueprint(prompt);
+  if (blueprint) {
+    // Add blueprint-specific pages that aren't in architecture yet
+    for (const bpPage of blueprint.requiredPages) {
+      const existingRoute = architecture.routes.find(r => r.path === bpPage.route);
+      if (existingRoute) {
+        // Merge blueprint components into existing route
+        for (const compName of bpPage.components) {
+          if (!existingRoute.components.includes(compName)) {
+            existingRoute.components.push(compName);
+          }
+        }
+      } else {
+        // Add new route from blueprint
+        architecture.routes.push({
+          path: bpPage.route,
+          name: bpPage.name,
+          components: bpPage.components,
+          description: `${bpPage.name} page`,
+        });
+      }
+    }
+
+    // Add blueprint-specific components to architecture
+    for (const bpComp of blueprint.requiredComponents) {
+      const exists = architecture.components.some(c => c.name === bpComp.name);
+      if (!exists) {
+        architecture.components.push({
+          name: bpComp.name,
+          type: "feature",
+          props: [],
+          description: bpComp.description,
+        });
+      }
+    }
+  }
 
   const navItems = architecture.navigation.map(n => n.label);
 
@@ -1659,9 +2703,20 @@ export async function runGeneration(
     const qualityScore = calculateQualityScore(files);
     const buildValidation = validateBuild(files);
 
-    // Emit requirement coverage report
+    // Calculate component depth score for honest quality assessment
+    const depthResult = calculateComponentDepthScore(files);
+    if (depthResult.placeholderCount > 0) {
+      emit("thinking", { message: `Found ${depthResult.placeholderCount} placeholder components (avg depth: ${Math.round(depthResult.avgScore)}%)` });
+    }
+
+    // Use architecture-based quality scores with component depth
+    let qualityScores: QualityScores | null = null;
     if (requirements && architecture) {
       const coverage = validateRequirements(files, requirements, architecture);
+      qualityScores = calculateQualityScores(
+        files, coverage, buildValidation.buildSuccess,
+        depthResult.score, depthResult.placeholderCount
+      );
       emit("coverage_report", {
         overallCoverage: coverage.overallCoverage,
         passed: coverage.passed,
@@ -1671,6 +2726,8 @@ export async function runGeneration(
         routes: coverage.routes,
         entities: coverage.entities,
         missingItems: coverage.missingItems,
+        qualityScores,
+        componentDepth: depthResult,
       });
     }
 

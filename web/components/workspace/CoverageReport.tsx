@@ -1,5 +1,5 @@
 "use client";
-import { CheckCircle2, XCircle, ChevronDown, ChevronRight, FileText, Layers, Puzzle, Route, Database } from "lucide-react";
+import { CheckCircle2, XCircle, ChevronDown, ChevronRight, FileText, Layers, Puzzle, Route, Database, BarChart3, AlertTriangle } from "lucide-react";
 import { useState } from "react";
 import type { CoverageReport as CoverageReportType, CoverageCategory } from "./types";
 
@@ -83,8 +83,32 @@ function CategoryRow({ name, category }: { name: string; category: CoverageCateg
   );
 }
 
+function ScoreBar({ label, score, maxScore = 100 }: { label: string; score: number; maxScore?: number }) {
+  const pct = Math.round((score / maxScore) * 100);
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-[10px] text-zinc-400 w-16 shrink-0">{label}</span>
+      <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${
+            pct >= 80 ? "bg-green-500" : pct >= 50 ? "bg-amber-500" : "bg-red-500"
+          }`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className={`text-[10px] font-medium w-8 text-right ${
+        pct >= 80 ? "text-green-400" : pct >= 50 ? "text-amber-400" : "text-red-400"
+      }`}>
+        {pct}%
+      </span>
+    </div>
+  );
+}
+
 export function CoverageReport({ report }: CoverageReportProps) {
   const pct = Math.round(report.overallCoverage * 100);
+  const qs = report.qualityScores;
+  const depth = report.componentDepth;
 
   return (
     <div className="p-3 space-y-3">
@@ -110,6 +134,46 @@ export function CoverageReport({ report }: CoverageReportProps) {
           style={{ width: `${pct}%` }}
         />
       </div>
+
+      {/* Quality Scores Breakdown (honest) */}
+      {qs && (
+        <div className="p-2 rounded-lg bg-white/[0.02] border border-white/5 space-y-1.5">
+          <div className="flex items-center gap-1.5 mb-2">
+            <BarChart3 className="w-3 h-3 text-zinc-400" />
+            <span className="text-[10px] font-medium text-zinc-300">Quality Breakdown</span>
+          </div>
+          <ScoreBar label="Coverage" score={qs.coverage} />
+          <ScoreBar label="Structure" score={qs.architecture} />
+          <ScoreBar label="Features" score={qs.feature} />
+          <ScoreBar label="Build" score={qs.build} />
+          <ScoreBar label="Depth" score={qs.ux} />
+          <div className="border-t border-white/5 pt-1.5 mt-1.5">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-medium text-zinc-300">Overall Quality</span>
+              <span className={`text-xs font-bold ${
+                qs.overall >= 80 ? "text-green-400" : qs.overall >= 50 ? "text-amber-400" : "text-red-400"
+              }`}>
+                {qs.overall}%
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Component Depth Warning */}
+      {depth && depth.placeholderCount > 0 && (
+        <div className="p-2 rounded-lg bg-amber-500/5 border border-amber-500/10">
+          <div className="flex items-center gap-1.5">
+            <AlertTriangle className="w-3 h-3 text-amber-400" />
+            <span className="text-[10px] text-amber-400 font-medium">
+              {depth.placeholderCount} placeholder component{depth.placeholderCount > 1 ? "s" : ""} detected
+            </span>
+          </div>
+          <p className="text-[10px] text-amber-400/60 mt-0.5">
+            Avg depth: {Math.round(depth.avgScore)}% — components need real UI/logic
+          </p>
+        </div>
+      )}
 
       {/* Category breakdown */}
       <div className="space-y-1.5">

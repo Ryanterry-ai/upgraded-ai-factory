@@ -56,6 +56,7 @@ function WorkspacePage() {
   const [selectedFactory, setSelectedFactory] = useState(initialFactory);
   const eventSourceRef = useRef<EventSource | null>(null);
   const abortRef = useRef<boolean>(false);
+  const hasAutoStarted = useRef(false);
 
   const updateState = useCallback((updates: Partial<WorkspaceState> | ((prev: WorkspaceState) => Partial<WorkspaceState>)) => {
     setState((prev) => {
@@ -73,95 +74,9 @@ function WorkspacePage() {
     setState((prev) => ({ ...prev, buildLogs: [...prev.buildLogs, `[${new Date().toLocaleTimeString()}] ${log}`] }));
   }, []);
 
-  const startGeneration = useCallback(async (prompt: string) => {
-    if (!prompt.trim()) return;
-    abortRef.current = false;
-
-    const userMsg: ChatMessage = {
-      id: crypto.randomUUID(), role: "user", content: prompt, timestamp: Date.now(),
-    };
-
-    // If we already have a project, do iterative editing
-    const isEdit = state.projectId && state.status === "completed";
-    const apiUrl = isEdit
-      ? `/api/projects/${state.projectId}/edit`
-      : "/api/generate";
-    const body = isEdit
-      ? { instruction: prompt, files: state.files }
-      : { prompt, factory: selectedFactory || undefined };
-
-    updateState({
-      status: "generating",
-      chatMessages: [...state.chatMessages, userMsg],
-      agentEvents: isEdit ? state.agentEvents : [],
-      buildLogs: isEdit ? state.buildLogs : [],
-      progress: 0,
-      error: null,
-    });
-
-    addBuildLog("Starting generation pipeline...");
-    addAgentEvent({ agent: "Router", action: "Detecting factory type", status: "running" });
-
-    try {
-      const response = await fetch(apiUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Accept": "text/event-stream",
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-      // Handle non-SSE JSON response (fallback)
-      if (!response.headers.get("content-type")?.includes("text/event-stream")) {
-        const json = await response.json();
-        if (json.error) throw new Error(json.error);
-        if (json.files) updateState({ files: json.files });
-        if (json.projectId) updateState({ projectId: json.projectId });
-        updateState({ status: "completed", progress: 100 });
-        addBuildLog("Generation complete (non-streaming)");
-        return;
-      }
-
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let buffer = "";
-
-      if (!reader) throw new Error("No response body");
-
-      addAgentEvent({ agent: "Router", action: "Factory detected", status: "completed" });
-      addBuildLog("Factory type detected. Initializing agents...");
-
-      while (true) {
-        if (abortRef.current) break;
-        const { done, value } = await reader.read();
-        if (done) break;
-        buffer += decoder.decode(value, { stream: true });
-
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-
-        for (const line of lines) {
-          if (line.startsWith("data: ")) {
-            try {
-              const event = JSON.parse(line.slice(6));
-              handleSSEEvent(event);
-            } catch {}
-          }
-        }
-      }
-    } catch (err) {
-      updateState({ status: "error", error: err instanceof Error ? err.message : "Generation failed" });
-      addBuildLog(`Error: ${err instanceof Error ? err.message : "Unknown error"}`);
-    }
-  }, [updateState, addAgentEvent, addBuildLog]);
-
   const handleSSEEvent = useCallback((event: Record<string, unknown>) => {
     switch (event.type) {
       case "thinking":
-        // Show AI thinking as a chat message
         const thinkingMsg: ChatMessage = {
           id: crypto.randomUUID(),
           role: "assistant",
@@ -208,6 +123,8 @@ function WorkspacePage() {
           routes: event.routes as CoverageCategory,
           entities: event.entities as CoverageCategory,
           missingItems: event.missingItems as string[],
+          qualityScores: event.qualityScores as CoverageReport["qualityScores"],
+          componentDepth: event.componentDepth as CoverageReport["componentDepth"],
         };
         updateState({ coverageReport });
         const coveragePct = Math.round((event.overallCoverage as number) * 100);
@@ -236,11 +153,102 @@ function WorkspacePage() {
     }
   }, [updateState, addAgentEvent, addBuildLog]);
 
+  const startGeneration = useCallback(async (prompt: string) => {
+    if (!prompt.trim()) return;
+    abortRef.current = false;
+
+    const userMsg: ChatMessage = {
+      id: crypto.randomUUID(), role: "user", content: prompt, timestamp: Date.now(),
+    };
+
+    const isEdit = state.projectId && state.status === "completed";
+    const apiUrl = isEdit
+      ? `/api/projects/${state.projectId}/edit`
+      : "/api/generate";
+    const body = isEdit
+      ? { instruction: prompt, files: state.files }
+      : { prompt, factory: selectedFactory || undefined };
+
+    updateState({
+      status: "generating",
+      chatMessages: [...state.chatMessages, userMsg],
+      agentEvents: isEdit ? state.agentEvents : [],
+      buildLogs: isEdit ? state.buildLogs : [],
+      progress: 0,
+      error: null,
+    });
+
+    addBuildLog("Starting generation pipeline...");
+    addAgentEvent({ agent: "Router", action: "Detecting factory type", status: "running" });
+
+    try {
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Accept": "text/event-stream" },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      if (!response.headers.get("content-type")?.includes("text/event-stream")) {
+        const json = await response.json();
+        if (json.error) throw new Error(json.error);
+        if (json.files) updateState({ files: json.files });
+        if (json.projectId) updateState({ projectId: json.projectId });
+        updateState({ status: "completed", progress: 100 });
+        addBuildLog("Generation complete (non-streaming)");
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      if (!reader) throw new Error("No response body");
+
+      addAgentEvent({ agent: "Router", action: "Factory detected", status: "completed" });
+      addBuildLog("Factory type detected. Initializing agents...");
+
+      while (true) {
+        if (abortRef.current) break;
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const event = JSON.parse(line.slice(6));
+              handleSSEEvent(event);
+            } catch {}
+          }
+        }
+      }
+    } catch (err) {
+      updateState({ status: "error", error: err instanceof Error ? err.message : "Generation failed" });
+      addBuildLog(`Error: ${err instanceof Error ? err.message : "Unknown error"}`);
+    }
+  }, [updateState, addAgentEvent, addBuildLog, state, selectedFactory, handleSSEEvent]);
+
   const sendMessage = useCallback((msg: string) => {
     if (state.status === "generating") return;
     startGeneration(msg);
     setInputValue("");
   }, [state.status, startGeneration]);
+
+  // Auto-start when navigated from homepage with a prompt
+  useEffect(() => {
+    if (initialPrompt && !hasAutoStarted.current && state.status === "idle") {
+      hasAutoStarted.current = true;
+      const timer = setTimeout(() => {
+        startGeneration(initialPrompt);
+      }, 150);
+      return () => clearTimeout(timer);
+    }
+  }, [initialPrompt, state.status, startGeneration]);
 
   const downloadProject = useCallback(async () => {
     if (!state.projectId) return;
@@ -252,8 +260,6 @@ function WorkspacePage() {
       navigator.clipboard.writeText(`${window.location.origin}/projects/${state.projectId}`);
     }
   }, [state.projectId]);
-
-  // No auto-start — user must click Generate or press Enter
 
   return (
     <div className="h-screen flex flex-col bg-[#09090b] text-white overflow-hidden">
