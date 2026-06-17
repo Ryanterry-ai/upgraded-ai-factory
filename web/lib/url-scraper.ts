@@ -486,7 +486,9 @@ export async function scrapeSite(startUrl: string, maxPages = 50): Promise<Scrap
         html = html.replace(/<head([^>]*)>/i, `<head$1><base href="${currentUrl}">`);
         page.fullHtml = html;
       }
-    } catch {}
+    } catch (err) {
+      console.error(`[Scraper] Failed to fetch full HTML for ${currentUrl}:`, err instanceof Error ? err.message : err);
+    }
 
     pages.push(page);
 

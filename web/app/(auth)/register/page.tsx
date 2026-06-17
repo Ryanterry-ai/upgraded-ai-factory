@@ -27,7 +27,7 @@ export default function RegisterPage() {
 
   if (success) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center px-4">
+      <div className="min-h-screen bg-[#09090b] text-white flex items-center justify-center px-4">
         <div className="absolute inset-0 grid-bg opacity-30" />
         <div className="w-full max-w-sm relative text-center">
           <div className="w-16 h-16 rounded-2xl bg-green-500/10 flex items-center justify-center mx-auto mb-4">
@@ -42,7 +42,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#09090b] text-white flex items-center justify-center px-4">
       <div className="absolute inset-0 grid-bg opacity-30" />
       <div className="w-full max-w-sm relative">
         <div className="text-center mb-8">

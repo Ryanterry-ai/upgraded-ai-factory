@@ -25,7 +25,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#09090b] text-white flex items-center justify-center px-4">
       <div className="absolute inset-0 grid-bg opacity-30" />
       <div className="w-full max-w-sm relative">
         <div className="text-center mb-8">
