@@ -150,7 +150,7 @@ export function analyzeRequirements(prompt: string): RequirementMatrix {
   }
 
   // ─── ALWAYS: HOME PAGE ───
-  pages.push({ id: "page-home", type: "page", name: "Home", description: "Main landing page", required: true, keywords: ["home", "landing", "homepage"] });
+  pages.push({ id: "page-home", type: "page", name: "Home", description: "Main landing page", required: true, route: "/", keywords: ["home", "landing", "homepage"] });
 
   // ─── PAGE DETECTION ───
   const pagePatterns: { pattern: RegExp; name: string; route: string; keywords: string[] }[] = [

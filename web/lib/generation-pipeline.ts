@@ -233,27 +233,37 @@ function genFooter(): string {
 `;
 }
 
-function genHero(prompt: string): string {
+function getHeroContent(prompt: string): { title: string; subtitle: string; cta: string } {
+  const ctx = extractProjectContext(prompt);
   const isUrlPrompt = /^https?:\/\//i.test(prompt.trim()) || /^www\./i.test(prompt.trim());
-  const title = isUrlPrompt
-    ? "Welcome"
-    : prompt.match(/(?:about|for|called?|named?)\s+["']?([^"'.]+)["']?/i)?.[1]?.trim() || "Welcome";
-  const subtitle = isUrlPrompt
-    ? "Loading content from source website..."
-    : prompt.slice(0, 150);
+  if (isUrlPrompt) return { title: "Welcome", subtitle: "Loading content from source website...", cta: "Get Started" };
+  const map: Record<string, { title: string; subtitle: string; cta: string }> = {
+    "health & fitness": { title: "Transform Your Body, Transform Your Life", subtitle: "Personalized fitness programs and expert coaching to help you achieve your health goals.", cta: "Start Your Journey" },
+    "digital marketing": { title: "Grow Your Business With Data-Driven Marketing", subtitle: "We craft strategies that deliver measurable results and accelerate your online growth.", cta: "Get a Free Audit" },
+    "technology": { title: "Innovation That Drives Results", subtitle: "Cutting-edge solutions built for scalability, performance, and the modern web.", cta: "See Our Work" },
+    "ecommerce": { title: "Sell More, Scale Faster", subtitle: "Beautiful storefronts, seamless checkout, and tools to grow your online sales.", cta: "Shop Now" },
+  };
+  if (ctx.industry && map[ctx.industry]) return map[ctx.industry];
+  const nameMatch = prompt.match(/(?:for|called|named)\s+(?:a\s+)?(?:the\s+)?["']?([^"'.]+?)["']?\s*(?:\.|,|$)/i);
+  const name = nameMatch?.[1]?.trim() || "Your Project";
+  return { title: `Welcome to ${name}`, subtitle: "A modern solution built with care and precision.", cta: "Learn More" };
+}
+
+function genHero(prompt: string): string {
+  const h = getHeroContent(prompt);
   return `export function Hero() {
   return (
     <section className="py-20 md:py-32">
       <div className="container mx-auto px-4 text-center">
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-          ${title}
+          ${h.title}
         </h1>
         <p className="mt-6 text-lg text-gray-600 md:text-xl max-w-2xl mx-auto">
-          ${subtitle}
+          ${h.subtitle}
         </p>
         <div className="mt-8 flex justify-center gap-4">
           <button className="rounded-lg bg-blue-600 px-6 py-3 text-white font-medium hover:bg-blue-700 transition-colors">
-            Get Started
+            ${h.cta}
           </button>
           <button className="rounded-lg border border-gray-300 px-6 py-3 font-medium hover:bg-gray-50 transition-colors">
             Learn More
@@ -266,12 +276,44 @@ function genHero(prompt: string): string {
 `;
 }
 
-function genFeatures(): string {
+function getProjectFeatures(prompt: string): Array<{ title: string; description: string; icon: string }> {
+  const ctx = extractProjectContext(prompt);
+  const featureMap: Record<string, Array<{ title: string; description: string; icon: string }>> = {
+    "health & fitness": [
+      { title: "Personalized Plans", description: "Custom workout and nutrition plans tailored to your goals.", icon: "target" },
+      { title: "Expert Coaching", description: "Certified trainers guide you every step of the way.", icon: "users" },
+      { title: "Progress Tracking", description: "Track your workouts, measurements, and milestones.", icon: "chart" },
+    ],
+    "digital marketing": [
+      { title: "SEO Optimization", description: "Rank higher on Google with our proven strategies.", icon: "search" },
+      { title: "Social Media Growth", description: "Engage your audience and grow across platforms.", icon: "trending" },
+      { title: "Analytics Dashboard", description: "Real-time insights into campaign performance.", icon: "chart" },
+    ],
+    "technology": [
+      { title: "Cloud Architecture", description: "Scalable infrastructure built for performance.", icon: "cloud" },
+      { title: "API Integration", description: "Seamless connections with your existing tools.", icon: "code" },
+      { title: "Real-time Analytics", description: "Monitor and optimize with live dashboards.", icon: "chart" },
+    ],
+    "ecommerce": [
+      { title: "Beautiful Storefronts", description: "Eye-catching designs that convert browsers into buyers.", icon: "shopping" },
+      { title: "Secure Checkout", description: "PCI-compliant payment processing your customers trust.", icon: "lock" },
+      { title: "Inventory Management", description: "Track stock levels, orders, and fulfillment in real time.", icon: "box" },
+    ],
+  };
+  return featureMap[ctx.industry || ""] || [
+    { title: "Modern Design", description: "Clean, professional interface built with latest standards.", icon: "palette" },
+    { title: "Fast Performance", description: "Optimized for speed and efficiency.", icon: "zap" },
+    { title: "Secure & Reliable", description: "Enterprise-grade security and uptime.", icon: "shield" },
+  ];
+}
+
+function genFeatures(prompt?: string): string {
+  const features = getProjectFeatures(prompt || "Welcome");
   return `export function Features() {
   const features = [
-    { title: "Lightning Fast", description: "Optimized for speed and performance." },
-    { title: "Secure", description: "Enterprise-grade security built in." },
-    { title: "Easy to Use", description: "Intuitive interface for everyone." },
+    { title: "${features[0].title}", description: "${features[0].description}" },
+    { title: "${features[1].title}", description: "${features[1].description}" },
+    { title: "${features[2].title}", description: "${features[2].description}" },
   ];
   return (
     <section className="py-16 bg-gray-50 dark:bg-gray-900">
@@ -1125,7 +1167,7 @@ const COMPONENT_GENERATORS: Record<string, (prompt?: string) => string> = {
   Header: () => genHeader("Project"),
   Footer: genFooter,
   Hero: (p) => genHero(p || "Welcome"),
-  Features: genFeatures,
+  Features: (p) => genFeatures(p),
   AboutContent: genAbout,
   ContactForm: genContactForm,
   PricingTable: genPricingTable,
