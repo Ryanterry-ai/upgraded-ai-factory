@@ -164,8 +164,11 @@ export function analyzeRequirements(prompt: string): RequirementMatrix {
     { pattern: /\b(careers?\s*(page|section)?)\b/i, name: "Careers", route: "/careers", keywords: ["careers", "jobs", "hiring"] },
     { pattern: /\b(faq\s*(page|section)?)\b/i, name: "FAQ", route: "/faq", keywords: ["faq", "questions", "answers"] },
     { pattern: /\b(testimonials?\s*(page|section|reviews?|case\s*studies)?)\b/i, name: "Testimonials", route: "/testimonials", keywords: ["testimonials", "reviews", "case studies", "what clients say"] },
-    { pattern: /\b(products?\s*(page|catalog|listing|grid)?)\b/i, name: "Products", route: "/products", keywords: ["products", "catalog", "listing"] },
+    { pattern: /\b(products?\s*(page|catalog|listing|listings|grid)?)\b/i, name: "Products", route: "/products", keywords: ["products", "catalog", "listing"] },
+    { pattern: /\b(cart|shopping\s*cart|bag)\b/i, name: "Cart", route: "/cart", keywords: ["cart", "shopping cart", "bag"] },
     { pattern: /\b(checkout\s*(page|section)?)\b/i, name: "Checkout", route: "/checkout", keywords: ["checkout", "payment", "purchase"] },
+    { pattern: /\b(account\s*(page|section|settings)?)\b/i, name: "Account", route: "/account", keywords: ["account", "my account", "user account"] },
+    { pattern: /\b(admin\s*(dashboard|panel|page)?)\b/i, name: "Admin", route: "/admin", keywords: ["admin", "admin dashboard", "admin panel"] },
     { pattern: /\b(wishlist|wish\s*list)\b/i, name: "Wishlist", route: "/wishlist", keywords: ["wishlist", "wish list", "saved"] },
     { pattern: /\b(reviews?\s*(page|section)?)\b/i, name: "Reviews", route: "/reviews", keywords: ["reviews", "ratings", "feedback"] },
     { pattern: /\b(reports?\s*(page|dashboard)?)\b/i, name: "Reports", route: "/reports", keywords: ["reports", "analytics", "insights"] },
@@ -335,6 +338,12 @@ export function planArchitecture(matrix: RequirementMatrix, projectName: string)
       route.components = ["ProductGrid", "FilterSidebar"];
     } else if (page.name === "Checkout") {
       route.components = ["CheckoutForm"];
+    } else if (page.name === "Cart") {
+      route.components = ["CartItems", "CartSummary"];
+    } else if (page.name === "Account") {
+      route.components = ["ProfileForm", "SettingsForm"];
+    } else if (page.name === "Admin") {
+      route.components = ["DashboardContent", "DataTable"];
     } else if (page.name === "Leads") {
       route.components = ["DataTable", "LeadForm"];
     } else if (page.name === "Members") {
