@@ -1,256 +1,217 @@
 /**
- * Generates a standalone HTML preview from generated project files.
- * Extracts content from React components and renders as static HTML
- * so the iframe can show the site immediately without a dev server.
+ * Generates a standalone HTML preview from scraped website data.
+ * Uses the actual scraped content (headings, sections, images, nav)
+ * to render a realistic preview in the iframe.
  */
 
-interface GeneratedFile {
+interface ScrapedPage {
+  url: string;
   path: string;
-  content: string;
-  type: string;
+  title: string;
+  description: string;
+  headings: { level: number; text: string }[];
+  sections: { tag: string; text: string; className?: string; html?: string }[];
+  images: { src: string; alt: string; localPath?: string }[];
+  links: { href: string; text: string; isInternal: boolean }[];
+  navItems: string[];
+  colors: string[];
+  bodyText: string;
+  metaTags: Record<string, string>;
+  structuredData: unknown[];
+  techStack: string[];
 }
 
-function extractJsxContent(jsx: string): string {
-  // Simple JSX to HTML converter for preview purposes
-  let html = jsx;
-  // Remove imports/exports
-  html = html.replace(/import\s+.*?from\s+["'].*?["'];?\n/g, "");
-  html = html.replace(/export\s+default\s+/g, "");
-  html = html.replace(/export\s+(?:function|const)\s+\w+\s*(?:=\s*)?\(?.*?\)?\s*=>\s*/g, "");
-  html = html.replace(/export\s+function\s+\w+\s*\(.*?\)\s*\{?\s*/g, "");
-  // Convert className to class
-  html = html.replace(/className=/g, "class=");
-  // Convert JSX expressions to text
-  html = html.replace(/\{`([^`]+)`\}/g, "$1");
-  html = html.replace(/\{"([^"]+)"\}/g, "$1");
-  html = html.replace(/\{([^}]+)\}/g, "");
-  // Remove fragment wrappers
-  html = html.replace(/<>\s*/g, "");
-  html = html.replace(/\s*<\/>/g, "");
-  // Remove trailing return and braces
-  html = html.replace(/[\s\S]*?return\s*\(/, "");
-  html = html.replace(/\);\s*\}?\s*$/, "");
-  return html.trim();
+interface ScrapedSite {
+  baseUrl: string;
+  rootDomain: string;
+  pages: ScrapedPage[];
+  navigation: string[];
+  globalColors: string[];
+  globalFonts: string[];
+  techStack: string[];
+  images: { src: string; alt: string; localPath: string }[];
 }
 
-function extractTailwindClasses(content: string): string {
-  // Extract custom colors from tailwind config
-  const colorMatch = content.match(/colors:\s*\{([^}]+)\}/);
-  const colors: Record<string, string> = {};
-  if (colorMatch) {
-    const pairs = colorMatch[1].match(/(\w+):\s*["']([^"']+)["']/g);
-    if (pairs) {
-      for (const pair of pairs) {
-        const [key, val] = pair.split(":").map((s) => s.trim().replace(/["']/g, ""));
-        colors[key] = val;
-      }
-    }
-  }
-  return Object.entries(colors)
-    .map(([k, v]) => `--color-${k}: ${v};`)
-    .join("\n    ");
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 }
 
-function extractCssContent(content: string): string {
-  // Extract CSS custom properties and styles from globals.css
-  let css = content;
-  // Remove @tailwind directives
-  css = css.replace(/@tailwind\s+.*?;/g, "");
-  // Extract CSS variables
-  const vars: string[] = [];
-  const varMatches = css.match(/--[\w-]+:\s*[^;]+;/g);
-  if (varMatches) vars.push(...varMatches);
-  return vars.join("\n    ");
+function getColors(scraped: ScrapedSite): { primary: string; secondary: string; accent: string; bg: string; text: string } {
+  const colors = scraped.globalColors;
+  return {
+    primary: colors[0] || "#7c3aed",
+    secondary: colors[1] || "#ec4899",
+    accent: colors[2] || "#06b6d4",
+    bg: "#09090b",
+    text: "#fafafa",
+  };
 }
 
-function extractComponentText(content: string): string {
-  // Extract text content from JSX components
-  const texts: string[] = [];
-  // String literals in JSX
-  const strMatches = content.match(/["']([^"']{10,})["']/g);
-  if (strMatches) {
-    for (const s of strMatches) {
-      const text = s.replace(/["']/g, "");
-      if (!text.includes("className") && !text.includes("http") && !text.includes("/")) {
-        texts.push(text);
-      }
-    }
-  }
-  return texts.join(" ");
+function renderNav(scraped: ScrapedSite, colors: ReturnType<typeof getColors>): string {
+  const items = scraped.navigation.length > 0
+    ? scraped.navigation
+    : scraped.pages[0]?.navItems?.slice(0, 6) || [];
+
+  const brand = scraped.pages[0]?.title || scraped.rootDomain;
+
+  return `
+    <nav style="display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:rgba(0,0,0,0.8);backdrop-filter:blur(12px);border-bottom:1px solid rgba(255,255,255,0.05);position:sticky;top:0;z-index:100;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,${colors.primary},${colors.secondary});display:flex;align-items:center;justify-content:center;">
+          <span style="color:white;font-size:14px;font-weight:700;">${brand.charAt(0).toUpperCase()}</span>
+        </div>
+        <span style="font-weight:600;color:white;font-size:14px;">${escapeHtml(brand.slice(0, 20))}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:24px;">
+        ${items.slice(0, 6).map(item => `
+          <a href="#" style="font-size:13px;color:#a1a1aa;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#a1a1aa'">${escapeHtml(item)}</a>
+        `).join("")}
+      </div>
+    </nav>`;
 }
 
-function extractColors(content: string): { primary: string; secondary: string; accent: string } {
-  const colors = { primary: "#7c3aed", secondary: "#ec4899", accent: "#06b6d4" };
+function renderHero(scraped: ScrapedSite, colors: ReturnType<typeof getColors>): string {
+  const homePage = scraped.pages.find(p => p.path === "/") || scraped.pages[0];
+  if (!homePage) return "";
 
-  // Look for hex colors
-  const hexMatches = content.match(/["']#[0-9a-fA-F]{6}["']/g);
-  if (hexMatches && hexMatches.length >= 2) {
-    colors.primary = hexMatches[0].replace(/["']/g, "");
-    colors.secondary = hexMatches[1].replace(/["']/g, "");
-  }
-  if (hexMatches && hexMatches.length >= 3) {
-    colors.accent = hexMatches[2].replace(/["']/g, "");
-  }
-  return colors;
+  // Find the main heading (H1 or first H2)
+  const mainHeading = homePage.headings.find(h => h.level === 1) || homePage.headings[0];
+  const title = mainHeading?.text || homePage.title;
+
+  // Get subtitle from description or second heading
+  const subtitle = homePage.description || homePage.headings[1]?.text || "";
+
+  // Get first section text as body
+  const bodySection = homePage.sections.find(s => s.text.length > 20);
+  const body = bodySection?.text?.slice(0, 200) || "";
+
+  return `
+    <section style="position:relative;padding:80px 24px;text-align:center;overflow:hidden;">
+      <div style="position:absolute;inset:0;background:radial-gradient(ellipse at center,${colors.primary}15 0%,transparent 70%);"></div>
+      <div style="position:relative;max-width:800px;margin:0 auto;">
+        <h1 style="font-size:clamp(32px,5vw,56px);font-weight:800;color:white;line-height:1.1;margin-bottom:24px;letter-spacing:-0.02em;">
+          ${escapeHtml(title)}
+        </h1>
+        ${subtitle ? `<p style="font-size:18px;color:#a1a1aa;margin-bottom:32px;max-width:600px;margin-left:auto;margin-right:auto;line-height:1.6;">${escapeHtml(subtitle.slice(0, 200))}</p>` : ""}
+        ${body ? `<p style="font-size:15px;color:#71717a;margin-bottom:40px;max-width:500px;margin-left:auto;margin-right:auto;line-height:1.6;">${escapeHtml(body.slice(0, 300))}</p>` : ""}
+        <div style="display:flex;align-items:center;justify-content:center;gap:16px;">
+          <a href="#" style="padding:12px 28px;border-radius:8px;background:linear-gradient(135deg,${colors.primary},${colors.secondary});color:white;font-weight:600;font-size:14px;text-decoration:none;transition:opacity 0.2s;" onmouseover="this.style.opacity='0.9'" onmouseout="this.style.opacity='1'">Get Started</a>
+          <a href="#" style="padding:12px 28px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);color:#d4d4d8;font-size:14px;text-decoration:none;transition:background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='transparent'">Learn More</a>
+        </div>
+      </div>
+    </section>`;
 }
 
-export function generatePreviewHtml(files: GeneratedFile[], projectName?: string): string {
-  // Find key files
-  const globalsCss = files.find((f) => f.path.includes("globals.css"));
-  const pageFiles = files.filter((f) => f.path.includes("/app/") && f.path.endsWith("page.tsx"));
-  const componentFiles = files.filter((f) => f.path.includes("/components/") && f.type === "component");
-  const tailwindConfig = files.find((f) => f.path.includes("tailwind.config"));
+function renderSections(page: ScrapedPage, colors: ReturnType<typeof getColors>): string {
+  return page.sections.slice(0, 6).map((section, i) => {
+    const text = section.text.trim();
+    if (text.length < 10) return "";
 
-  const colors = globalsCss ? extractColors(globalsCss.content) : { primary: "#7c3aed", secondary: "#ec4899", accent: "#06b6d4" };
-  const cssVars = globalsCss ? extractCssContent(globalsCss.content) : "";
-  const twVars = tailwindConfig ? extractTailwindClasses(tailwindConfig.content) : "";
+    // Check if this looks like a feature/card section
+    const sentences = text.split(/\.\s+/).filter(s => s.length > 10);
 
-  // Build component map
-  const componentMap: Record<string, string> = {};
-  for (const comp of componentFiles) {
-    const nameMatch = comp.path.match(/\/(\w+)\.tsx$/);
-    if (nameMatch) {
-      componentMap[nameMatch[1]] = comp.content;
-    }
-  }
-
-  // Extract content from main page
-  const mainPage = pageFiles.find((f) => f.path.endsWith("page.tsx") && f.path.includes("/app/page"));
-  const pageContent = mainPage ? extractJsxContent(mainPage.content) : "";
-
-  // Extract all text content from all components
-  const allTexts: string[] = [];
-  for (const comp of componentFiles) {
-    const text = extractComponentText(comp.content);
-    if (text) allTexts.push(text);
-  }
-
-  // Build sections from component content
-  const sections: string[] = [];
-
-  // Header component
-  const headerComp = componentMap["Header"];
-  if (headerComp) {
-    const navItems = headerComp.match(/href=["']([^"']+)["']/g)?.map((h) => {
-      const match = h.match(/href=["']([^"']+)["']/);
-      return match ? match[1].replace("/", "") : "";
-    }) || [];
-    sections.push(`
-      <nav class="flex items-center justify-between px-6 py-4 bg-black/80 backdrop-blur-sm border-b border-white/5">
-        <div class="flex items-center gap-2">
-          <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-[${colors.primary}] to-[${colors.secondary}] flex items-center justify-center">
-            <span class="text-white text-sm font-bold">${projectName?.charAt(0)?.toUpperCase() || "P"}</span>
+    if (sentences.length >= 3) {
+      // Grid of features
+      const cards = sentences.slice(0, 3).map(s => `
+        <div style="padding:24px;border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);transition:border-color 0.2s;" onmouseover="this.style.borderColor='${colors.primary}40'" onmouseout="this.style.borderColor='rgba(255,255,255,0.05)'">
+          <div style="width:40px;height:40px;border-radius:8px;background:${colors.primary}20;display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+            <span style="color:${colors.primary};font-size:18px;">✦</span>
           </div>
-          <span class="font-semibold text-white">${projectName || "Project"}</span>
+          <p style="font-size:14px;color:#d4d4d8;line-height:1.6;">${escapeHtml(s.slice(0, 150))}${s.length > 150 ? "..." : ""}</p>
         </div>
-        <div class="flex items-center gap-6">
-          ${navItems.map((item) => `<a href="#${item}" class="text-sm text-zinc-400 hover:text-white transition-colors">${item.charAt(0).toUpperCase() + item.slice(1)}</a>`).join("\n          ")}
-        </div>
-      </nav>
-    `);
-  }
+      `).join("");
 
-  // Hero component
-  const heroComp = componentMap["Hero"];
-  if (heroComp) {
-    const titleMatch = heroComp.match(/<h1[^>]*>([\s\S]*?)<\/h1>/) || heroComp.match(/<h[12][^>]*>([\s\S]*?)<\/h[12]>/);
-    const subtitleMatch = heroComp.match(/<p[^>]*>(.*?)<\/p>/);
-    const title = titleMatch ? titleMatch[1].replace(/[{}"']/g, "").trim() : "Welcome";
-    const subtitle = subtitleMatch ? subtitleMatch[1].replace(/[{}"']/g, "").trim() : "";
-    sections.push(`
-      <section class="relative py-32 px-6 text-center overflow-hidden">
-        <div class="absolute inset-0 bg-gradient-to-br from-[${colors.primary}]/10 via-transparent to-[${colors.secondary}]/10"></div>
-        <div class="relative max-w-4xl mx-auto">
-          <h1 class="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight">${title}</h1>
-          <p class="text-xl text-zinc-400 mb-8 max-w-2xl mx-auto">${subtitle}</p>
-          <div class="flex items-center justify-center gap-4">
-            <a href="#" class="px-6 py-3 rounded-lg bg-gradient-to-r from-[${colors.primary}] to-[${colors.secondary}] text-white font-medium hover:opacity-90 transition-opacity">Get Started</a>
-            <a href="#" class="px-6 py-3 rounded-lg border border-white/10 text-zinc-300 hover:bg-white/5 transition-colors">Learn More</a>
+      return `
+        <section style="padding:60px 24px;">
+          <div style="max-width:1000px;margin:0 auto;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;">
+              ${cards}
+            </div>
           </div>
+        </section>`;
+    }
+
+    // Regular content section
+    return `
+      <section style="padding:48px 24px;${i % 2 === 1 ? "background:rgba(255,255,255,0.02);" : ""}">
+        <div style="max-width:700px;margin:0 auto;">
+          <p style="font-size:15px;color:#a1a1aa;line-height:1.8;">${escapeHtml(text.slice(0, 500))}${text.length > 500 ? "..." : ""}</p>
         </div>
-      </section>
-    `);
+      </section>`;
+  }).filter(Boolean).join("");
+}
+
+function renderImages(page: ScrapedPage): string {
+  const images = page.images.slice(0, 4);
+  if (images.length === 0) return "";
+
+  return `
+    <section style="padding:40px 24px;">
+      <div style="max-width:1000px;margin:0 auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+        ${images.map(img => `
+          <div style="aspect-ratio:16/10;border-radius:8px;background:linear-gradient(135deg,rgba(255,255,255,0.05),rgba(255,255,255,0.02));overflow:hidden;border:1px solid rgba(255,255,255,0.05);">
+            <img src="${escapeHtml(img.src)}" alt="${escapeHtml(img.alt)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'" />
+          </div>
+        `).join("")}
+      </div>
+    </section>`;
+}
+
+function renderFooter(scraped: ScrapedSite, colors: ReturnType<typeof getColors>): string {
+  const brand = scraped.pages[0]?.title || scraped.rootDomain;
+  return `
+    <footer style="padding:32px 24px;border-top:1px solid rgba(255,255,255,0.05);">
+      <div style="max-width:1000px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:13px;color:#52525b;">&copy; 2024 ${escapeHtml(brand)}. All rights reserved.</span>
+        <div style="display:flex;gap:16px;">
+          <a href="#" style="font-size:13px;color:#52525b;text-decoration:none;">Privacy</a>
+          <a href="#" style="font-size:13px;color:#52525b;text-decoration:none;">Terms</a>
+        </div>
+      </div>
+    </footer>`;
+}
+
+export function generatePreviewHtml(scraped: ScrapedSite | null | undefined, projectName?: string): string {
+  if (!scraped || scraped.pages.length === 0) {
+    return `<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>body{margin:0;background:#09090b;color:#fff;font-family:-apple-system,BlinkMacSystemFont,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;}</style>
+</head><body><div style="text-align:center;color:#71717a;"><p>Preview requires scraped data</p></div></body></html>`;
   }
 
-  // Features component
-  const featuresComp = componentMap["Features"];
-  if (featuresComp) {
-    const featureItems = featuresComp.match(/<h3[^>]*>([\s\S]*?)<\/h3>/g)?.map((h) => {
-      return h.replace(/<[^>]+>/g, "").replace(/[{}"']/g, "").trim();
-    }) || ["Feature 1", "Feature 2", "Feature 3"];
-    sections.push(`
-      <section class="py-20 px-6">
-        <div class="max-w-6xl mx-auto">
-          <h2 class="text-3xl font-bold text-white text-center mb-12">Features</h2>
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            ${featureItems.map((f, i) => `
-              <div class="p-6 rounded-xl bg-white/5 border border-white/5 hover:border-[${colors.primary}]/30 transition-colors">
-                <div class="w-10 h-10 rounded-lg bg-[${colors.primary}]/20 flex items-center justify-center mb-4">
-                  <span class="text-[${colors.primary}] text-lg">✦</span>
-                </div>
-                <h3 class="text-lg font-semibold text-white mb-2">${f}</h3>
-                <p class="text-sm text-zinc-400">Built with modern technology for optimal performance and user experience.</p>
+  const colors = getColors(scraped);
+  const homePage = scraped.pages.find(p => p.path === "/") || scraped.pages[0];
+
+  // Build page sections
+  const nav = renderNav(scraped, colors);
+  const hero = renderHero(scraped, colors);
+  const sections = renderSections(homePage, colors);
+  const images = renderImages(homePage);
+  const footer = renderFooter(scraped, colors);
+
+  // Additional pages as links section
+  const otherPages = scraped.pages.filter(p => p.path !== "/").slice(0, 4);
+  let pagesSection = "";
+  if (otherPages.length > 0) {
+    pagesSection = `
+      <section style="padding:60px 24px;background:rgba(255,255,255,0.02);">
+        <div style="max-width:1000px;margin:0 auto;">
+          <h2 style="font-size:24px;font-weight:700;color:white;text-align:center;margin-bottom:32px;">Explore</h2>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+            ${otherPages.map(p => `
+              <div style="padding:20px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);">
+                <h3 style="font-size:15px;font-weight:600;color:white;margin-bottom:8px;">${escapeHtml(p.title || p.path)}</h3>
+                <p style="font-size:13px;color:#71717a;line-height:1.5;">${escapeHtml((p.description || p.bodyText || "").slice(0, 100))}${(p.description || p.bodyText || "").length > 100 ? "..." : ""}</p>
               </div>
             `).join("")}
           </div>
         </div>
-      </section>
-    `);
-  }
-
-  // About component
-  const aboutComp = componentMap["AboutContent"];
-  if (aboutComp) {
-    const aboutText = extractComponentText(aboutComp);
-    sections.push(`
-      <section class="py-20 px-6 bg-white/[0.02]">
-        <div class="max-w-4xl mx-auto text-center">
-          <h2 class="text-3xl font-bold text-white mb-6">About Us</h2>
-          <p class="text-lg text-zinc-400 leading-relaxed">${aboutText || "We build innovative solutions for modern problems."}</p>
-        </div>
-      </section>
-    `);
-  }
-
-  // CTA component
-  const ctaComp = componentMap["CTA"];
-  if (ctaComp) {
-    sections.push(`
-      <section class="py-20 px-6">
-        <div class="max-w-4xl mx-auto text-center p-12 rounded-2xl bg-gradient-to-br from-[${colors.primary}]/10 to-[${colors.secondary}]/10 border border-white/5">
-          <h2 class="text-3xl font-bold text-white mb-4">Ready to Get Started?</h2>
-          <p class="text-zinc-400 mb-8">Join thousands of users building the future.</p>
-          <a href="#" class="inline-block px-8 py-3 rounded-lg bg-gradient-to-r from-[${colors.primary}] to-[${colors.secondary}] text-white font-medium hover:opacity-90 transition-opacity">Start Free Trial</a>
-        </div>
-      </section>
-    `);
-  }
-
-  // If no components found, use extracted text
-  if (sections.length <= 1 && allTexts.length > 0) {
-    sections.push(`
-      <section class="py-20 px-6">
-        <div class="max-w-4xl mx-auto">
-          ${allTexts.slice(0, 5).map((t) => `<p class="text-zinc-300 mb-4">${t}</p>`).join("\n          ")}
-        </div>
-      </section>
-    `);
-  }
-
-  // Footer
-  const footerComp = componentMap["Footer"];
-  if (footerComp) {
-    sections.push(`
-      <footer class="py-8 px-6 border-t border-white/5">
-        <div class="max-w-6xl mx-auto flex items-center justify-between">
-          <span class="text-sm text-zinc-500">&copy; 2024 ${projectName || "Project"}. All rights reserved.</span>
-          <div class="flex items-center gap-4">
-            <a href="#" class="text-sm text-zinc-500 hover:text-white transition-colors">Privacy</a>
-            <a href="#" class="text-sm text-zinc-500 hover:text-white transition-colors">Terms</a>
-          </div>
-        </div>
-      </footer>
-    `);
+      </section>`;
   }
 
   return `<!DOCTYPE html>
@@ -258,26 +219,30 @@ export function generatePreviewHtml(files: GeneratedFile[], projectName?: string
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${projectName || "Preview"}</title>
-  <script src="https://cdn.tailwindcss.com"><\/script>
+  <title>${escapeHtml(projectName || homePage.title || "Preview")}</title>
   <style>
-    :root {
-      ${cssVars}
-      ${twVars}
-    }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      background: #09090b;
-      color: #fff;
+      background: ${colors.bg};
+      color: ${colors.text};
       min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
     }
     a { text-decoration: none; }
     img { max-width: 100%; height: auto; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 3px; }
   </style>
 </head>
 <body>
-  ${sections.join("\n")}
+  ${nav}
+  ${hero}
+  ${sections}
+  ${images}
+  ${pagesSection}
+  ${footer}
 </body>
 </html>`;
 }

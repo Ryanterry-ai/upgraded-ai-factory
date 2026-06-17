@@ -32,6 +32,7 @@ export interface GenerationResult {
   buildValidation?: ValidationResult;
   qualityPrediction?: QualityPrediction;
   optimizedBlueprint?: OptimizedBlueprint;
+  scraped?: ScrapedSite;
 }
 
 function sanitizeName(input: string): string {
@@ -1223,6 +1224,7 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
       buildValidation,
       qualityPrediction,
       optimizedBlueprint,
+      scraped,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

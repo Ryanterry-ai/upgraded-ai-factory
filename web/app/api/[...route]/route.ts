@@ -251,7 +251,7 @@ app.post("/generate", async (c) => {
           // Generate and send preview URL
           if (result.files && result.files.length > 0) {
             try {
-              const previewHtml = generatePreviewHtml(result.files, name?.trim() || "Project");
+              const previewHtml = generatePreviewHtml(result.scraped || null, name?.trim() || "Project");
               const previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}`;
               send("preview_url", { url: previewUrl });
             } catch (previewErr) {
