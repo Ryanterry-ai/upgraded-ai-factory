@@ -341,9 +341,9 @@ app.post("/generate", async (c) => {
               const scraped = result.scraped;
               const homePage = scraped?.pages?.find(p => p.path === "/") || scraped?.pages?.[0];
 
-              if (homePage?.fullHtml && result.projectId) {
-                // Use HTTP endpoint for preview — allows on-demand page loading
-                const previewUrl = `/api/preview/${result.projectId}`;
+              if (homePage?.fullHtml) {
+                // Embed homepage HTML directly as data URL — works everywhere
+                const previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(homePage.fullHtml)}`;
                 send("preview_url", { url: previewUrl });
               } else {
                 // Fallback to reconstructed preview
@@ -543,65 +543,25 @@ Only include files that need to change. Do not include unchanged files.`;
 
 app.get("/projects/:id/download", async (c) => {
   const id = c.req.param("id");
-  const { getSite } = await import("@/lib/clone-store");
-  const { default: JSZip } = await import("jszip");
+  const supabase = getSupabase();
 
-  const site = getSite(id);
+  // Try to download the static site clone first (actual HTML + assets)
+  const { data: cloneData, error: cloneError } = await supabase.storage
+    .from("generated-projects")
+    .download(`${id}/clone.zip`);
 
-  if (site && site.pages.size > 0) {
-    // Build a complete static site from scraped data
-    const zip = new JSZip();
-
-    // Add all HTML pages
-    for (const [path, page] of site.pages) {
-      const filePath = path === "/" ? "index.html" : `${path.replace(/^\//, "").replace(/\/$/, "")}/index.html`;
-      zip.file(filePath, page.fullHtml);
-    }
-
-    // Add all assets (images, CSS, JS, fonts)
-    for (const [assetPath, asset] of site.assets) {
-      const cleanPath = assetPath.startsWith("/") ? assetPath.slice(1) : assetPath;
-      zip.file(cleanPath, Buffer.from(asset.buffer));
-    }
-
-    // Add a README
-    zip.file("README.md", `# Cloned Website
-
-Source: ${site.baseUrl}
-Pages: ${site.pages.size}
-Assets: ${site.assets.size}
-
-## How to use
-
-This is a static HTML clone of the website. You can:
-
-1. Open index.html in your browser to view the site
-2. Deploy to any static hosting (Netlify, Vercel, GitHub Pages, S3)
-3. Edit the HTML files directly
-
-## Files
-
-- \`index.html\` — Homepage
-- Other pages in their respective directories
-- \`/images/\` — Downloaded images
-- \`/css/\` — Stylesheets
-- \`/js/\` — JavaScript files
-- \`/fonts/\` — Web fonts
-`);
-
-    const zipBuffer = await zip.generateAsync({ type: "uint8array" });
-
-    return new Response(new Uint8Array(zipBuffer), {
+  if (!cloneError && cloneData) {
+    const arrayBuffer = await cloneData.arrayBuffer();
+    return new Response(new Uint8Array(arrayBuffer), {
       headers: {
         "Content-Type": "application/zip",
         "Content-Disposition": `attachment; filename="cloned-site-${id}.zip"`,
-        "Content-Length": zipBuffer.byteLength.toString(),
+        "Content-Length": arrayBuffer.byteLength.toString(),
       },
     });
   }
 
-  // Fallback: download generated Next.js project from Supabase
-  const supabase = getSupabase();
+  // Fallback: download generated Next.js project
   const { data, error } = await supabase.storage
     .from("generated-projects")
     .download(`${id}/project.zip`);

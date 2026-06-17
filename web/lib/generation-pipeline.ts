@@ -1154,6 +1154,42 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
       console.error(msg);
     }
 
+    // Create and upload static site clone zip (actual HTML + assets)
+    if (scraped && scraped.pages.length > 0) {
+      try {
+        const { default: JSZip } = await import("jszip");
+        const cloneZip = new JSZip();
+
+        // Add all HTML pages
+        for (const page of scraped.pages) {
+          if (!page.fullHtml) continue;
+          const filePath = page.path === "/"
+            ? "index.html"
+            : `${page.path.replace(/^\//, "").replace(/\/$/, "")}/index.html`;
+          cloneZip.file(filePath, page.fullHtml);
+        }
+
+        // Add all assets
+        for (const asset of scraped.assets || []) {
+          const cleanPath = asset.localPath.startsWith("/") ? asset.localPath.slice(1) : asset.localPath;
+          cloneZip.file(cleanPath, Buffer.from(asset.buffer));
+        }
+
+        // Add README
+        cloneZip.file("README.md", `# Cloned Website\n\nSource: ${scraped.baseUrl}\nPages: ${scraped.pages.length}\nAssets: ${(scraped.assets || []).length}\n\nDeploy to any static hosting.\n`);
+
+        const cloneBuffer = await cloneZip.generateAsync({ type: "uint8array" });
+        await supabase.storage
+          .from("generated-projects")
+          .upload(`${projectId}/clone.zip`, Buffer.from(cloneBuffer), {
+            contentType: "application/zip",
+            upsert: true,
+          });
+      } catch (err) {
+        console.error("Clone ZIP creation failed:", err);
+      }
+    }
+
     const { error: updateError } = await supabase
       .from("projects")
       .update({
