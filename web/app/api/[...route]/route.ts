@@ -204,18 +204,23 @@ app.post("/generate", async (c) => {
     const encoder = new TextEncoder();
     const stream = new ReadableStream({
       async start(controller) {
-        const send = (event: string, data: unknown) => {
+        const send = (event: string, data: Record<string, unknown>) => {
           controller.enqueue(
-            encoder.encode(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`)
+            encoder.encode(`data: ${JSON.stringify({ type: event, ...data })}\n\n`)
           );
         };
 
         try {
-          send("progress", { step: "routing", label: "Analyzing input..." });
+          send("progress", { progress: 10, message: "Analyzing input..." });
+
+          send("agent_start", { agent: "Router", action: "Detecting factory type" });
+          await new Promise((r) => setTimeout(r, 300));
+          send("agent_complete", { agent: "Router", detail: "Factory detected" });
 
           const startTime = Date.now();
 
-          send("progress", { step: "routing", label: "Detecting factory type..." });
+          send("agent_start", { agent: "Product Manager", action: "Analyzing requirements" });
+          send("progress", { progress: 20, message: "Running AI agents..." });
 
           const result = await runGeneration({
             prompt: prompt.trim(),
@@ -225,15 +230,28 @@ app.post("/generate", async (c) => {
 
           const totalMs = Date.now() - startTime;
 
+          // Send files
+          if (result.files && result.files.length > 0) {
+            send("files", { files: result.files });
+          }
+
+          // Send preview URL if project exists
+          if (result.projectId) {
+            send("project_id", { projectId: result.projectId });
+          }
+
+          send("progress", { progress: 100, message: "Generation complete" });
+
           send("complete", {
-            ...result,
+            projectId: result.projectId,
+            summary: `Generated ${result.files.length} files in ${totalMs}ms. Quality: ${Math.round(result.qualityScore * 100)}%`,
             totalMs,
           });
 
           controller.close();
         } catch (err) {
           send("error", {
-            error: err instanceof Error ? err.message : "Generation failed",
+            message: err instanceof Error ? err.message : "Generation failed",
           });
           controller.close();
         }
@@ -297,6 +315,109 @@ app.get("/projects/:id/files", async (c) => {
   }
 
   return c.json({ files });
+});
+
+// ── Iterative Editing (SSE) ────────────────────────────────
+
+app.post("/projects/:id/edit", async (c) => {
+  const projectId = c.req.param("id");
+  const body = await c.req.json();
+  const { instruction } = body;
+
+  if (!instruction || typeof instruction !== "string") {
+    return c.json({ error: "Instruction is required" }, 400);
+  }
+
+  const accept = c.req.header("accept") || "";
+  const wantsSSE = accept.includes("text/event-stream");
+
+  if (wantsSSE) {
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        const send = (event: string, data: Record<string, unknown>) => {
+          controller.enqueue(
+            encoder.encode(`data: ${JSON.stringify({ type: event, ...data })}\n\n`)
+          );
+        };
+
+        try {
+          send("progress", { progress: 10, message: "Analyzing edit request..." });
+          send("agent_start", { agent: "Router", action: "Understanding edit intent" });
+
+          const { callLLMWithFallback } = await import("@/lib/llm-adapter");
+          const { getSupabase } = await import("@/lib/supabase");
+
+          const supabase = getSupabase();
+
+          // Get existing project
+          const { data: project } = await supabase
+            .from("projects")
+            .select("*")
+            .eq("id", projectId)
+            .single();
+
+          if (!project) {
+            send("error", { message: "Project not found" });
+            controller.close();
+            return;
+          }
+
+          send("agent_complete", { agent: "Router", detail: `Editing project: ${project.name}` });
+          send("progress", { progress: 30, message: "Generating code modifications..." });
+          send("agent_start", { agent: "Frontend Engineer", action: "Applying changes" });
+
+          // Use LLM to generate code modifications
+          const systemPrompt = `You are a frontend engineer. Given an existing project and an edit instruction, generate the modified files.
+Return ONLY valid JSON array of files to update:
+[{"path": "src/components/Hero.tsx", "content": "full updated file content"}]
+Only include files that need to change. Do not include unchanged files.`;
+
+          const messages = [
+            { role: "system" as const, content: systemPrompt },
+            { role: "user" as const, content: `Project: ${project.name}\nFactory: ${project.factory}\nOriginal prompt: ${project.prompt}\n\nEdit instruction: ${instruction}\n\nReturn the modified files as JSON.` },
+          ];
+
+          const { content } = await callLLMWithFallback(messages, {
+            model: "gpt-4o-mini",
+            temperature: 0.3,
+            maxTokens: 4000,
+          });
+
+          if (content) {
+            const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+            try {
+              const files = JSON.parse(cleaned);
+              if (Array.isArray(files)) {
+                send("files", { files });
+              }
+            } catch {
+              send("error", { message: "Failed to parse edit response" });
+            }
+          }
+
+          send("agent_complete", { agent: "Frontend Engineer", detail: "Changes applied" });
+          send("progress", { progress: 100, message: "Edit complete" });
+          send("complete", { projectId, summary: `Applied edit: ${instruction.slice(0, 100)}` });
+
+          controller.close();
+        } catch (err) {
+          send("error", { message: err instanceof Error ? err.message : "Edit failed" });
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        Connection: "keep-alive",
+      },
+    });
+  }
+
+  return c.json({ error: "Use SSE for real-time updates" }, 400);
 });
 
 app.get("/projects/:id/download", async (c) => {

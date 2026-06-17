@@ -5,6 +5,7 @@ import { retrieveMemory, formatMemoryContext, recordGeneration, type MemoryConte
 import { validateBuild, type ValidationResult } from "./build-validator";
 import { predictQuality, extractPatterns, recordPatterns, type QualityPrediction } from "./pattern-adapter";
 import { getOptimizedBlueprintForFactory, type OptimizedBlueprint } from "./blueprint-optimizer";
+import { isUrl, scrapeUrl, formatScrapedForLLM, type ScrapedContent } from "./url-scraper";
 
 export interface GenerationRequest {
   prompt: string;
@@ -119,19 +120,25 @@ function buildBlueprint(prompt: string, factory: string, projectName: string) {
   };
 }
 
-function genHeader(name: string): string {
+function genHeader(name: string, navigation?: string[], colors?: LLMContent["colors"]): string {
+  const navLinks = (navigation && navigation.length > 0)
+    ? navigation.slice(0, 6)
+    : ["Home", "About", "Contact"];
+  const links = navLinks.map((n) => {
+    const slug = n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    return `<Link href="/${slug}" className="text-sm font-medium hover:opacity-80 transition-opacity">${n}</Link>`;
+  }).join("\n          ");
+  const accent = colors?.primary || "#2563eb";
   return `"use client";
 import Link from "next/link";
 
 export function Header() {
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-gray-950/90">
+    <header className="sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <nav className="container mx-auto flex h-16 items-center justify-between px-4">
-        <Link href="/" className="text-xl font-bold">${name}</Link>
-        <div className="flex gap-6">
-          <Link href="/" className="text-sm font-medium hover:text-primary transition-colors">Home</Link>
-          <Link href="/about" className="text-sm font-medium hover:text-primary transition-colors">About</Link>
-          <Link href="/contact" className="text-sm font-medium hover:text-primary transition-colors">Contact</Link>
+        <Link href="/" className="text-xl font-bold" style={{ color: "${accent}" }}>${name}</Link>
+        <div className="hidden md:flex gap-6">
+          ${links}
         </div>
       </nav>
     </header>
@@ -160,7 +167,13 @@ function genFooter(): string {
 }
 
 function genHero(prompt: string): string {
-  const title = prompt.match(/(?:about|for|called?|named?)\s+["']?([^"'.]+)["']?/i)?.[1]?.trim() || "Welcome";
+  const isUrlPrompt = /^https?:\/\//i.test(prompt.trim()) || /^www\./i.test(prompt.trim());
+  const title = isUrlPrompt
+    ? "Welcome"
+    : prompt.match(/(?:about|for|called?|named?)\s+["']?([^"'.]+)["']?/i)?.[1]?.trim() || "Welcome";
+  const subtitle = isUrlPrompt
+    ? "Loading content from source website..."
+    : prompt.slice(0, 150);
   return `export function Hero() {
   return (
     <section className="py-20 md:py-32">
@@ -169,7 +182,7 @@ function genHero(prompt: string): string {
           ${title}
         </h1>
         <p className="mt-6 text-lg text-gray-600 md:text-xl max-w-2xl mx-auto">
-          ${prompt.slice(0, 150)}
+          ${subtitle}
         </p>
         <div className="mt-8 flex justify-center gap-4">
           <button className="rounded-lg bg-blue-600 px-6 py-3 text-white font-medium hover:bg-blue-700 transition-colors">
@@ -526,29 +539,44 @@ export function Newsletter() {
 `;
 }
 
-function genStyles(): string {
+function genStyles(colors?: LLMContent["colors"]): string {
+  const bg = colors?.background || "#ffffff";
+  const text = colors?.text || "#111827";
+  const primary = colors?.primary || "#2563eb";
+  const secondary = colors?.secondary || "#1e40af";
   return `@tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #111827;
-  --primary: #2563eb;
+  --background: ${bg};
+  --foreground: ${text};
+  --primary: ${primary};
+  --secondary: ${secondary};
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #030712;
     --foreground: #f9fafb;
-    --primary: #3b82f6;
+    --primary: ${primary};
+    --secondary: ${secondary};
   }
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
 }
 `;
 }
@@ -642,12 +670,16 @@ interface LLMContent {
   features: Array<{ title: string; description: string }>;
   aboutText: string;
   ctaText: string;
+  navigation: string[];
+  sections: Array<{ title: string; content: string }>;
+  colors: { primary: string; secondary: string; accent: string; background: string; text: string };
 }
 
 async function generateLLMContent(
   prompt: string,
   factory: string,
-  memoryContext?: MemoryContext
+  memoryContext?: MemoryContext,
+  scraped?: ScrapedContent
 ): Promise<LLMContent | null> {
   if (!isLLMAvailable()) return null;
 
@@ -656,29 +688,55 @@ async function generateLLMContent(
     memorySection = "\n\n" + formatMemoryContext(memoryContext);
   }
 
-  const systemPrompt = `You are a web content generator. Given a project description, generate real, specific content for a website.
+  let scrapedSection = "";
+  if (scraped) {
+    scrapedSection = "\n\n" + formatScrapedForLLM(scraped);
+  }
+
+  const isUrlPrompt = !!scraped;
+
+  const systemPrompt = isUrlPrompt
+    ? `You are a website cloning expert. You are given the scraped content of a target website. Generate accurate, faithful content that matches the original site as closely as possible.
+Return ONLY valid JSON with this exact structure:
+{
+  "heroTitle": "string - the actual main heading from the site",
+  "heroSubtitle": "string - the actual subheading/description from the site",
+  "features": [{"title": "string", "description": "string"}] - actual features/sections from the site, up to 6,
+  "aboutText": "string - actual about/description text from the site",
+  "ctaText": "string - actual CTA button text from the site",
+  "navigation": ["string"] - actual nav links from the site,
+  "sections": [{"title": "string", "content": "string"}] - actual content sections from the site,
+  "colors": {"primary": "hex color", "secondary": "hex color", "accent": "hex color", "background": "hex color", "text": "hex color"}
+}
+Use the ACTUAL content from the scraped site. Do not invent content. If a section is not present in the scrape, omit it.
+No markdown. No explanation. Only JSON.`
+    : `You are a web content generator. Given a project description, generate real, specific content for a website.
 Return ONLY valid JSON with this exact structure:
 {
   "heroTitle": "string - compelling headline (max 60 chars)",
   "heroSubtitle": "string - supporting text (max 150 chars)",
   "features": [{"title": "string", "description": "string"}] - exactly 3 features,
   "aboutText": "string - 2-3 sentences about the project",
-  "ctaText": "string - call to action button text"
+  "ctaText": "string - call to action button text",
+  "navigation": ["Home", "About", "Contact"],
+  "sections": [],
+  "colors": {"primary": "#2563eb", "secondary": "#1e40af", "accent": "#3b82f6", "background": "#ffffff", "text": "#111827"}
 }
 No markdown. No explanation. Only JSON.`;
 
+  const userContent = isUrlPrompt
+    ? `Target website to clone: ${scraped!.url}\nUser instruction: ${prompt.slice(0, 500)}${scrapedSection}${memorySection}`
+    : `Project type: ${factory}\nDescription: ${prompt.slice(0, 500)}${memorySection}`;
+
   const messages: LLMMessage[] = [
     { role: "system", content: systemPrompt },
-    {
-      role: "user",
-      content: `Project type: ${factory}\nDescription: ${prompt.slice(0, 500)}${memorySection}`,
-    },
+    { role: "user", content: userContent },
   ];
 
   const { content, usedFallback } = await callLLMWithFallback(messages, {
     model: "gpt-4o-mini",
-    temperature: 0.7,
-    maxTokens: 500,
+    temperature: isUrlPrompt ? 0.3 : 0.7,
+    maxTokens: isUrlPrompt ? 1500 : 500,
   });
 
   if (usedFallback || !content) return null;
@@ -690,35 +748,47 @@ No markdown. No explanation. Only JSON.`;
       heroTitle: typeof parsed.heroTitle === "string" ? parsed.heroTitle : "Welcome",
       heroSubtitle: typeof parsed.heroSubtitle === "string" ? parsed.heroSubtitle : prompt.slice(0, 150),
       features: Array.isArray(parsed.features)
-        ? parsed.features.slice(0, 3).map((f: Record<string, string>) => ({
+        ? parsed.features.slice(0, 6).map((f: Record<string, string>) => ({
             title: f.title || "Feature",
             description: f.description || "Description",
           }))
         : [],
       aboutText: typeof parsed.aboutText === "string" ? parsed.aboutText : "",
       ctaText: typeof parsed.ctaText === "string" ? parsed.ctaText : "Get Started",
+      navigation: Array.isArray(parsed.navigation) ? parsed.navigation.slice(0, 8) : [],
+      sections: Array.isArray(parsed.sections) ? parsed.sections.slice(0, 6) : [],
+      colors: parsed.colors && typeof parsed.colors === "object" ? {
+        primary: parsed.colors.primary || "#2563eb",
+        secondary: parsed.colors.secondary || "#1e40af",
+        accent: parsed.colors.accent || "#3b82f6",
+        background: parsed.colors.background || "#ffffff",
+        text: parsed.colors.text || "#111827",
+      } : { primary: "#2563eb", secondary: "#1e40af", accent: "#3b82f6", background: "#ffffff", text: "#111827" },
     };
   } catch {
     return null;
   }
 }
 
-function genHeroLLM(title: string, subtitle: string): string {
+function genHeroLLM(title: string, subtitle: string, ctaText?: string, colors?: LLMContent["colors"]): string {
+  const bg = colors?.background || "#ffffff";
+  const textColor = colors?.text || "#111827";
+  const accent = colors?.primary || "#2563eb";
   return `export function Hero() {
   return (
-    <section className="py-20 md:py-32">
-      <div className="container mx-auto px-4 text-center">
-        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
+    <section className="relative overflow-hidden" style={{ background: "${bg}" }}>
+      <div className="container mx-auto px-4 py-20 md:py-32 text-center">
+        <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl" style={{ color: "${textColor}" }}>
           ${title}
         </h1>
-        <p className="mt-6 text-lg text-gray-600 md:text-xl max-w-2xl mx-auto">
+        <p className="mt-6 text-lg md:text-xl max-w-2xl mx-auto opacity-80" style={{ color: "${textColor}" }}>
           ${subtitle}
         </p>
         <div className="mt-8 flex justify-center gap-4">
-          <button className="rounded-lg bg-blue-600 px-6 py-3 text-white font-medium hover:bg-blue-700 transition-colors">
-            Get Started
+          <button className="rounded-lg px-8 py-3 text-white font-medium transition-colors hover:opacity-90" style={{ background: "${accent}" }}>
+            ${ctaText || "Get Started"}
           </button>
-          <button className="rounded-lg border border-gray-300 px-6 py-3 font-medium hover:bg-gray-50 transition-colors">
+          <button className="rounded-lg border px-8 py-3 font-medium transition-colors hover:opacity-80" style={{ borderColor: "${accent}", color: "${accent}" }}>
             Learn More
           </button>
         </div>
@@ -729,18 +799,19 @@ function genHeroLLM(title: string, subtitle: string): string {
 `;
 }
 
-function genFeaturesLLM(features: Array<{ title: string; description: string }>): string {
+function genFeaturesLLM(features: Array<{ title: string; description: string }>, colors?: LLMContent["colors"]): string {
   const featuresJS = JSON.stringify(features);
+  const accent = colors?.primary || "#2563eb";
   return `export function Features() {
   const features = ${featuresJS};
   return (
-    <section className="py-16 bg-gray-50 dark:bg-gray-900">
+    <section className="py-16" style={{ background: "rgba(0,0,0,0.02)" }}>
       <div className="container mx-auto px-4">
         <h2 className="text-3xl font-bold text-center mb-12">Features</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto">
           {features.map((f) => (
-            <div key={f.title} className="rounded-lg border bg-white dark:bg-gray-800 p-6 shadow-sm">
-              <h3 className="text-xl font-semibold">{f.title}</h3>
+            <div key={f.title} className="rounded-xl border bg-white dark:bg-gray-800 p-6 shadow-sm hover:shadow-md transition-shadow">
+              <h3 className="text-xl font-semibold" style={{ color: "${accent}" }}>{f.title}</h3>
               <p className="mt-2 text-gray-600 dark:text-gray-400">{f.description}</p>
             </div>
           ))}
@@ -813,7 +884,8 @@ async function generateFiles(
   prompt: string,
   factory: string,
   projectName: string,
-  llmContent: LLMContent | null
+  llmContent: LLMContent | null,
+  scraped?: ScrapedContent
 ): Promise<{ path: string; content: string; type: string }[]> {
   const blueprint = buildBlueprint(prompt, factory, projectName);
   const files: { path: string; content: string; type: string }[] = [];
@@ -828,7 +900,7 @@ async function generateFiles(
   files.push({ path: postcss.filename, content: postcss.content, type: "config" });
   files.push({ path: nextConfig.filename, content: nextConfig.content, type: "config" });
   files.push({ path: "src/app/layout.tsx", content: genLayout(projectName), type: "page" });
-  files.push({ path: "src/app/globals.css", content: genStyles(), type: "style" });
+  files.push({ path: "src/app/globals.css", content: genStyles(llmContent?.colors), type: "style" });
 
   const usedComponents = new Set<string>();
 
@@ -848,19 +920,27 @@ async function generateFiles(
     }
   }
 
+  const navItems = llmContent?.navigation && llmContent.navigation.length > 0
+    ? llmContent.navigation
+    : scraped?.navigation && scraped.navigation.length > 0
+      ? scraped.navigation
+      : undefined;
+
   for (const compName of usedComponents) {
     const gen = COMPONENT_GENERATORS[compName];
     if (gen) {
       let content = gen(prompt);
       if (llmContent) {
         if (compName === "Hero") {
-          content = genHeroLLM(llmContent.heroTitle, llmContent.heroSubtitle);
+          content = genHeroLLM(llmContent.heroTitle, llmContent.heroSubtitle, llmContent.ctaText, llmContent.colors);
         } else if (compName === "Features" && llmContent.features.length > 0) {
-          content = genFeaturesLLM(llmContent.features);
+          content = genFeaturesLLM(llmContent.features, llmContent.colors);
         } else if (compName === "AboutContent" && llmContent.aboutText) {
           content = genAboutLLM(llmContent.aboutText);
         } else if (compName === "CTA" && llmContent.ctaText) {
           content = genCTALLM(llmContent.ctaText);
+        } else if (compName === "Header") {
+          content = genHeader(projectName, navItems, llmContent.colors);
         }
       }
       files.push({
@@ -878,8 +958,8 @@ async function generateFiles(
   }
 
   const headerFile = files.find((f) => f.path === "src/components/Header.tsx");
-  if (headerFile) {
-    headerFile.content = genHeader(projectName);
+  if (headerFile && llmContent) {
+    headerFile.content = genHeader(projectName, navItems, llmContent.colors);
   }
 
   return files;
@@ -919,6 +999,18 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
   const errors: string[] = [];
   const warnings: string[] = [];
 
+  // Detect and scrape URL if present
+  let scraped: ScrapedContent | undefined;
+  const promptHasUrl = isUrl(request.prompt.trim());
+  if (promptHasUrl) {
+    try {
+      scraped = await scrapeUrl(request.prompt.trim());
+      warnings.push(`Scraped ${scraped.url}: ${scraped.title} (${scraped.headings.length} headings, ${scraped.images.length} images, ${scraped.sections.length} sections)`);
+    } catch (err) {
+      warnings.push(`URL scraping failed: ${err instanceof Error ? err.message : "unknown"}. Generating from prompt only.`);
+    }
+  }
+
   const { data: project, error: createError } = await supabase
     .from("projects")
     .insert({
@@ -937,12 +1029,12 @@ export async function runGeneration(request: GenerationRequest): Promise<Generat
 
   try {
     const [llmContent, agentResults, memoryContext, qualityPrediction] = await Promise.all([
-      generateLLMContent(request.prompt, factory),
+      generateLLMContent(request.prompt, factory, undefined, scraped),
       runAgentWorkflow(request.prompt, factory, projectName),
       retrieveMemory(request.prompt, factory),
       predictQuality(request.prompt, factory),
     ]);
-    const files = await generateFiles(request.prompt, factory, projectName, llmContent);
+    const files = await generateFiles(request.prompt, factory, projectName, llmContent, scraped);
     const blueprint = buildBlueprint(request.prompt, factory, projectName);
     const qualityScore = calculateQualityScore(files);
     const buildValidation = validateBuild(files);

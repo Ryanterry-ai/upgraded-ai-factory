@@ -1,79 +1,81 @@
 "use client";
-
-import Link from "next/link";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { ArrowRight, Sparkles, Zap, Globe, ShoppingCart, LayoutDashboard, Bot, Settings, Code2 } from "lucide-react";
+import { Sparkles, ArrowRight, Globe, ShoppingCart, LayoutDashboard, Settings, Bot, Wrench } from "lucide-react";
 
-const factories = [
-  { icon: Globe, label: "Website", desc: "Landing pages, portfolios, blogs" },
-  { icon: ShoppingCart, label: "Ecommerce", desc: "Stores, product pages, checkout" },
-  { icon: LayoutDashboard, label: "SaaS", desc: "Dashboards, auth, billing" },
-  { icon: Settings, label: "Admin", desc: "Backoffice, CRM, data panels" },
-  { icon: Bot, label: "Agent", desc: "AI agents, chatbots, copilots" },
-  { icon: Code2, label: "Internal Tools", desc: "CRUD apps, data views" },
+const FACTORIES = [
+  { id: "website", label: "Website", icon: Globe, color: "#8b5cf6", desc: "Landing pages, portfolios, blogs" },
+  { id: "ecommerce", label: "Ecommerce", icon: ShoppingCart, color: "#ec4899", desc: "Stores, product pages, checkout" },
+  { id: "saas", label: "SaaS", icon: LayoutDashboard, color: "#06b6d4", desc: "Dashboards, auth, billing" },
+  { id: "admin", label: "Admin", icon: Settings, color: "#f59e0b", desc: "Backoffice, CRM, data panels" },
+  { id: "agent", label: "Agent", icon: Bot, color: "#10b981", desc: "AI agents, chatbots, copilots" },
+  { id: "tools", label: "Internal Tools", icon: Wrench, color: "#6366f1", desc: "CRUD apps, data views" },
 ];
 
-const features = [
-  { title: "AI Team of 32 Agents", desc: "Product managers, engineers, designers, QA, SEO — all working in parallel." },
-  { title: "Real-Time Workspace", desc: "Watch agents think, build, and validate your project live." },
-  { title: "Production-Ready Output", desc: "Next.js + TypeScript + Tailwind. Download and deploy instantly." },
-  { title: "Semantic Memory", desc: "The system learns from every generation to improve future outputs." },
+const SUGGESTIONS = [
+  "Ecommerce store with product grid and cart",
+  "SaaS dashboard with charts and billing",
+  "Portfolio with blog and contact form",
+  "Admin panel with user management",
+  "Landing page for AI startup",
+  "AI chatbot with conversation history",
 ];
 
 export default function HomePage() {
+  const router = useRouter();
+  const [prompt, setPrompt] = useState("");
+  const [hoveredFactory, setHoveredFactory] = useState<string | null>(null);
+
+  const handleSubmit = (p: string) => {
+    if (!p.trim()) return;
+    router.push(`/projects/new?prompt=${encodeURIComponent(p.trim())}`);
+  };
+
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-hidden">
+    <div className="min-h-screen bg-[#09090b] text-white">
       {/* Nav */}
-      <nav className="fixed top-0 w-full z-50 glass">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-light to-pink-500 flex items-center justify-center">
+      <header className="fixed top-0 w-full z-50 border-b border-white/5 bg-[#09090b]/80 backdrop-blur-xl">
+        <div className="max-w-7xl mx-auto px-6 h-14 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center">
               <Sparkles className="w-4 h-4 text-white" />
             </div>
-            <span className="text-lg font-bold tracking-tight">build.same</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Dashboard
-            </Link>
-            <Link href="/login" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              Sign In
-            </Link>
-            <Link
-              href="/projects/new"
-              className="text-sm font-medium bg-white text-black px-4 py-2 rounded-lg hover:bg-zinc-200 transition-colors"
-            >
-              Get Started
-            </Link>
+            <span className="font-bold text-sm tracking-tight">build.same</span>
           </div>
+          <nav className="flex items-center gap-6">
+            <a href="/dashboard" className="text-sm text-zinc-400 hover:text-white transition-colors">Dashboard</a>
+            <a href="/login" className="text-sm text-zinc-400 hover:text-white transition-colors">Sign In</a>
+            <button onClick={() => handleSubmit(prompt || "Build a landing page")} className="text-sm bg-white text-black px-4 py-1.5 rounded-full font-medium hover:bg-zinc-200 transition-colors">
+              Get Started
+            </button>
+          </nav>
         </div>
-      </nav>
+      </header>
 
       {/* Hero */}
-      <section className="relative pt-32 pb-20 px-6">
-        <div className="absolute inset-0 grid-bg opacity-40" />
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-brand/20 rounded-full blur-[120px]" />
-
-        <div className="max-w-4xl mx-auto text-center relative">
+      <main className="pt-32 pb-20 px-6">
+        <div className="max-w-3xl mx-auto text-center">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
+            transition={{ duration: 0.5 }}
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-border text-xs text-muted-foreground mb-8">
-              <span className="w-2 h-2 rounded-full bg-green-500 pulse-dot" />
-              32 AI agents ready
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs text-zinc-400 mb-8">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              32 AI agents online
             </div>
 
-            <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.1] mb-6">
+            <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-tight leading-[1.1] mb-6">
               Build anything
               <br />
-              <span className="gradient-text">with AI.</span>
+              <span className="bg-gradient-to-r from-violet-400 via-pink-400 to-orange-400 bg-clip-text text-transparent">
+                with AI.
+              </span>
             </h1>
 
-            <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 leading-relaxed">
-              Describe what you want. Our AI team of 32 agents designs, codes, and validates
-              a production-ready application — in minutes, not months.
+            <p className="text-lg text-zinc-400 max-w-xl mx-auto mb-10 leading-relaxed">
+              Describe what you want. Our AI team of 32 agents designs, codes, and validates a production-ready application — in minutes, not months.
             </p>
           </motion.div>
 
@@ -81,150 +83,142 @@ export default function HomePage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
             className="max-w-2xl mx-auto"
           >
-            <Link href="/projects/new">
-              <div className="glass rounded-2xl p-1 cursor-pointer group hover:border-brand-light/50 transition-all duration-300">
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-violet-500/20 via-pink-500/20 to-orange-500/20 rounded-2xl blur opacity-0 group-hover:opacity-100 transition-opacity" />
+              <div className="relative bg-[#18181b] border border-white/10 rounded-2xl p-1">
                 <div className="flex items-center gap-3 px-4 py-3">
-                  <Sparkles className="w-5 h-5 text-muted-foreground group-hover:text-brand-light transition-colors" />
-                  <span className="text-muted-foreground text-left flex-1">
-                    Describe your app, paste a URL, or upload a design...
-                  </span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground hidden sm:block">⌘K</span>
-                    <ArrowRight className="w-4 h-4 text-muted-foreground group-hover:text-foreground group-hover:translate-x-0.5 transition-all" />
-                  </div>
+                  <Sparkles className="w-5 h-5 text-zinc-500 shrink-0" />
+                  <input
+                    type="text"
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleSubmit(prompt)}
+                    placeholder="Describe your app, paste a URL, or upload a design..."
+                    className="flex-1 bg-transparent text-white placeholder:text-zinc-500 outline-none text-sm"
+                  />
+                  <button
+                    onClick={() => handleSubmit(prompt)}
+                    className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center hover:bg-white/20 transition-colors shrink-0"
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
-            </Link>
+            </div>
 
-            {/* Quick actions */}
-            <div className="flex items-center justify-center gap-3 mt-4">
-              <span className="text-xs text-muted-foreground">or start with:</span>
+            {/* Quick inputs */}
+            <div className="flex items-center justify-center gap-3 mt-4 text-xs text-zinc-500">
+              <span>or start with:</span>
               {["Paste URL", "Upload PDF", "Figma file"].map((label) => (
-                <Link
+                <button
                   key={label}
-                  href="/projects/new"
-                  className="text-xs px-3 py-1.5 rounded-full border border-border text-muted-foreground hover:text-foreground hover:border-zinc-500 transition-all"
+                  onClick={() => handleSubmit(`Build a ${label.toLowerCase()}`)}
+                  className="px-3 py-1 rounded-full border border-white/10 hover:border-white/20 hover:text-zinc-300 transition-colors"
                 >
                   {label}
-                </Link>
+                </button>
               ))}
             </div>
           </motion.div>
 
-          {/* Browser mockup */}
-          <motion.div
-            initial={{ opacity: 0, y: 40 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.4 }}
-            className="mt-16 max-w-4xl mx-auto"
-          >
-            <div className="rounded-xl border border-border bg-zinc-900/50 overflow-hidden glow">
-              <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full bg-zinc-700" />
-                  <div className="w-3 h-3 rounded-full bg-zinc-700" />
-                  <div className="w-3 h-3 rounded-full bg-zinc-700" />
-                </div>
-                <div className="flex-1 flex justify-center">
-                  <div className="px-4 py-1 rounded-lg bg-zinc-800 text-xs text-muted-foreground">
-                    build.same
-                  </div>
-                </div>
-              </div>
-              <div className="p-8 md:p-12">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {factories.map((f, i) => (
-                    <motion.div
-                      key={f.label}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4, delay: 0.6 + i * 0.1 }}
-                      className="p-4 rounded-xl border border-border bg-zinc-800/50 hover:border-brand-light/30 transition-all cursor-pointer group"
-                    >
-                      <f.icon className="w-5 h-5 text-brand-light mb-3 group-hover:scale-110 transition-transform" />
-                      <p className="text-sm font-medium mb-1">{f.label}</p>
-                      <p className="text-xs text-muted-foreground">{f.desc}</p>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="py-24 px-6">
-        <div className="max-w-6xl mx-auto">
+          {/* Suggestions */}
           <motion.div
             initial={{ opacity: 0 }}
-            whileInView={{ opacity: 1 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+            className="flex flex-wrap justify-center gap-2 mt-8 max-w-2xl mx-auto"
           >
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight mb-4">
-              Not a code generator.
-              <br />
-              <span className="text-muted-foreground">An AI software team.</span>
-            </h2>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 gap-6">
-            {features.map((f, i) => (
-              <motion.div
-                key={f.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-                className="p-6 rounded-2xl border border-border hover:border-zinc-600 transition-all group"
+            {SUGGESTIONS.map((s) => (
+              <button
+                key={s}
+                onClick={() => handleSubmit(s)}
+                className="text-xs px-3 py-1.5 rounded-full border border-white/10 text-zinc-400 hover:border-white/20 hover:text-zinc-200 transition-colors"
               >
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-brand/10 flex items-center justify-center shrink-0 group-hover:bg-brand/20 transition-colors">
-                    <Zap className="w-5 h-5 text-brand-light" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold mb-2">{f.title}</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
-                  </div>
-                </div>
-              </motion.div>
+                {s}
+              </button>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-24 px-6">
-        <div className="max-w-3xl mx-auto text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-4xl md:text-5xl font-bold tracking-tight mb-6">
-              Ready to build?
-            </h2>
-            <p className="text-muted-foreground text-lg mb-8">
-              No credit card. No configuration. Just describe and generate.
-            </p>
-            <Link
-              href="/projects/new"
-              className="inline-flex items-center gap-2 bg-white text-black px-6 py-3 rounded-xl font-medium hover:bg-zinc-200 transition-colors"
-            >
-              Start Building
-              <ArrowRight className="w-4 h-4" />
-            </Link>
           </motion.div>
         </div>
-      </section>
+
+        {/* Factory Cards */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="max-w-4xl mx-auto mt-20"
+        >
+          <div className="rounded-2xl border border-white/10 bg-[#18181b]/50 p-6">
+            <div className="text-center mb-6">
+              <span className="text-xs font-medium text-zinc-500 uppercase tracking-wider">build.same</span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              {FACTORIES.map((f) => {
+                const Icon = f.icon;
+                return (
+                  <button
+                    key={f.id}
+                    onClick={() => handleSubmit(`Build a ${f.label.toLowerCase()}`)}
+                    onMouseEnter={() => setHoveredFactory(f.id)}
+                    onMouseLeave={() => setHoveredFactory(null)}
+                    className="relative p-4 rounded-xl border border-white/5 hover:border-white/15 bg-white/[0.02] hover:bg-white/[0.05] transition-all text-left group"
+                  >
+                    <Icon className="w-5 h-5 mb-3" style={{ color: f.color }} />
+                    <div className="font-medium text-sm text-white">{f.label}</div>
+                    <div className="text-xs text-zinc-500 mt-1">{f.desc}</div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Features */}
+        <div className="max-w-5xl mx-auto mt-24 grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[
+            { title: "AI Team of 32 Agents", desc: "Product managers, engineers, designers, QA, SEO — all working in parallel.", color: "#8b5cf6" },
+            { title: "Real-Time Workspace", desc: "Watch agents think, build, and validate your project live.", color: "#ec4899" },
+            { title: "Production-Ready Output", desc: "Next.js + TypeScript + Tailwind. Download and deploy instantly.", color: "#06b6d4" },
+          ].map((f, i) => (
+            <motion.div
+              key={f.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 + i * 0.1 }}
+              className="text-center"
+            >
+              <div className="w-10 h-10 rounded-xl mx-auto mb-4 flex items-center justify-center" style={{ background: `${f.color}15` }}>
+                <div className="w-3 h-3 rounded-full" style={{ background: f.color }} />
+              </div>
+              <h3 className="font-semibold text-white mb-2">{f.title}</h3>
+              <p className="text-sm text-zinc-500 leading-relaxed">{f.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8 }}
+          className="text-center mt-24"
+        >
+          <h2 className="text-2xl font-bold mb-4">Ready to build?</h2>
+          <p className="text-zinc-400 mb-6">No credit card. No configuration. Just describe and generate.</p>
+          <button
+            onClick={() => handleSubmit(prompt || "Build a modern landing page")}
+            className="bg-gradient-to-r from-violet-500 to-pink-500 text-white px-8 py-3 rounded-full font-medium hover:opacity-90 transition-opacity"
+          >
+            Start Building
+          </button>
+        </motion.div>
+      </main>
 
       {/* Footer */}
-      <footer className="border-t border-border py-8 px-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between text-xs text-muted-foreground">
+      <footer className="border-t border-white/5 py-6">
+        <div className="max-w-7xl mx-auto px-6 flex items-center justify-between text-xs text-zinc-600">
           <span>build.same — AI-Native App Builder</span>
           <span>Powered by 32 AI Agents</span>
         </div>
