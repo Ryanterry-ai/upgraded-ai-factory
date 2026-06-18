@@ -1328,54 +1328,213 @@ export function Sidebar() {
 
 function genDashboardContent(): string {
   return `"use client";
-export function DashboardContent() {
-  const stats = [
-    { label: "Total Revenue", value: "$124,563", change: "+12.5%", up: true, icon: "💰" },
-    { label: "Total Orders", value: "3,456", change: "+8.2%", up: true, icon: "📦" },
-    { label: "Active Users", value: "12,345", change: "+23.1%", up: true, icon: "👥" },
-    { label: "Conversion Rate", value: "3.24%", change: "-0.4%", up: false, icon: "📈" },
-  ];
-  const recentOrders = [
-    { id: "#ORD-7823", customer: "Sarah Mitchell", product: "Whey Protein Isolate", amount: "$49.99", status: "Delivered", date: "2 min ago" },
-    { id: "#ORD-7822", customer: "James Rodriguez", product: "Creatine Monohydrate", amount: "$29.99", status: "Processing", date: "15 min ago" },
-    { id: "#ORD-7821", customer: "Emily Chen", product: "BCAA Recovery", amount: "$39.99", status: "Shipped", date: "1 hr ago" },
-    { id: "#ORD-7820", customer: "Michael Thompson", product: "Pre-Workout Surge", amount: "$44.99", status: "Delivered", date: "2 hrs ago" },
-    { id: "#ORD-7819", customer: "Priya Sharma", product: "Omega-3 Fish Oil", amount: "$24.99", status: "Processing", date: "3 hrs ago" },
-  ];
-  const statusColors: Record<string, string> = { Delivered: "bg-green-100 text-green-700", Processing: "bg-yellow-100 text-yellow-700", Shipped: "bg-blue-100 text-blue-700" };
+import { useState } from "react";
+
+const monthlyData = [
+  { month: "Jan", revenue: 84500, members: 892 },
+  { month: "Feb", revenue: 91200, members: 934 },
+  { month: "Mar", revenue: 87800, members: 908 },
+  { month: "Apr", revenue: 95600, members: 978 },
+  { month: "May", revenue: 102300, members: 1045 },
+  { month: "Jun", revenue: 108900, members: 1112 },
+  { month: "Jul", revenue: 98700, members: 1023 },
+  { month: "Aug", revenue: 112400, members: 1156 },
+  { month: "Sep", revenue: 118900, members: 1201 },
+  { month: "Oct", revenue: 124563, members: 1247 },
+];
+
+const activityDistribution = [
+  { label: "Gym Floor", value: 45, color: "#f59e0b" },
+  { label: "Group Classes", value: 30, color: "#3b82f6" },
+  { label: "Personal Training", value: 25, color: "#10b981" },
+];
+
+const recentCheckins = [
+  { name: "Rahul Sharma", time: "2 min ago", type: "Gym Floor", avatar: "RS" },
+  { name: "Priya Patel", time: "8 min ago", type: "Yoga Class", avatar: "PP" },
+  { name: "Amit Singh", time: "15 min ago", type: "Personal Training", avatar: "AS" },
+  { name: "Neha Gupta", time: "22 min ago", type: "Gym Floor", avatar: "NG" },
+  { name: "Vikram Rao", time: "31 min ago", type: "HIIT Class", avatar: "VR" },
+];
+
+const alerts = [
+  { type: "warning", title: "Overdue Invoice", desc: "Raj Fitness Center — ₹24,999 overdue by 12 days", time: "1h ago" },
+  { type: "danger", title: "Membership Expiring", desc: "15 memberships expire this week — ₹1,87,500 at risk", time: "3h ago" },
+  { type: "info", title: "High-Priority Lead", desc: "Corporate inquiry from TechCorp India — 200 employees", time: "5h ago" },
+];
+
+function MiniLineChart({ data, color }: { data: number[]; color: string }) {
+  const max = Math.max(...data);
+  const min = Math.min(...data);
+  const range = max - min || 1;
+  const points = data.map((v, i) => \`\${(i / (data.length - 1)) * 100},\${100 - ((v - min) / range) * 80}\`).join(" ");
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Dashboard Overview</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
+      <defs>
+        <linearGradient id={\`grad-\${color.replace("#", "")}\`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
+          <stop offset="100%" stopColor={color} stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <polygon points={\`0,100 \${points} 100,100\`} fill={\`url(#grad-\${color.replace("#", "")})\`} />
+      <polyline points={points} fill="none" stroke={color} strokeWidth="2" vectorEffect="non-scaling-stroke" />
+    </svg>
+  );
+}
+
+function DonutChart({ data }: { data: typeof activityDistribution }) {
+  const total = data.reduce((s, d) => s + d.value, 0);
+  let cumulative = 0;
+  const segments = data.map((d) => {
+    const start = (cumulative / total) * 100;
+    cumulative += d.value;
+    const end = (cumulative / total) * 100;
+    return { ...d, start, end };
+  });
+  return (
+    <div className="relative w-40 h-40">
+      <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
+        {segments.map((s, i) => (
+          <circle key={i} cx="18" cy="18" r="15.9" fill="none" stroke={s.color} strokeWidth="3.5"
+            strokeDasharray={\`\${s.end - s.start} \${100 - (s.end - s.start)}\`}
+            strokeDashoffset={-\${s.start}} className="transition-all duration-700" />
+        ))}
+      </svg>
+      <div className="absolute inset-0 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-2xl font-bold">1,247</p>
+          <p className="text-[10px] text-gray-400">Active</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function DashboardContent() {
+  const [activeTab, setActiveTab] = useState<"overview" | "leads" | "billing" | "members">("overview");
+
+  const stats = [
+    { label: "Total Members", value: "1,247", change: "+34 this month", up: true, icon: "👥", color: "blue" },
+    { label: "Monthly Revenue", value: "₹12,45,630", change: "+12.5% vs last", up: true, icon: "💰", color: "green" },
+    { label: "Hot Leads", value: "23", change: "8 require follow-up", up: true, icon: "🔥", color: "amber" },
+    { label: "Today's Check-ins", value: "89", change: "62% of members", up: true, icon: "✅", color: "emerald" },
+  ];
+
+  const colorMap: Record<string, string> = { blue: "bg-blue-50 text-blue-600", green: "bg-green-50 text-green-600", amber: "bg-amber-50 text-amber-600", emerald: "bg-emerald-50 text-emerald-600" };
+
+  return (
+    <div className="p-6 space-y-6" style={{ fontFamily: "'Inter', sans-serif" }}>
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Welcome back — here's your gym overview</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-gray-400">Last updated: Just now</span>
+          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s) => (
-          <div key={s.label} className="p-5 rounded-2xl bg-white border hover:shadow-md transition-shadow">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500">{s.label}</p>
-              <span className="text-2xl">{s.icon}</span>
+          <div key={s.label} className="bg-white rounded-2xl border p-5 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between mb-3">
+              <div className={\`w-10 h-10 rounded-xl flex items-center justify-center text-lg \${colorMap[s.color]}\`}>{s.icon}</div>
+              <span className="text-[10px] font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">↑ {s.change}</span>
             </div>
-            <p className="text-3xl font-bold mt-2">{s.value}</p>
-            <p className={`text-sm mt-1 font-medium ${s.up ? "text-green-600" : "text-red-500"}`}>{s.change} vs last month</p>
+            <p className="text-2xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{s.value}</p>
+            <p className="text-xs text-gray-500 mt-1">{s.label}</p>
           </div>
         ))}
       </div>
-      <div className="bg-white rounded-2xl border p-6">
-        <h2 className="text-lg font-semibold mb-4">Recent Orders</h2>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead><tr className="border-b text-left text-gray-500">
-              <th className="pb-3 font-medium">Order</th><th className="pb-3 font-medium">Customer</th><th className="pb-3 font-medium">Product</th><th className="pb-3 font-medium">Amount</th><th className="pb-3 font-medium">Status</th><th className="pb-3 font-medium">Time</th>
-            </tr></thead>
-            <tbody>{recentOrders.map((o) => (
-              <tr key={o.id} className="border-b last:border-0 hover:bg-gray-50">
-                <td className="py-3 font-mono text-xs">{o.id}</td>
-                <td className="py-3 font-medium">{o.customer}</td>
-                <td className="py-3 text-gray-600">{o.product}</td>
-                <td className="py-3 font-semibold">{o.amount}</td>
-                <td className="py-3"><span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[o.status] || "bg-gray-100"}`}>{o.status}</span></td>
-                <td className="py-3 text-gray-400">{o.date}</td>
-              </tr>
-            ))}</tbody>
-          </table>
+
+      {/* Charts Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Revenue Chart */}
+        <div className="lg:col-span-2 bg-white rounded-2xl border p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold">Revenue Trend</h3>
+            <span className="text-xs text-gray-400">Last 10 months</span>
+          </div>
+          <div className="h-48">
+            <MiniLineChart data={monthlyData.map(d => d.revenue)} color="#f59e0b" />
+          </div>
+          <div className="flex justify-between mt-2 text-[10px] text-gray-400">
+            {monthlyData.map(d => <span key={d.month}>{d.month}</span>)}
+          </div>
+        </div>
+
+        {/* Activity Distribution */}
+        <div className="bg-white rounded-2xl border p-5">
+          <h3 className="font-semibold mb-4">Activity Distribution</h3>
+          <div className="flex justify-center mb-4">
+            <DonutChart data={activityDistribution} />
+          </div>
+          <div className="space-y-2">
+            {activityDistribution.map((a) => (
+              <div key={a.label} className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: a.color }} />
+                  <span className="text-gray-600">{a.label}</span>
+                </div>
+                <span className="font-medium">{a.value}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Row: Check-ins + Alerts */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Recent Check-ins */}
+        <div className="bg-white rounded-2xl border p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold">Recent Check-ins</h3>
+            <button className="text-xs text-amber-600 font-medium hover:underline">View All</button>
+          </div>
+          <div className="space-y-3">
+            {recentCheckins.map((c, i) => (
+              <div key={i} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors">
+                <div className="w-9 h-9 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center text-xs font-bold">{c.avatar}</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{c.name}</p>
+                  <p className="text-[10px] text-gray-400">{c.type}</p>
+                </div>
+                <span className="text-[10px] text-gray-400">{c.time}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Live Alerts */}
+        <div className="bg-white rounded-2xl border p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-semibold">Live Alerts</h3>
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              <span className="text-xs text-gray-400">{alerts.length} active</span>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {alerts.map((a, i) => {
+              const styles: Record<string, string> = { warning: "bg-amber-50 border-amber-200 text-amber-800", danger: "bg-red-50 border-red-200 text-red-800", info: "bg-blue-50 border-blue-200 text-blue-800" };
+              const icons: Record<string, string> = { warning: "⚠️", danger: "🚨", info: "ℹ️" };
+              return (
+                <div key={i} className={\`p-3 rounded-xl border \${styles[a.type]}\`}>
+                  <div className="flex items-start gap-2">
+                    <span className="text-sm mt-0.5">{icons[a.type]}</span>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold">{a.title}</p>
+                      <p className="text-xs mt-0.5 opacity-80">{a.desc}</p>
+                    </div>
+                    <span className="text-[10px] opacity-60 whitespace-nowrap">{a.time}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
@@ -2329,109 +2488,159 @@ export function AttendanceTable() {
 
 function genMemberTable(): string {
   return `"use client";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 
 interface Member {
   id: string;
   name: string;
-  email: string;
   phone: string;
-  membershipType: "basic" | "premium" | "vip";
-  status: "active" | "inactive" | "expired";
+  email: string;
+  plan: "Basic" | "Premium" | "VIP";
+  status: "active" | "expired" | "suspended";
   joinDate: string;
-  lastVisit: string;
+  lastCheckin: string;
+  totalCheckins: number;
+  billingStanding: "paid" | "pending" | "overdue";
+  emergencyContact: string;
 }
 
 const MOCK_MEMBERS: Member[] = [
-  { id: "1", name: "John Smith", email: "john@email.com", phone: "555-0101", membershipType: "premium", status: "active", joinDate: "2024-06-15", lastVisit: "2025-01-15" },
-  { id: "2", name: "Sarah Johnson", email: "sarah@email.com", phone: "555-0102", membershipType: "vip", status: "active", joinDate: "2024-03-10", lastVisit: "2025-01-14" },
-  { id: "3", name: "Mike Wilson", email: "mike@email.com", phone: "555-0103", membershipType: "basic", status: "inactive", joinDate: "2024-09-01", lastVisit: "2024-12-20" },
-  { id: "4", name: "Emily Davis", email: "emily@email.com", phone: "555-0104", membershipType: "premium", status: "active", joinDate: "2024-01-20", lastVisit: "2025-01-15" },
-  { id: "5", name: "James Brown", email: "james@email.com", phone: "555-0105", membershipType: "basic", status: "expired", joinDate: "2023-11-05", lastVisit: "2024-08-10" },
+  { id: "1", name: "Rahul Sharma", phone: "+91 98765 43210", email: "rahul@gmail.com", plan: "VIP", status: "active", joinDate: "Jan 2024", lastCheckin: "Today, 7:30 AM", totalCheckins: 312, billingStanding: "paid", emergencyContact: "+91 98765 43211" },
+  { id: "2", name: "Priya Patel", phone: "+91 87654 32109", email: "priya@gmail.com", plan: "Premium", status: "active", joinDate: "Mar 2024", lastCheckin: "Today, 6:15 AM", totalCheckins: 245, billingStanding: "paid", emergencyContact: "+91 87654 32110" },
+  { id: "3", name: "Amit Singh", phone: "+91 76543 21098", email: "amit@yahoo.com", plan: "Basic", status: "active", joinDate: "Jun 2024", lastCheckin: "Yesterday", totalCheckins: 89, billingStanding: "pending", emergencyContact: "+91 76543 21099" },
+  { id: "4", name: "Neha Gupta", phone: "+91 65432 10987", email: "neha@gmail.com", plan: "Premium", status: "active", joinDate: "Feb 2024", lastCheckin: "2 days ago", totalCheckins: 198, billingStanding: "paid", emergencyContact: "+91 65432 10988" },
+  { id: "5", name: "Vikram Rao", phone: "+91 54321 09876", email: "vikram@outlook.com", plan: "VIP", status: "active", joinDate: "Nov 2023", lastCheckin: "Today, 8:00 AM", totalCheckins: 423, billingStanding: "paid", emergencyContact: "+91 54321 09877" },
+  { id: "6", name: "Sneha Reddy", phone: "+91 43210 98765", email: "sneha@gmail.com", plan: "Basic", status: "expired", joinDate: "Sep 2023", lastCheckin: "Dec 15, 2024", totalCheckins: 34, billingStanding: "overdue", emergencyContact: "+91 43210 98766" },
+  { id: "7", name: "Karthik Iyer", phone: "+91 32109 87654", email: "karthik@gmail.com", plan: "Premium", status: "active", joinDate: "Aug 2024", lastCheckin: "Today, 6:45 AM", totalCheckins: 156, billingStanding: "paid", emergencyContact: "+91 32109 87655" },
+  { id: "8", name: "Deepa Krishnan", phone: "+91 21098 76543", email: "deepa@gmail.com", plan: "VIP", status: "active", joinDate: "Apr 2024", lastCheckin: "Yesterday", totalCheckins: 278, billingStanding: "paid", emergencyContact: "+91 21098 76544" },
 ];
 
-const STATUS_COLORS: Record<string, string> = { active: "bg-green-100 text-green-800", inactive: "bg-gray-100 text-gray-800", expired: "bg-red-100 text-red-800" };
-const PLAN_COLORS: Record<string, string> = { basic: "bg-blue-100 text-blue-800", premium: "bg-purple-100 text-purple-800", vip: "bg-amber-100 text-amber-800" };
+const PLAN_COLORS: Record<string, string> = { Basic: "bg-blue-100 text-blue-700", Premium: "bg-purple-100 text-purple-700", VIP: "bg-amber-100 text-amber-700" };
+const STATUS_COLORS: Record<string, string> = { active: "bg-green-100 text-green-700", expired: "bg-red-100 text-red-700", suspended: "bg-gray-100 text-gray-700" };
+const BILLING_COLORS: Record<string, string> = { paid: "text-green-600", pending: "text-amber-600", overdue: "text-red-600" };
 
 export function MemberTable() {
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
   const [planFilter, setPlanFilter] = useState("all");
+  const [checkinInput, setCheckinInput] = useState("");
+  const [checkinResult, setCheckinResult] = useState<{ success: boolean; message: string } | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
-  const perPage = 10;
+  const perPage = 8;
 
-  const filtered = useMemo(() => {
-    let result = [...MOCK_MEMBERS];
-    if (search) result = result.filter((m) => m.name.toLowerCase().includes(search.toLowerCase()) || m.email.toLowerCase().includes(search.toLowerCase()));
-    if (statusFilter !== "all") result = result.filter((m) => m.status === statusFilter);
-    if (planFilter !== "all") result = result.filter((m) => m.membershipType === planFilter);
-    return result;
-  }, [search, statusFilter, planFilter]);
+  const filtered = MOCK_MEMBERS
+    .filter(m => planFilter === "all" || m.plan === planFilter)
+    .filter(m => search === "" || m.name.toLowerCase().includes(search.toLowerCase()) || m.phone.includes(search));
 
   const paginated = filtered.slice((currentPage - 1) * perPage, currentPage * perPage);
   const totalPages = Math.ceil(filtered.length / perPage);
 
+  const handleCheckin = () => {
+    const member = MOCK_MEMBERS.find(m => m.phone === checkinInput || m.id === checkinInput);
+    if (member && member.status === "active") {
+      setCheckinResult({ success: true, message: `✓ ${member.name} checked in — ${member.plan} member, ${member.totalCheckins + 1} total visits` });
+    } else if (member) {
+      setCheckinResult({ success: false, message: `✕ ${member.name}'s membership is ${member.status}` });
+    } else {
+      setCheckinResult({ success: false, message: "✕ Member not found — check phone number or ID" });
+    }
+    setCheckinInput("");
+    setTimeout(() => setCheckinResult(null), 5000);
+  };
+
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap gap-3">
-        <input type="text" placeholder="Search by name or email..." value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }} className="px-4 py-2 border rounded-lg text-sm flex-1 min-w-[200px]" />
-        <select value={statusFilter} onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }} className="px-4 py-2 border rounded-lg text-sm">
-          <option value="all">All Status</option>
-          <option value="active">Active</option>
-          <option value="inactive">Inactive</option>
-          <option value="expired">Expired</option>
-        </select>
-        <select value={planFilter} onChange={(e) => { setPlanFilter(e.target.value); setCurrentPage(1); }} className="px-4 py-2 border rounded-lg text-sm">
-          <option value="all">All Plans</option>
-          <option value="basic">Basic</option>
-          <option value="premium">Premium</option>
-          <option value="vip">VIP</option>
-        </select>
+    <div className="space-y-5" style={{ fontFamily: "'Inter', sans-serif" }}>
+      {/* Check-in Scanner */}
+      <div className="bg-gradient-to-r from-amber-500 to-amber-600 rounded-2xl p-5 text-white">
+        <h3 className="font-bold text-lg mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Reception Check-In</h3>
+        <p className="text-amber-100 text-xs mb-3">Scan member ID or enter phone number</p>
+        <div className="flex gap-2">
+          <input value={checkinInput} onChange={(e) => setCheckinInput(e.target.value)} placeholder="Enter phone number or member ID" className="flex-1 px-4 py-2.5 rounded-xl text-gray-900 text-sm focus:outline-none focus:ring-2 focus:ring-white/50" onKeyDown={(e) => e.key === "Enter" && handleCheckin()} />
+          <button onClick={handleCheckin} className="bg-white text-amber-700 px-6 py-2.5 rounded-xl font-semibold text-sm hover:bg-amber-50 transition-colors">Check In</button>
+        </div>
+        {checkinResult && (
+          <div className={\`mt-3 px-4 py-2 rounded-xl text-sm font-medium \${checkinResult.success ? "bg-green-500/20 text-white" : "bg-red-500/20 text-white"}\`}>
+            {checkinResult.message}
+          </div>
+        )}
       </div>
-      <div className="border rounded-lg overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Member</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Contact</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Plan</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Joined</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Last Visit</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {paginated.map((m) => (
-              <tr key={m.id} className="border-t hover:bg-gray-50">
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-600">{m.name.split(" ").map((n) => n[0]).join("")}</div>
-                    <span className="font-medium">{m.name}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-gray-600">{m.email}</td>
-                <td className="px-4 py-3"><span className={\`px-2 py-1 rounded-full text-xs font-medium \${PLAN_COLORS[m.membershipType]}\`}>{m.membershipType}</span></td>
-                <td className="px-4 py-3"><span className={\`px-2 py-1 rounded-full text-xs font-medium \${STATUS_COLORS[m.status]}\`}>{m.status}</span></td>
-                <td className="px-4 py-3 text-gray-600">{m.joinDate}</td>
-                <td className="px-4 py-3 text-gray-600">{m.lastVisit}</td>
-                <td className="px-4 py-3">
-                  <div className="flex gap-2">
-                    <button className="text-blue-600 hover:text-blue-800 text-xs">Edit</button>
-                    <button className="text-red-600 hover:text-red-800 text-xs">Remove</button>
-                  </div>
-                </td>
+
+      {/* Header + Filters */}
+      <div className="flex flex-wrap gap-3 items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Member Directory</h2>
+          <p className="text-xs text-gray-500">{filtered.length} total members</p>
+        </div>
+        <div className="flex gap-2">
+          <input type="text" placeholder="Search name or phone..." value={search} onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }} className="px-3 py-2 border rounded-xl text-sm w-56 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+          <select value={planFilter} onChange={(e) => { setPlanFilter(e.target.value); setCurrentPage(1); }} className="px-3 py-2 border rounded-xl text-sm bg-white">
+            <option value="all">All Plans</option>
+            <option>Basic</option><option>Premium</option><option>VIP</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Member Table */}
+      <div className="bg-white rounded-2xl border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 border-b">
+              <tr>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Member</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Contact</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Plan</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Check-ins</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Last Visit</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Billing</th>
+                <th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {paginated.map((m) => (
+                <tr key={m.id} className="border-b last:border-0 hover:bg-gray-50 transition-colors">
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-xs font-bold">{m.name.split(" ").map(n => n[0]).join("")}</div>
+                      <div>
+                        <p className="font-medium">{m.name}</p>
+                        <p className="text-[10px] text-gray-400">Since {m.joinDate}</p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3">
+                    <p className="text-xs">{m.phone}</p>
+                    <p className="text-[10px] text-gray-400">{m.email}</p>
+                  </td>
+                  <td className="px-4 py-3"><span className={\`px-2 py-1 rounded-full text-[10px] font-bold \${PLAN_COLORS[m.plan]}\`}>{m.plan}</span></td>
+                  <td className="px-4 py-3"><span className={\`px-2 py-1 rounded-full text-[10px] font-bold \${STATUS_COLORS[m.status]}\`}>{m.status}</span></td>
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-1.5">
+                      <div className="w-8 h-8 bg-amber-50 rounded-lg flex items-center justify-center text-xs font-bold text-amber-700">{m.totalCheckins}</div>
+                      <span className="text-[10px] text-gray-400">total</span>
+                    </div>
+                  </td>
+                  <td className="px-4 py-3 text-xs">{m.lastCheckin}</td>
+                  <td className="px-4 py-3"><span className={\`text-xs font-semibold \${BILLING_COLORS[m.billingStanding]}\`}>{m.billingStanding === "paid" ? "✓ Paid" : m.billingStanding === "pending" ? "⏳ Pending" : "⚠ Overdue"}</span></td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-1.5">
+                      <button className="text-xs bg-gray-100 px-2 py-1 rounded-lg hover:bg-gray-200">Profile</button>
+                      <button className="text-xs bg-amber-50 text-amber-700 px-2 py-1 rounded-lg hover:bg-amber-100">Check In</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      {/* Pagination */}
       {totalPages > 1 && (
-        <div className="flex justify-between items-center">
-          <p className="text-sm text-gray-500">Showing {(currentPage - 1) * perPage + 1}-{Math.min(currentPage * perPage, filtered.length)} of {filtered.length}</p>
+        <div className="flex justify-between items-center text-sm">
+          <p className="text-gray-500">Showing {(currentPage - 1) * perPage + 1}–{Math.min(currentPage * perPage, filtered.length)} of {filtered.length}</p>
           <div className="flex gap-1">
-            <button onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 rounded border text-sm disabled:opacity-50">Prev</button>
-            <button onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 rounded border text-sm disabled:opacity-50">Next</button>
+            <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1} className="px-3 py-1 rounded-lg border text-sm disabled:opacity-50 hover:bg-gray-50">← Prev</button>
+            <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} className="px-3 py-1 rounded-lg border text-sm disabled:opacity-50 hover:bg-gray-50">Next →</button>
           </div>
         </div>
       )}
@@ -2448,89 +2657,154 @@ import { useState } from "react";
 interface Lead {
   id: string;
   name: string;
-  email: string;
-  value: number;
-  stage: "new" | "contacted" | "qualified" | "proposal" | "closed-won" | "closed-lost";
-  source: string;
+  phone: string;
+  source: "Walk-in" | "Instagram" | "Referral" | "JustDial" | "Google Ads" | "Corporate";
+  interest: string;
+  stage: "new" | "contacted" | "trial" | "converted" | "lost";
+  priority: "hot" | "warm" | "cold";
+  followUp: string;
+  notes: string;
 }
 
+const PLANS = [
+  { id: "basic", name: "Basic", price: 1499 },
+  { id: "premium", name: "Premium", price: 2999 },
+  { id: "vip", name: "VIP", price: 4999 },
+];
+
 const STAGES = [
-  { id: "new", label: "New Leads", color: "bg-blue-500" },
-  { id: "contacted", label: "Contacted", color: "bg-yellow-500" },
-  { id: "qualified", label: "Qualified", color: "bg-purple-500" },
-  { id: "proposal", label: "Proposal", color: "bg-orange-500" },
-  { id: "closed-won", label: "Closed Won", color: "bg-green-500" },
-  { id: "closed-lost", label: "Closed Lost", color: "bg-red-500" },
+  { id: "new", label: "New Leads", color: "bg-blue-500", count: 8 },
+  { id: "contacted", label: "Contacted", color: "bg-yellow-500", count: 5 },
+  { id: "trial", label: "On Trial", color: "bg-purple-500", count: 4 },
+  { id: "converted", label: "Converted", color: "bg-green-500", count: 12 },
+  { id: "lost", label: "Lost", color: "bg-red-500", count: 3 },
 ];
 
 const MOCK_LEADS: Lead[] = [
-  { id: "1", name: "Acme Corp", email: "info@acme.com", value: 15000, stage: "new", source: "Website" },
-  { id: "2", name: "TechStart Inc", email: "hello@techstart.io", value: 8500, stage: "contacted", source: "Referral" },
-  { id: "3", name: "Global Solutions", email: "contact@globalsol.com", value: 22000, stage: "qualified", source: "LinkedIn" },
-  { id: "4", name: "NextGen Labs", email: "sales@nextgen.dev", value: 12000, stage: "proposal", source: "Cold Email" },
-  { id: "5", name: "Prime Holdings", email: "info@primeholdings.com", value: 35000, stage: "closed-won", source: "Conference" },
-  { id: "6", name: "SkyHigh Media", email: "team@skyhigh.co", value: 6000, stage: "new", source: "Google Ads" },
-  { id: "7", name: "OceanTrade", email: "biz@oceantrade.com", value: 18000, stage: "closed-lost", source: "Cold Call" },
+  { id: "1", name: "Rajesh Kumar", phone: "+91 98765 43210", source: "Walk-in", interest: "Personal Training", stage: "new", priority: "hot", followUp: "Today", notes: "Asked about PT pricing, very interested" },
+  { id: "2", name: "Ananya Sharma", phone: "+91 87654 32109", source: "Instagram", interest: "Weight Loss Program", stage: "contacted", priority: "warm", followUp: "Tomorrow", notes: "DM'd about 3-month transformation" },
+  { id: "3", name: "Vikram Patel", phone: "+91 76543 21098", source: "Referral", interest: "Premium Membership", stage: "trial", priority: "hot", followUp: "Today", notes: "Referred by Rahul S., CEO of TechCorp" },
+  { id: "4", name: "Sneha Reddy", phone: "+91 65432 10987", source: "JustDial", interest: "Group Classes", stage: "new", priority: "warm", followUp: "This Week", notes: "Interested in Zumba and Yoga" },
+  { id: "5", name: "Arjun Nair", phone: "+91 54321 09876", source: "Google Ads", interest: "Student Plan", stage: "contacted", priority: "cold", followUp: "Next Week", notes: "College student, price-sensitive" },
+  { id: "6", name: "Priya Mehta", phone: "+91 43210 98765", source: "Corporate", interest: "Corporate Wellness (50 employees)", stage: "trial", priority: "hot", followUp: "Today", notes: "HR head at FinServe India, needs proposal" },
+  { id: "7", name: "Karthik Iyer", phone: "+91 32109 87654", source: "Walk-in", interest: "Bodybuilding", stage: "new", priority: "warm", followUp: "Tomorrow", notes: "Competitive bodybuilder, needs advanced facilities" },
+  { id: "8", name: "Deepa Krishnan", phone: "+91 21098 76543", source: "Instagram", interest: "Post-Pregnancy Fitness", stage: "converted", priority: "hot", followUp: "N/A", notes: "Converted to Premium plan" },
+  { id: "9", name: "Mohit Gupta", phone: "+91 10987 65432", source: "Referral", interest: "CrossFit", stage: "trial", priority: "warm", followUp: "This Week", notes: "Trying CrossFit classes this week" },
+  { id: "10", name: "Nisha Agarwal", phone: "+91 09876 54321", source: "Google Ads", interest: "Yoga & Meditation", stage: "converted", priority: "warm", followUp: "N/A", notes: "Converted to Basic plan" },
 ];
 
 export function LeadPipeline() {
   const [leads, setLeads] = useState<Lead[]>(MOCK_LEADS);
-  const [draggedLead, setDraggedLead] = useState<Lead | null>(null);
+  const [showConvertModal, setShowConvertModal] = useState(false);
+  const [convertingLead, setConvertingLead] = useState<Lead | null>(null);
+  const [selectedPlan, setSelectedPlan] = useState("premium");
+  const [filterSource, setFilterSource] = useState("all");
+  const [filterPriority, setFilterPriority] = useState("all");
 
-  const moveLead = (leadId: string, newStage: Lead["stage"]) => {
-    setLeads((prev) => prev.map((l) => (l.id === leadId ? { ...l, stage: newStage } : l)));
+  const filtered = leads
+    .filter(l => filterSource === "all" || l.source === filterSource)
+    .filter(l => filterPriority === "all" || l.priority === filterPriority);
+
+  const pipelineValue = filtered.filter(l => l.stage !== "lost").reduce((s, l) => {
+    const plan = PLANS.find(p => p.name.toLowerCase() === l.interest.toLowerCase().split(" ")[0]);
+    return s + (plan?.price || 2999);
+  }, 0);
+
+  const convertToMember = () => {
+    if (!convertingLead) return;
+    setLeads(prev => prev.map(l => l.id === convertingLead.id ? { ...l, stage: "converted" as const } : l));
+    setShowConvertModal(false);
+    setConvertingLead(null);
   };
 
-  const totalValue = leads.filter((l) => l.stage !== "closed-lost").reduce((sum, l) => sum + l.value, 0);
-  const wonValue = leads.filter((l) => l.stage === "closed-won").reduce((sum, l) => sum + l.value, 0);
+  const moveLead = (leadId: string, newStage: Lead["stage"]) => {
+    setLeads(prev => prev.map(l => l.id === leadId ? { ...l, stage: newStage } : l));
+  };
+
+  const priorityBadge = (p: string) => {
+    const styles: Record<string, string> = { hot: "bg-red-100 text-red-700", warm: "bg-amber-100 text-amber-700", cold: "bg-blue-100 text-blue-700" };
+    return <span className={\`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase \${styles[p]}\`}>{p}</span>;
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="flex gap-4 mb-4">
-        <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
-          <p className="text-xs text-blue-600">Total Pipeline</p>
-          <p className="text-xl font-bold text-blue-700">\${totalValue.toLocaleString()}</p>
+    <div className="space-y-4" style={{ fontFamily: "'Inter', sans-serif" }}>
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Lead Pipeline</h2>
+          <p className="text-sm text-gray-500">Track and convert gym membership leads</p>
         </div>
-        <div className="p-3 rounded-lg bg-green-50 border border-green-200">
-          <p className="text-xs text-green-600">Won Deals</p>
-          <p className="text-xl font-bold text-green-700">\${wonValue.toLocaleString()}</p>
+        <button className="bg-amber-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-amber-700 transition-colors">+ Add Lead</button>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="bg-white rounded-xl border p-3">
+          <p className="text-[10px] text-gray-500 uppercase">Total Pipeline</p>
+          <p className="text-lg font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>₹{pipelineValue.toLocaleString("en-IN")}</p>
         </div>
-        <div className="p-3 rounded-lg bg-purple-50 border border-purple-200">
-          <p className="text-xs text-purple-600">Win Rate</p>
-          <p className="text-xl font-bold text-purple-700">{leads.length > 0 ? Math.round((leads.filter((l) => l.stage === "closed-won").length / leads.length) * 100) : 0}%</p>
+        <div className="bg-white rounded-xl border p-3">
+          <p className="text-[10px] text-gray-500 uppercase">Hot Leads</p>
+          <p className="text-lg font-bold text-red-600">{leads.filter(l => l.priority === "hot").length}</p>
+        </div>
+        <div className="bg-white rounded-xl border p-3">
+          <p className="text-[10px] text-gray-500 uppercase">Conversion Rate</p>
+          <p className="text-lg font-bold text-green-600">{leads.length > 0 ? Math.round((leads.filter(l => l.stage === "converted").length / leads.length) * 100) : 0}%</p>
+        </div>
+        <div className="bg-white rounded-xl border p-3">
+          <p className="text-[10px] text-gray-500 uppercase">Follow-ups Today</p>
+          <p className="text-lg font-bold text-amber-600">{leads.filter(l => l.followUp === "Today").length}</p>
         </div>
       </div>
-      <div className="flex gap-4 overflow-x-auto pb-4">
+
+      {/* Filters */}
+      <div className="flex gap-2">
+        <select value={filterSource} onChange={(e) => setFilterSource(e.target.value)} className="px-3 py-1.5 border rounded-lg text-xs bg-white">
+          <option value="all">All Sources</option>
+          <option>Walk-in</option><option>Instagram</option><option>Referral</option><option>JustDial</option><option>Google Ads</option><option>Corporate</option>
+        </select>
+        <select value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)} className="px-3 py-1.5 border rounded-lg text-xs bg-white">
+          <option value="all">All Priorities</option>
+          <option>hot</option><option>warm</option><option>cold</option>
+        </select>
+      </div>
+
+      {/* Pipeline Kanban */}
+      <div className="flex gap-3 overflow-x-auto pb-4">
         {STAGES.map((stage) => {
-          const stageLeads = leads.filter((l) => l.stage === stage.id);
+          const stageLeads = filtered.filter(l => l.stage === stage.id);
           return (
-            <div key={stage.id} className="min-w-[250px] flex-1">
+            <div key={stage.id} className="min-w-[280px] flex-1">
               <div className="flex items-center gap-2 mb-3">
                 <div className={\`w-2 h-2 rounded-full \${stage.color}\`} />
                 <h3 className="font-medium text-sm">{stage.label}</h3>
-                <span className="text-xs text-gray-500 bg-gray-100 px-1.5 rounded">{stageLeads.length}</span>
+                <span className="text-[10px] text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded-full">{stageLeads.length}</span>
               </div>
               <div
-                className="space-y-2 min-h-[200px] p-2 rounded-lg bg-gray-50 border-2 border-dashed border-gray-200"
+                className="space-y-2 min-h-[200px] p-2 rounded-xl bg-gray-50 border-2 border-dashed border-gray-200"
                 onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault();
-                  if (draggedLead) moveLead(draggedLead.id, stage.id as Lead["stage"]);
-                  setDraggedLead(null);
-                }}
+                onDrop={(e) => { e.preventDefault(); if (draggedLead) moveLead(draggedLead.id, stage.id as Lead["stage"]); setDraggedLead(null); }}
               >
                 {stageLeads.map((lead) => (
-                  <div
-                    key={lead.id}
-                    draggable
-                    onDragStart={() => setDraggedLead(lead)}
-                    className="bg-white p-3 rounded-lg border shadow-sm cursor-grab hover:shadow-md transition-shadow"
-                  >
-                    <p className="font-medium text-sm">{lead.name}</p>
-                    <p className="text-xs text-gray-500 mt-1">{lead.email}</p>
-                    <div className="flex justify-between items-center mt-2">
-                      <span className="text-sm font-semibold text-green-600">\${lead.value.toLocaleString()}</span>
-                      <span className="text-xs text-gray-400">{lead.source}</span>
+                  <div key={lead.id} draggable onDragStart={() => setDraggedLead(lead)} className="bg-white p-3 rounded-xl border shadow-sm cursor-grab hover:shadow-md transition-all">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="font-medium text-sm">{lead.name}</span>
+                      {priorityBadge(lead.priority)}
+                    </div>
+                    <p className="text-[10px] text-gray-500 mb-1">{lead.phone} · {lead.source}</p>
+                    <p className="text-xs text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full inline-block mb-2">{lead.interest}</p>
+                    <p className="text-[10px] text-gray-400 mb-2 line-clamp-2">{lead.notes}</p>
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-gray-400">📅 {lead.followUp}</span>
+                      {lead.stage !== "converted" && lead.stage !== "lost" && (
+                        <div className="flex gap-1">
+                          {lead.stage === "trial" ? (
+                            <button onClick={() => { setConvertingLead(lead); setShowConvertModal(true); }} className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium hover:bg-green-200">Convert → Member</button>
+                          ) : (
+                            <button onClick={() => moveLead(lead.id, STAGES[STAGES.findIndex(s => s.id === lead.id) + 1]?.id as Lead["stage"] || lead.stage)} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full hover:bg-gray-200">Move →</button>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -2539,6 +2813,38 @@ export function LeadPipeline() {
           );
         })}
       </div>
+
+      {/* VIP Conversion Modal */}
+      {showConvertModal && convertingLead && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setShowConvertModal(false)}>
+          <div className="bg-white rounded-3xl max-w-md w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold mb-1">Convert to Member</h3>
+            <p className="text-sm text-gray-500 mb-4">Create a membership for {convertingLead.name}</p>
+            <div className="space-y-3 mb-6">
+              {PLANS.map((plan) => (
+                <button key={plan.id} onClick={() => setSelectedPlan(plan.id)} className={\`w-full p-4 rounded-xl border-2 text-left transition-all \${selectedPlan === plan.id ? "border-amber-500 bg-amber-50" : "border-gray-200 hover:border-gray-300"}\`}>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="font-semibold">{plan.name}</p>
+                      <p className="text-xs text-gray-500">{plan.id === "vip" ? "Full access + personal training" : plan.id === "premium" ? "All classes + gym floor" : "Gym floor access"}</p>
+                    </div>
+                    <span className="text-lg font-bold">₹{plan.price.toLocaleString("en-IN")}/mo</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="bg-gray-50 rounded-xl p-3 mb-4 text-xs text-gray-600">
+              <p>📋 Auto-creates invoice for first month</p>
+              <p>📱 Sends welcome SMS to {convertingLead.phone}</p>
+              <p>🎯 Adds to {PLANS.find(p => p.id === selectedPlan)?.name} member group</p>
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setShowConvertModal(false)} className="flex-1 border py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50">Cancel</button>
+              <button onClick={convertToMember} className="flex-1 bg-green-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-green-700">Convert & Create Invoice</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -2643,7 +2949,7 @@ export function RevenueChart() {
 
 function genInvoiceTable(): string {
   return `"use client";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 
 interface Invoice {
   id: string;
@@ -2653,86 +2959,133 @@ interface Invoice {
   dueDate: string;
   paidDate: string | null;
   plan: string;
+  paymentMethod: string | null;
 }
 
 const MOCK_INVOICES: Invoice[] = [
-  { id: "INV-001", memberName: "John Smith", amount: 49.99, status: "paid", dueDate: "2025-01-01", paidDate: "2024-12-28", plan: "Premium" },
-  { id: "INV-002", memberName: "Sarah Johnson", amount: 99.99, status: "paid", dueDate: "2025-01-01", paidDate: "2025-01-01", plan: "VIP" },
-  { id: "INV-003", memberName: "Mike Wilson", amount: 29.99, status: "overdue", dueDate: "2025-01-01", paidDate: null, plan: "Basic" },
-  { id: "INV-004", memberName: "Emily Davis", amount: 49.99, status: "pending", dueDate: "2025-02-01", paidDate: null, plan: "Premium" },
-  { id: "INV-005", memberName: "James Brown", amount: 29.99, status: "paid", dueDate: "2025-01-01", paidDate: "2024-12-30", plan: "Basic" },
+  { id: "INV-2024-001", memberName: "Rahul Sharma", amount: 4999, status: "paid", dueDate: "Dec 1, 2024", paidDate: "Nov 29, 2024", plan: "VIP", paymentMethod: "UPI" },
+  { id: "INV-2024-002", memberName: "Priya Patel", amount: 2999, status: "paid", dueDate: "Dec 1, 2024", paidDate: "Dec 1, 2024", plan: "Premium", paymentMethod: "Credit Card" },
+  { id: "INV-2024-003", memberName: "Amit Singh", amount: 1499, status: "overdue", dueDate: "Dec 1, 2024", paidDate: null, plan: "Basic", paymentMethod: null },
+  { id: "INV-2024-004", memberName: "Neha Gupta", amount: 2999, status: "pending", dueDate: "Jan 1, 2025", paidDate: null, plan: "Premium", paymentMethod: null },
+  { id: "INV-2024-005", memberName: "Vikram Rao", amount: 4999, status: "paid", dueDate: "Dec 1, 2024", paidDate: "Nov 30, 2024", plan: "VIP", paymentMethod: "Net Banking" },
+  { id: "INV-2024-006", memberName: "Sneha Reddy", amount: 1499, status: "overdue", dueDate: "Nov 1, 2024", paidDate: null, plan: "Basic", paymentMethod: null },
+  { id: "INV-2024-007", memberName: "Karthik Iyer", amount: 2999, status: "paid", dueDate: "Jan 1, 2025", paidDate: "Dec 28, 2024", plan: "Premium", paymentMethod: "Cash" },
+  { id: "INV-2024-008", memberName: "Deepa Krishnan", amount: 4999, status: "pending", dueDate: "Jan 1, 2025", paidDate: null, plan: "VIP", paymentMethod: null },
 ];
 
-const STATUS_COLORS: Record<string, string> = { paid: "bg-green-100 text-green-800", pending: "bg-yellow-100 text-yellow-800", overdue: "bg-red-100 text-red-800" };
+const STATUS_COLORS: Record<string, string> = { paid: "bg-green-100 text-green-700", pending: "bg-amber-100 text-amber-700", overdue: "bg-red-100 text-red-700" };
+const PAYMENT_METHODS = ["Cash", "UPI", "Credit Card", "Debit Card", "Net Banking"];
 
 export function InvoiceTable() {
+  const [invoices, setInvoices] = useState<Invoice[]>(MOCK_INVOICES);
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [payModal, setPayModal] = useState<Invoice | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState("Cash");
 
-  const filtered = useMemo(() => {
-    let result = [...MOCK_INVOICES];
-    if (statusFilter !== "all") result = result.filter((i) => i.status === statusFilter);
-    if (search) result = result.filter((i) => i.memberName.toLowerCase().includes(search.toLowerCase()));
-    return result;
-  }, [statusFilter, search]);
+  const filtered = invoices
+    .filter(i => statusFilter === "all" || i.status === statusFilter)
+    .filter(i => search === "" || i.memberName.toLowerCase().includes(search.toLowerCase()));
 
-  const totalPaid = MOCK_INVOICES.filter((i) => i.status === "paid").reduce((s, i) => s + i.amount, 0);
-  const totalPending = MOCK_INVOICES.filter((i) => i.status === "pending" || i.status === "overdue").reduce((s, i) => s + i.amount, 0);
+  const totalPaid = invoices.filter(i => i.status === "paid").reduce((s, i) => s + i.amount, 0);
+  const totalPending = invoices.filter(i => i.status === "pending").reduce((s, i) => s + i.amount, 0);
+  const totalOverdue = invoices.filter(i => i.status === "overdue").reduce((s, i) => s + i.amount, 0);
+
+  const markAsPaid = (id: string) => {
+    setInvoices(prev => prev.map(i => i.id === id ? { ...i, status: "paid" as const, paidDate: "Just now", paymentMethod: selectedMethod } : i));
+    setPayModal(null);
+  };
 
   return (
-    <div className="space-y-4">
-      <div className="flex gap-4">
-        <div className="p-3 rounded-lg bg-green-50 border border-green-200 flex-1">
-          <p className="text-xs text-green-600">Total Paid</p>
-          <p className="text-xl font-bold text-green-700">\${totalPaid.toFixed(2)}</p>
+    <div className="space-y-5" style={{ fontFamily: "'Inter', sans-serif" }}>
+      {/* Income Dashboard */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-5 text-white">
+          <p className="text-green-100 text-xs uppercase font-medium">Collected</p>
+          <p className="text-3xl font-bold mt-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>₹{totalPaid.toLocaleString("en-IN")}</p>
+          <p className="text-green-200 text-xs mt-1">{invoices.filter(i => i.status === "paid").length} invoices</p>
         </div>
-        <div className="p-3 rounded-lg bg-yellow-50 border border-yellow-200 flex-1">
-          <p className="text-xs text-yellow-600">Pending/Overdue</p>
-          <p className="text-xl font-bold text-yellow-700">\${totalPending.toFixed(2)}</p>
+        <div className="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-5 text-white">
+          <p className="text-amber-100 text-xs uppercase font-medium">Pending</p>
+          <p className="text-3xl font-bold mt-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>₹{totalPending.toLocaleString("en-IN")}</p>
+          <p className="text-amber-200 text-xs mt-1">{invoices.filter(i => i.status === "pending").length} invoices</p>
+        </div>
+        <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-5 text-white">
+          <p className="text-red-100 text-xs uppercase font-medium">Overdue</p>
+          <p className="text-3xl font-bold mt-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>₹{totalOverdue.toLocaleString("en-IN")}</p>
+          <p className="text-red-200 text-xs mt-1">{invoices.filter(i => i.status === "overdue").length} invoices — needs attention</p>
         </div>
       </div>
-      <div className="flex gap-3">
-        <input type="text" placeholder="Search member..." value={search} onChange={(e) => setSearch(e.target.value)} className="px-4 py-2 border rounded-lg text-sm flex-1" />
-        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-4 py-2 border rounded-lg text-sm">
-          <option value="all">All Status</option>
-          <option value="paid">Paid</option>
-          <option value="pending">Pending</option>
-          <option value="overdue">Overdue</option>
-        </select>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-3 items-center justify-between">
+        <h2 className="text-xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Billing Ledger</h2>
+        <div className="flex gap-2">
+          <input type="text" placeholder="Search member..." value={search} onChange={(e) => setSearch(e.target.value)} className="px-3 py-2 border rounded-xl text-sm w-48 focus:outline-none focus:ring-2 focus:ring-amber-500" />
+          <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-3 py-2 border rounded-xl text-sm bg-white">
+            <option value="all">All Status</option>
+            <option value="paid">Paid</option>
+            <option value="pending">Pending</option>
+            <option value="overdue">Overdue</option>
+          </select>
+        </div>
       </div>
-      <div className="border rounded-lg overflow-hidden">
+
+      {/* Invoice Table */}
+      <div className="bg-white rounded-2xl border overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50 border-b">
             <tr>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Invoice</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Member</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Plan</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Amount</th>
-              <th className="text-left px-4 py-3 font-medium text-gray-600">Due Date</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Due</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
               <th className="text-left px-4 py-3 font-medium text-gray-600">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filtered.map((inv) => (
-              <tr key={inv.id} className="border-t hover:bg-gray-50">
-                <td className="px-4 py-3 font-mono text-xs">{inv.id}</td>
+              <tr key={inv.id} className="border-b last:border-0 hover:bg-gray-50 transition-colors">
+                <td className="px-4 py-3 font-mono text-xs text-gray-500">{inv.id}</td>
                 <td className="px-4 py-3 font-medium">{inv.memberName}</td>
-                <td className="px-4 py-3 text-gray-600">{inv.plan}</td>
-                <td className="px-4 py-3 font-semibold">\${inv.amount.toFixed(2)}</td>
-                <td className="px-4 py-3 text-gray-600">{inv.dueDate}</td>
-                <td className="px-4 py-3"><span className={\`px-2 py-1 rounded-full text-xs font-medium \${STATUS_COLORS[inv.status]}\`}>{inv.status}</span></td>
+                <td className="px-4 py-3"><span className="text-xs bg-gray-100 px-2 py-0.5 rounded-full">{inv.plan}</span></td>
+                <td className="px-4 py-3 font-bold">₹{inv.amount.toLocaleString("en-IN")}</td>
+                <td className="px-4 py-3 text-xs text-gray-500">{inv.dueDate}</td>
+                <td className="px-4 py-3"><span className={\`px-2 py-1 rounded-full text-[10px] font-bold \${STATUS_COLORS[inv.status]}\`}>{inv.status.toUpperCase()}</span></td>
                 <td className="px-4 py-3">
-                  <div className="flex gap-2">
-                    {inv.status !== "paid" && <button className="text-green-600 hover:text-green-800 text-xs">Mark Paid</button>}
-                    <button className="text-blue-600 hover:text-blue-800 text-xs">View</button>
-                  </div>
+                  {inv.status === "paid" ? (
+                    <span className="text-xs text-green-600 font-medium">✓ {inv.paymentMethod}</span>
+                  ) : (
+                    <button onClick={() => setPayModal(inv)} className="text-xs bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg font-semibold hover:bg-amber-200 transition-colors">Mark as Paid</button>
+                  )}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
+
+      {/* Payment Modal */}
+      {payModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setPayModal(null)}>
+          <div className="bg-white rounded-3xl max-w-sm w-full p-6" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold mb-1">Mark as Paid</h3>
+            <p className="text-sm text-gray-500 mb-4">{payModal.memberName} — ₹{payModal.amount.toLocaleString("en-IN")}</p>
+            <p className="text-xs text-gray-500 mb-2">Payment Method</p>
+            <div className="grid grid-cols-3 gap-2 mb-6">
+              {PAYMENT_METHODS.map((m) => (
+                <button key={m} onClick={() => setSelectedMethod(m)} className={\`p-2.5 rounded-xl border-2 text-xs font-medium transition-all \${selectedMethod === m ? "border-amber-500 bg-amber-50" : "border-gray-200 hover:border-gray-300"}\`}>{m}</button>
+              ))}
+            </div>
+            <div className="flex gap-3">
+              <button onClick={() => setPayModal(null)} className="flex-1 border py-2.5 rounded-xl text-sm font-medium hover:bg-gray-50">Cancel</button>
+              <button onClick={() => markAsPaid(payModal.id)} className="flex-1 bg-green-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-green-700">Confirm Payment</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
