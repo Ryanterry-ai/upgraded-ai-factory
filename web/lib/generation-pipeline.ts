@@ -368,15 +368,15 @@ function getHeroContentForDomain(domain: string, fallback: { title: string; subt
 } {
   if (domain === "ecommerce") {
     return {
-      title: "Fuel Your Fitness Journey",
-      subtitle: "Science-backed supplements trusted by 50,000+ athletes worldwide. Premium quality, lab-tested formulas.",
+      title: "Premium Supplements, Delivered Pan-India",
+      subtitle: "Lab-tested, FSSAI certified sports nutrition. Trusted by 50,000+ Indian athletes. Free shipping on orders above ₹999.",
       cta: "Shop Now",
-      secondaryCta: "View All Products",
+      secondaryCta: "View Lab Reports",
       stats: [
         { label: "Happy Customers", value: "50,000+" },
-        { label: "Products Sold", value: "1M+" },
-        { label: "5-Star Reviews", value: "25,000+" },
-        { label: "Countries Shipped", value: "35+" },
+        { label: "Orders Delivered", value: "2L+" },
+        { label: "FSSAI Certified", value: "100%" },
+        { label: "Cities Covered", value: "500+" },
       ],
     };
   }
@@ -585,9 +585,9 @@ function genPricingTable(prompt?: string): string {
 
 function getPricingForDomain(domain: string): Array<{ name: string; price: string; period?: string; tagline: string; popular?: boolean; cta: string; features: string[] }> {
   if (domain === "ecommerce") return [
-    { name: "Starter Pack", price: "$29", period: "/month", tagline: "Perfect for beginners", features: ["5 Supplement Samples", "Basic Nutrition Guide", "Email Support", "Monthly Delivery"], cta: "Get Started" },
-    { name: "Performance", price: "$59", period: "/month", tagline: "Most popular for athletes", popular: true, features: ["10 Premium Supplements", "Custom Workout Plan", "Priority Support", "Free Shipping", "Monthly Coaching Call"], cta: "Go Performance" },
-    { name: "Elite", price: "$99", period: "/month", tagline: "For serious competitors", features: ["All Supplements Included", "Personal Nutritionist", "1-on-1 Coaching", "Lab Testing Access", "VIP Community"], cta: "Go Elite" },
+    { name: "Starter Pack", price: "₹1,499", period: "/month", tagline: "Perfect for beginners", features: ["5 Supplement Samples", "Basic Nutrition Guide", "Email Support", "Free Shipping"], cta: "Get Started" },
+    { name: "Performance", price: "₹2,999", period: "/month", tagline: "Most popular for athletes", popular: true, features: ["10 Premium Supplements", "Custom Workout Plan", "Priority Support", "Free Express Shipping", "Monthly Coaching Call"], cta: "Go Performance" },
+    { name: "Elite", price: "₹4,999", period: "/month", tagline: "For serious competitors", features: ["All Supplements Included", "Personal Nutritionist", "1-on-1 Coaching", "Lab Testing Access", "VIP Community"], cta: "Go Elite" },
   ];
   if (domain === "gym-crm") return [
     { name: "Starter", price: "$49", period: "/month", tagline: "Up to 100 members", features: ["Member Management", "Attendance Tracking", "Basic Billing", "Email Support"], cta: "Start Free Trial" },
@@ -750,7 +750,7 @@ function genCTA(prompt?: string): string {
 }
 
 function getCTAForDomain(domain: string): { title: string; subtitle: string; cta: string; secondaryCta: string } {
-  if (domain === "ecommerce") return { title: "Fuel Your Fitness Goals Today", subtitle: "Join 50,000+ athletes who trust our science-backed supplements. Free shipping on orders over $50.", cta: "Shop Now", secondaryCta: "View All Products" };
+  if (domain === "ecommerce") return { title: "Fuel Your Fitness Goals Today", subtitle: "Join 50,000+ Indian athletes who trust our lab-tested, FSSAI certified supplements. Free shipping above ₹999.", cta: "Shop Now", secondaryCta: "View Lab Reports" };
   if (domain === "gym-crm") return { title: "Transform Your Gym Management", subtitle: "Start managing members, billing, and attendance in one powerful platform. Free for 14 days.", cta: "Start Free Trial", secondaryCta: "Book a Demo" };
   if (domain === "streaming") return { title: "Start Watching Today", subtitle: "Stream thousands of movies, shows, and originals. No ads, cancel anytime.", cta: "Start Free Trial", secondaryCta: "Browse Plans" };
   if (domain === "saas") return { title: "Ready to Scale Your Business?", subtitle: "Join 2,500+ companies using our platform to automate workflows and boost productivity.", cta: "Start Free Trial", secondaryCta: "Talk to Sales" };
@@ -762,43 +762,245 @@ function getCTAForDomain(domain: string): { title: string; subtitle: string; cta
 
 function genProductGrid(): string {
   return `"use client";
-export function ProductGrid() {
-  const products = [
-    { id: "1", name: "Whey Protein Isolate", price: 49.99, originalPrice: 64.99, rating: 4.8, reviews: 2847, badge: "Best Seller", image: "https://images.unsplash.com/photo-1593095948071-474c5cc2c129?w=400&h=400&fit=crop", category: "Protein" },
-    { id: "2", name: "Creatine Monohydrate", price: 29.99, originalPrice: 34.99, rating: 4.7, reviews: 1923, badge: "Top Rated", image: "https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=400&h=400&fit=crop", category: "Performance" },
-    { id: "3", name: "BCAA Recovery Complex", price: 39.99, rating: 4.6, reviews: 1456, image: "https://images.unsplash.com/photo-1597811163973-0acb52e4fe39?w=400&h=400&fit=crop", category: "Recovery" },
-    { id: "4", name: "Pre-Workout Surge", price: 44.99, originalPrice: 54.99, rating: 4.5, reviews: 1203, badge: "New", image: "https://images.unsplash.com/photo-1622485831930-3485a4889d94?w=400&h=400&fit=crop", category: "Performance" },
-    { id: "5", name: "Omega-3 Fish Oil", price: 24.99, rating: 4.8, reviews: 3201, image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=400&fit=crop", category: "Health" },
-    { id: "6", name: "Mass Gainer Pro", price: 54.99, originalPrice: 69.99, rating: 4.4, reviews: 987, badge: "Popular", image: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=400&h=400&fit=crop", category: "Mass" },
-  ];
+import { useState } from "react";
+
+const CATEGORIES = [
+  { id: "all", label: "All Products", icon: "🔥" },
+  { id: "protein", label: "Muscle & Strength", icon: "💪" },
+  { id: "weight", label: "Weight Management", icon: "⚖️" },
+  { id: "vitality", label: "Vitality & Wellness", icon: "⚡" },
+  { id: "brain", label: "Brain & Focus", icon: "🧠" },
+  { id: "recovery", label: "Joints & Recovery", icon: "🦴" },
+];
+
+const products = [
+  { id: "1", name: "Whey Protein Isolate", brand: "FuelCore", price: 2499, originalPrice: 3299, rating: 4.8, reviews: 2847, badge: "Best Seller", category: "protein", type: "powder", weight: "1 kg", flavor: "Chocolate Dream", fssai: "10019062000", labTested: true, veg: false, benefits: ["27g protein per serving", "Low carb, low fat", "Fast absorbing isolate"] },
+  { id: "2", name: "Creatine Monohydrate", brand: "FuelCore", price: 1499, originalPrice: 1899, rating: 4.7, reviews: 1923, badge: "Top Rated", category: "protein", type: "powder", weight: "500 g", flavor: "Unflavored", fssai: "10019062000", labTested: true, veg: true, benefits: ["5g micronized creatine", "Enhances strength & power", "Micronized for better mixability"] },
+  { id: "3", name: "BCAA Recovery Complex", brand: "ActiveEdge", price: 1999, originalPrice: 2499, rating: 4.6, reviews: 1456, category: "recovery", type: "powder", weight: "300 g", flavor: "Tropical Mango", fssai: "10019062000", labTested: true, veg: true, benefits: ["2:1:1 BCAA ratio", "Enhanced recovery", "Electrolyte blend included"] },
+  { id: "4", name: "Pre-Workout Surge", brand: "FuelCore", price: 2299, originalPrice: 2999, rating: 4.5, reviews: 1203, badge: "New", category: "vitality", type: "powder", weight: "300 g", flavor: "Blue Raspberry", fssai: "10019062000", labTested: true, veg: true, benefits: ["200mg caffeine", "Beta-alanine + citrulline", "No crash formula"] },
+  { id: "5", name: "Omega-3 Fish Oil", brand: "PureNutri", price: 999, originalPrice: 1499, rating: 4.8, reviews: 3201, category: "vitality", type: "capsule", weight: "90 softgels", flavor: "", fssai: "10019062000", labTested: true, veg: false, benefits: ["EPA + DHA formula", "Heart & brain health", "Enteric coated, no fishy aftertaste"] },
+  { id: "6", name: "Mass Gainer Pro", brand: "FuelCore", price: 2999, originalPrice: 3799, rating: 4.4, reviews: 987, badge: "Popular", category: "protein", type: "powder", weight: "2 kg", flavor: "Double Chocolate", fssai: "10019062000", labTested: true, veg: false, benefits: ["50g protein + 250g carbs", "1250 calories per serving", "Added digestive enzymes"] },
+  { id: "7", name: "Ashwagandha KSM-66", brand: "PureNutri", price: 799, originalPrice: 1199, rating: 4.7, reviews: 2156, badge: "Trending", category: "brain", type: "capsule", weight: "60 capsules", flavor: "", fssai: "10019062000", labTested: true, veg: true, benefits: ["600mg KSM-66 extract", "Reduces cortisol & stress", "Boosts focus & vitality"] },
+  { id: "8", name: "Glucosamine Chondroitin", brand: "ActiveEdge", price: 1299, originalPrice: 1699, rating: 4.5, reviews: 876, category: "recovery", type: "capsule", weight: "120 tablets", flavor: "", fssai: "10019062000", labTested: true, veg: true, benefits: ["Joint support formula", "MSM + turmeric added", "Reduces joint stiffness"] },
+  { id: "9", name: "Green Tea Fat Burner", brand: "PureNutri", price: 699, originalPrice: 999, rating: 4.3, reviews: 1543, category: "weight", type: "capsule", weight: "90 capsules", flavor: "", fssai: "10019062000", labTested: true, veg: true, benefits: ["500mg green tea extract", "EGCG for metabolism", "Appetite support"] },
+];
+
+function ProductIllustration({ type, flavor }: { type: string; flavor: string }) {
+  const isPowder = type === "powder";
   return (
-    <section className="py-16">
-      <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold text-center mb-12">Featured Products</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {products.map((product) => (
-            <div key={product.id} className="group rounded-2xl border overflow-hidden hover:shadow-xl transition-all duration-300">
-              <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
-                <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                {product.badge && <span className="absolute top-3 left-3 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">{product.badge}</span>}
-                {product.originalPrice && <span className="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">-{Math.round((1 - product.price / product.originalPrice) * 100)}%</span>}
+    <div className="relative w-full h-full flex items-center justify-center" style={{ perspective: "600px" }}>
+      <div className={\`relative \${isPowder ? "w-28 h-40" : "w-20 h-28"}\`} style={{ transformStyle: "preserve-3d", transform: "rotateY(-15deg) rotateX(5deg)" }}>
+        {/* Bottle/Tub body */}
+        <div className={\`absolute inset-0 rounded-xl \${isPowder ? "bg-gradient-to-b from-amber-600 via-amber-700 to-amber-900" : "bg-gradient-to-b from-emerald-400 via-emerald-500 to-emerald-700"}\`} style={{ boxShadow: "inset -8px 0 20px rgba(0,0,0,0.3), inset 4px 0 10px rgba(255,255,255,0.1), 8px 8px 24px rgba(0,0,0,0.3)" }}>
+          {/* Label */}
+          <div className="absolute inset-x-2 top-6 bottom-4 bg-white/90 rounded-lg flex flex-col items-center justify-center p-1">
+            <span className="text-[6px] font-bold text-amber-800 uppercase tracking-widest">FuelCore</span>
+            <span className="text-[8px] font-black text-gray-900 text-center leading-tight mt-0.5">{isPowder ? "WHEY\\nISOLATE" : "OMEGA-3"}</span>
+            {flavor && <span className="text-[5px] text-gray-500 mt-0.5">{flavor}</span>}
+          </div>
+          {/* Cap */}
+          <div className={\`absolute -top-2 left-1/2 -translate-x-1/2 \${isPowder ? "w-16 h-4 rounded-t-lg bg-gradient-to-b from-gray-700 to-gray-900" : "w-10 h-3 rounded-full bg-gradient-to-b from-gray-600 to-gray-800"}\`} />
+          {/* Shine */}
+          <div className="absolute left-2 top-0 bottom-0 w-1 bg-white/20 rounded-full" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function ProductGrid() {
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [selectedProduct, setSelectedProduct] = useState<typeof products[0] | null>(null);
+  const [sortBy, setSortBy] = useState("popular");
+
+  const toggleWishlist = (id: string) => {
+    setWishlist(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const filtered = products
+    .filter(p => activeCategory === "all" || p.category === activeCategory)
+    .filter(p => searchQuery === "" || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.brand.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => {
+      if (sortBy === "price-low") return a.price - b.price;
+      if (sortBy === "price-high") return b.price - a.price;
+      if (sortBy === "rating") return b.rating - a.rating;
+      return b.reviews - a.reviews;
+    });
+
+  return (
+    <section className="py-16 bg-[#faf9f6]">
+      <div className="max-w-7xl mx-auto px-4">
+        {/* Header */}
+        <div className="text-center mb-10">
+          <h2 className="text-3xl md:text-4xl font-bold" style={{ fontFamily: "'Outfit', sans-serif" }}>Featured Supplements</h2>
+          <p className="mt-2 text-gray-500">Lab-tested, FSSAI certified, trusted by 50,000+ athletes</p>
+        </div>
+
+        {/* Search + Sort */}
+        <div className="flex flex-col sm:flex-row gap-4 mb-8 max-w-2xl mx-auto">
+          <input
+            type="text"
+            placeholder="Search by name, ingredient, or benefit..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="flex-1 px-4 py-3 rounded-xl border border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500 text-sm"
+          />
+          <select value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="px-4 py-3 rounded-xl border border-gray-200 bg-white text-sm focus:outline-none">
+            <option value="popular">Most Popular</option>
+            <option value="rating">Highest Rated</option>
+            <option value="price-low">Price: Low to High</option>
+            <option value="price-high">Price: High to Low</option>
+          </select>
+        </div>
+
+        {/* Category Tabs */}
+        <div className="flex flex-wrap justify-center gap-2 mb-10">
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat.id}
+              onClick={() => setActiveCategory(cat.id)}
+              className={\`px-4 py-2 rounded-full text-sm font-medium transition-all \${
+                activeCategory === cat.id
+                  ? "bg-amber-600 text-white shadow-md"
+                  : "bg-white text-gray-600 border border-gray-200 hover:border-amber-300 hover:text-amber-700"
+              }\`}
+            >
+              <span className="mr-1.5">{cat.icon}</span>{cat.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Product Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filtered.map((product) => (
+            <div key={product.id} className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer" onClick={() => setSelectedProduct(product)}>
+              {/* Illustration Area */}
+              <div className="relative h-56 bg-gradient-to-br from-[#faf9f6] to-amber-50 flex items-center justify-center overflow-hidden">
+                <ProductIllustration type={product.type} flavor={product.flavor} />
+                {/* Badges */}
+                <div className="absolute top-3 left-3 flex flex-col gap-1.5">
+                  {product.badge && <span className="bg-amber-600 text-white text-[10px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide">{product.badge}</span>}
+                  {product.veg ? (
+                    <span className="w-5 h-5 bg-white border-2 border-green-600 rounded-sm flex items-center justify-center"><span className="w-2.5 h-2.5 bg-green-600 rounded-full" /></span>
+                  ) : (
+                    <span className="w-5 h-5 bg-white border-2 border-red-600 rounded-sm flex items-center justify-center"><span className="w-2.5 h-2.5 bg-red-600 rounded-full" /></span>
+                  )}
+                </div>
+                {/* Wishlist */}
+                <button onClick={(e) => { e.stopPropagation(); toggleWishlist(product.id); }} className="absolute top-3 right-3 w-9 h-9 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow-sm hover:scale-110 transition-transform">
+                  <span className={\`text-lg \${wishlist.includes(product.id) ? "text-red-500" : "text-gray-400"}\`}>{wishlist.includes(product.id) ? "♥" : "♡"}</span>
+                </button>
+                {/* Discount */}
+                {product.originalPrice && (
+                  <span className="absolute bottom-3 right-3 bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
+                    SAVE ₹{product.originalPrice - product.price}
+                  </span>
+                )}
               </div>
+
+              {/* Info */}
               <div className="p-5">
-                <p className="text-xs text-blue-600 font-medium uppercase tracking-wide">{product.category}</p>
-                <h3 className="mt-1 font-semibold text-lg">{product.name}</h3>
-                <div className="mt-2 flex items-center gap-2">
-                  <div className="flex text-yellow-400 text-sm">{"★".repeat(Math.floor(product.rating))}</div>
-                  <span className="text-sm text-gray-500">{product.rating} ({product.reviews.toLocaleString()})</span>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full uppercase">{product.brand}</span>
+                  <span className="text-[10px] text-gray-400">{product.weight}</span>
                 </div>
-                <div className="mt-3 flex items-center gap-2">
-                  <span className="text-2xl font-bold text-blue-600">${product.price}</span>
-                  {product.originalPrice && <span className="text-sm text-gray-400 line-through">${product.originalPrice}</span>}
+                <h3 className="font-semibold text-gray-900 group-hover:text-amber-700 transition-colors">{product.name}</h3>
+
+                {/* Rating */}
+                <div className="flex items-center gap-1.5 mt-2">
+                  <div className="flex text-amber-400 text-xs">{"★".repeat(Math.floor(product.rating))}{"☆".repeat(5 - Math.floor(product.rating))}</div>
+                  <span className="text-xs text-gray-500">{product.rating}</span>
+                  <span className="text-xs text-gray-400">({product.reviews.toLocaleString()})</span>
                 </div>
-                <button className="mt-4 w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors">Add to Cart</button>
+
+                {/* Price */}
+                <div className="mt-3 flex items-baseline gap-2">
+                  <span className="text-xl font-bold text-gray-900">₹{product.price.toLocaleString("en-IN")}</span>
+                  {product.originalPrice && <span className="text-sm text-gray-400 line-through">₹{product.originalPrice.toLocaleString("en-IN")}</span>}
+                </div>
+
+                {/* Trust badges */}
+                <div className="mt-3 flex items-center gap-3 text-[10px] text-gray-500">
+                  {product.labTested && <span className="flex items-center gap-1"><span className="text-green-600">✓</span> Lab Tested</span>}
+                  <span className="flex items-center gap-1"><span className="text-blue-600">✓</span> FSSAI</span>
+                  <span className="flex items-center gap-1"><span className="text-amber-600">🚚</span> Free shipping ₹999+</span>
+                </div>
+
+                <button className="mt-4 w-full bg-amber-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-amber-700 active:scale-[0.98] transition-all">
+                  Add to Cart — ₹{product.price.toLocaleString("en-IN")}
+                </button>
               </div>
             </div>
           ))}
         </div>
+
+        {filtered.length === 0 && (
+          <div className="text-center py-16 text-gray-400">
+            <p className="text-4xl mb-3">🔍</p>
+            <p className="font-medium">No products match your search</p>
+            <p className="text-sm mt-1">Try a different keyword or category</p>
+          </div>
+        )}
+
+        {/* FSSAI Compliance Footer */}
+        <div className="mt-12 bg-white rounded-2xl border p-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-4">
+            <div className="w-14 h-14 bg-green-50 rounded-xl flex items-center justify-center text-2xl">🛡️</div>
+            <div>
+              <p className="font-semibold text-gray-900">FSSAI Certified & Lab Tested</p>
+              <p className="text-sm text-gray-500">All products manufactured in ISO 22000 & GMP certified facilities. FSSAI License: 10019062000</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-6 text-sm text-gray-600">
+            <span className="flex items-center gap-1.5"><span className="w-4 h-4 bg-green-100 rounded-full flex items-center justify-center text-[10px]">✓</span> Third-Party Verified</span>
+            <span className="flex items-center gap-1.5"><span className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center text-[10px]">✓</span> Informed Sport Certified</span>
+          </div>
+        </div>
+
+        {/* Product Detail Modal */}
+        {selectedProduct && (
+          <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4" onClick={() => setSelectedProduct(null)}>
+            <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="p-8">
+                <div className="flex justify-between items-start mb-6">
+                  <div>
+                    <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-full">{selectedProduct.brand}</span>
+                    <h2 className="text-2xl font-bold mt-2">{selectedProduct.name}</h2>
+                  </div>
+                  <button onClick={() => setSelectedProduct(null)} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-500 hover:bg-gray-200">✕</button>
+                </div>
+                <div className="grid md:grid-cols-2 gap-8">
+                  <div className="bg-gradient-to-br from-[#faf9f6] to-amber-50 rounded-2xl h-64 flex items-center justify-center">
+                    <ProductIllustration type={selectedProduct.type} flavor={selectedProduct.flavor} />
+                  </div>
+                  <div>
+                    <div className="flex items-baseline gap-2 mb-4">
+                      <span className="text-3xl font-bold">₹{selectedProduct.price.toLocaleString("en-IN")}</span>
+                      {selectedProduct.originalPrice && <span className="text-lg text-gray-400 line-through">₹{selectedProduct.originalPrice.toLocaleString("en-IN")}</span>}
+                    </div>
+                    <div className="flex items-center gap-2 mb-4">
+                      <div className="flex text-amber-400">{"★".repeat(Math.floor(selectedProduct.rating))}</div>
+                      <span className="text-sm text-gray-600">{selectedProduct.rating} ({selectedProduct.reviews.toLocaleString()} reviews)</span>
+                    </div>
+                    <div className="space-y-2 mb-6">
+                      {selectedProduct.benefits.map((b: string, i: number) => (
+                        <div key={i} className="flex items-center gap-2 text-sm"><span className="text-green-600">✓</span>{b}</div>
+                      ))}
+                    </div>
+                    <div className="flex items-center gap-4 mb-6 text-xs text-gray-500">
+                      <span>FSSAI: {selectedProduct.fssai}</span>
+                      <span>Net Wt: {selectedProduct.weight}</span>
+                      {selectedProduct.veg ? <span className="text-green-600">🟥 Veg</span> : <span className="text-red-600">🟧 Non-Veg</span>}
+                    </div>
+                    <button className="w-full bg-amber-600 text-white py-3 rounded-xl font-semibold hover:bg-amber-700 transition-colors">Add to Cart — ₹{selectedProduct.price.toLocaleString("en-IN")}</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -809,33 +1011,152 @@ export function ProductGrid() {
 function genCartItems(): string {
   return `"use client";
 import { useState } from "react";
-export function CartItems() {
+
+const PROMO_CODES: Record<string, { discount: number; type: "percent" | "flat"; minOrder: number; label: string }> = {
+  PRISTINE10: { discount: 10, type: "percent", minOrder: 0, label: "10% off everything" },
+  FITINDIA: { discount: 500, type: "flat", minOrder: 4000, label: "₹500 off above ₹4,000" },
+  FREESHIP: { discount: 0, type: "flat", minOrder: 0, label: "Free express shipping" },
+};
+
+export function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const [items, setItems] = useState([
-    { id: "1", name: "Whey Protein Isolate", price: 49.99, qty: 2, image: "https://images.unsplash.com/photo-1593095948071-474c5cc2c129?w=100&h=100&fit=crop", flavor: "Chocolate" },
-    { id: "2", name: "Creatine Monohydrate", price: 29.99, qty: 1, image: "https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=100&h=100&fit=crop", flavor: "Unflavored" },
+    { id: "1", name: "Whey Protein Isolate", brand: "FuelCore", price: 2499, qty: 2, flavor: "Chocolate Dream", weight: "1 kg", veg: false },
+    { id: "2", name: "Creatine Monohydrate", brand: "FuelCore", price: 1499, qty: 1, flavor: "Unflavored", weight: "500 g", veg: true },
   ]);
+  const [promoCode, setPromoCode] = useState("");
+  const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
+  const [pincode, setPincode] = useState("");
+  const [pincodeResult, setPincodeResult] = useState<string | null>(null);
+
   const updateQty = (id: string, delta: number) => setItems(items.map(i => i.id === id ? { ...i, qty: Math.max(1, i.qty + delta) } : i));
   const removeItem = (id: string) => setItems(items.filter(i => i.id !== id));
+
+  const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+  const shipping = subtotal >= 999 ? 0 : 99;
+  const promo = appliedPromo ? PROMO_CODES[appliedPromo] : null;
+  const discount = promo ? (promo.type === "percent" ? Math.round(subtotal * promo.discount / 100) : promo.discount) : 0;
+  const total = subtotal - discount + shipping;
+
+  const applyPromo = () => {
+    const code = promoCode.toUpperCase().trim();
+    if (PROMO_CODES[code]) {
+      if (PROMO_CODES[code].minOrder > 0 && subtotal < PROMO_CODES[code].minOrder) {
+        setPincodeResult(\`Minimum order ₹\${PROMO_CODES[code].minOrder.toLocaleString("en-IN")} required\`);
+        return;
+      }
+      setAppliedPromo(code);
+      setPincodeResult(null);
+    }
+  };
+
+  const checkPincode = () => {
+    if (pincode.length === 6) {
+      const cities: Record<string, string> = { "400001": "Mumbai, Maharashtra", "110001": "New Delhi, Delhi", "560001": "Bangalore, Karnataka", "600001": "Chennai, Tamil Nadu", "700001": "Kolkata, West Bengal", "500001": "Hyderabad, Telangana" };
+      setPincodeResult(cities[pincode] ? \`✓ Delivering to \${cities[pincode]} — Estimated 2-3 business days\` : \`✓ Delivery available to \${pincode} — Estimated 3-5 business days\`);
+    }
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <div className="space-y-4">
-      {items.map((item) => (
-        <div key={item.id} className="flex items-center gap-4 border-b pb-4">
-          <img src={item.image} alt={item.name} className="w-20 h-20 rounded-lg object-cover" />
-          <div className="flex-1">
-            <h3 className="font-semibold">{item.name}</h3>
-            <p className="text-sm text-gray-500">{item.flavor}</p>
-            <p className="text-blue-600 font-bold mt-1">${item.price}</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button onClick={() => updateQty(item.id, -1)} className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100">-</button>
-            <span className="w-8 text-center font-medium">{item.qty}</span>
-            <button onClick={() => updateQty(item.id, 1)} className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100">+</button>
-          </div>
-          <p className="font-bold w-20 text-right">${(item.price * item.qty).toFixed(2)}</p>
-          <button onClick={() => removeItem(item.id)} className="text-red-500 hover:text-red-700 text-sm">Remove</button>
+    <div className="fixed inset-0 z-50 flex justify-end">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative w-full max-w-md bg-white h-full overflow-y-auto shadow-2xl animate-slide-in">
+        {/* Header */}
+        <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
+          <h2 className="text-lg font-bold" style={{ fontFamily: "'Outfit', sans-serif" }}>Your Cart ({items.length})</h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">✕</button>
         </div>
-      ))}
-      {items.length === 0 && <p className="text-center text-gray-500 py-8">Your cart is empty</p>}
+
+        {/* Free shipping banner */}
+        {subtotal < 999 ? (
+          <div className="mx-6 mt-4 bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
+            <p className="text-sm text-amber-800">Add ₹{(999 - subtotal).toLocaleString("en-IN")} more for <strong>free shipping</strong></p>
+            <div className="mt-2 h-1.5 bg-amber-200 rounded-full overflow-hidden">
+              <div className="h-full bg-amber-500 rounded-full transition-all" style={{ width: \`\${Math.min(100, (subtotal / 999) * 100)}%\` }} />
+            </div>
+          </div>
+        ) : (
+          <div className="mx-6 mt-4 bg-green-50 border border-green-200 rounded-xl p-3 text-center">
+            <p className="text-sm text-green-800">🎉 You've unlocked <strong>free shipping!</strong></p>
+          </div>
+        )}
+
+        {/* Items */}
+        <div className="px-6 py-4 space-y-4">
+          {items.map((item) => (
+            <div key={item.id} className="flex gap-4 py-4 border-b">
+              <div className="w-16 h-16 bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                <span className="text-2xl">{item.veg ? "🟥" : "🟧"}</span>
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-[10px] text-amber-700 font-semibold uppercase">{item.brand}</p>
+                    <h3 className="font-semibold text-sm truncate">{item.name}</h3>
+                    <p className="text-xs text-gray-500">{item.flavor} · {item.weight}</p>
+                  </div>
+                  <button onClick={() => removeItem(item.id)} className="text-gray-400 hover:text-red-500 text-sm flex-shrink-0">✕</button>
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <div className="flex items-center gap-2 bg-gray-100 rounded-full">
+                    <button onClick={() => updateQty(item.id, -1)} className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-gray-200 text-sm">−</button>
+                    <span className="w-6 text-center text-sm font-medium">{item.qty}</span>
+                    <button onClick={() => updateQty(item.id, 1)} className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-gray-200 text-sm">+</button>
+                  </div>
+                  <p className="font-bold text-sm">₹{(item.price * item.qty).toLocaleString("en-IN")}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Promo Code */}
+        <div className="px-6 py-3">
+          <p className="text-xs font-semibold text-gray-700 mb-2">Promo Code</p>
+          <div className="flex gap-2">
+            <input value={promoCode} onChange={(e) => setPromoCode(e.target.value)} placeholder="Enter code" className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" disabled={!!appliedPromo} />
+            {appliedPromo ? (
+              <button onClick={() => { setAppliedPromo(null); setPromoCode(""); }} className="px-3 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-medium">Applied ✓</button>
+            ) : (
+              <button onClick={applyPromo} className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800">Apply</button>
+            )}
+          </div>
+          <div className="flex gap-2 mt-2">
+            {Object.entries(PROMO_CODES).map(([code, p]) => (
+              <button key={code} onClick={() => { setPromoCode(code); }} className="text-[10px] bg-gray-100 text-gray-600 px-2 py-1 rounded-full hover:bg-gray-200">{code}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Pincode Checker */}
+        <div className="px-6 py-3 border-t">
+          <p className="text-xs font-semibold text-gray-700 mb-2">Check Delivery</p>
+          <div className="flex gap-2">
+            <input value={pincode} onChange={(e) => setPincode(e.target.value.replace(/\\D/g, "").slice(0, 6))} placeholder="6-digit pincode" className="flex-1 px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+            <button onClick={checkPincode} className="px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800">Check</button>
+          </div>
+          {pincodeResult && <p className="mt-2 text-xs text-green-700">{pincodeResult}</p>}
+        </div>
+
+        {/* Summary */}
+        <div className="px-6 py-4 border-t bg-gray-50">
+          <div className="space-y-2 text-sm">
+            <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>₹{subtotal.toLocaleString("en-IN")}</span></div>
+            {discount > 0 && <div className="flex justify-between text-green-600"><span>Discount ({appliedPromo})</span><span>-₹{discount.toLocaleString("en-IN")}</span></div>}
+            <div className="flex justify-between"><span className="text-gray-500">Shipping</span><span>{shipping === 0 ? <span className="text-green-600">FREE</span> : `₹${shipping}`}</span></div>
+            <div className="flex justify-between font-bold text-lg border-t pt-2"><span>Total</span><span>₹{total.toLocaleString("en-IN")}</span></div>
+          </div>
+          <button className="mt-4 w-full bg-amber-600 text-white py-3 rounded-xl font-semibold hover:bg-amber-700 active:scale-[0.98] transition-all">
+            Proceed to Checkout — ₹{total.toLocaleString("en-IN")}
+          </button>
+          <div className="mt-3 flex items-center justify-center gap-4 text-[10px] text-gray-400">
+            <span>🔒 Secure Checkout</span>
+            <span>UPI / Cards / COD</span>
+            <span>🛡️ Buyer Protection</span>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -843,27 +1164,139 @@ export function CartItems() {
 }
 
 function genCartSummary(): string {
-  return `export function CartSummary() {
-  const subtotal = 129.97;
+  return `"use client";
+import { useState } from "react";
+
+const INDIAN_STATES = ["Andhra Pradesh","Bihar","Delhi","Gujarat","Haryana","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Punjab","Rajasthan","Tamil Nadu","Telangana","Uttar Pradesh","West Bengal"];
+
+export function CheckoutModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const [step, setStep] = useState(1);
+  const [paymentMethod, setPaymentMethod] = useState("upi");
+  const [upiId, setUpiId] = useState("");
+  const [orderPlaced, setOrderPlaced] = useState(false);
+
+  const subtotal = 6497;
   const shipping = 0;
-  const discount = 15.00;
+  const discount = 650;
   const total = subtotal - discount + shipping;
+
+  const placeOrder = () => { setOrderPlaced(true); };
+
+  if (!isOpen) return null;
+  if (orderPlaced) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl max-w-md w-full p-8 text-center">
+          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"><span className="text-4xl">✓</span></div>
+          <h2 className="text-2xl font-bold mb-2">Order Placed!</h2>
+          <p className="text-gray-500 mb-4">Thank you for your purchase</p>
+          <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left">
+            <div className="flex justify-between text-sm mb-1"><span className="text-gray-500">Order ID</span><span className="font-mono font-bold">FC-{Math.random().toString(36).slice(2,8).toUpperCase()}</span></div>
+            <div className="flex justify-between text-sm mb-1"><span className="text-gray-500">Payment</span><span className="font-medium">{paymentMethod === "upi" ? `UPI: ${upiId}` : paymentMethod === "cod" ? "Cash on Delivery" : paymentMethod}</span></div>
+            <div className="flex justify-between text-sm mb-1"><span className="text-gray-500">Estimated Delivery</span><span className="font-medium">{new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span></div>
+            <div className="flex justify-between text-sm font-bold mt-2 pt-2 border-t"><span>Total Paid</span><span>₹{total.toLocaleString("en-IN")}</span></div>
+          </div>
+          <button onClick={onClose} className="w-full bg-amber-600 text-white py-3 rounded-xl font-semibold hover:bg-amber-700">Continue Shopping</button>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 p-6 border">
-      <h2 className="text-xl font-bold mb-4">Order Summary</h2>
-      <div className="space-y-3">
-        <div className="flex justify-between text-sm"><span className="text-gray-600">Subtotal (3 items)</span><span className="font-medium">${subtotal.toFixed(2)}</span></div>
-        <div className="flex justify-between text-sm"><span className="text-gray-600">Shipping</span><span className="text-green-600 font-medium">Free</span></div>
-        <div className="flex justify-between text-sm"><span className="text-gray-600">Discount (WELCOME15)</span><span className="text-green-600 font-medium">-${discount.toFixed(2)}</span></div>
-        <div className="border-t pt-3 flex justify-between"><span className="font-semibold">Total</span><span className="text-xl font-bold text-blue-600">${total.toFixed(2)}</span></div>
-      </div>
-      <div className="mt-4">
-        <input type="text" placeholder="Enter coupon code" className="w-full border rounded-xl px-4 py-2.5 text-sm" />
-      </div>
-      <button className="mt-4 w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors">Proceed to Checkout</button>
-      <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-400">
-        <span className="flex items-center gap-1">🔒 Secure Checkout</span>
-        <span className="flex items-center gap-1">🚚 Free Shipping 50+</span>
+    <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b">
+          <h2 className="text-lg font-bold" style={{ fontFamily: "'Outfit', sans-serif" }}>Checkout</h2>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">✕</button>
+        </div>
+
+        {/* Progress */}
+        <div className="px-6 py-4 flex items-center gap-2">
+          {["Shipping", "Payment", "Confirm"].map((s, i) => (
+            <div key={s} className="flex items-center gap-2 flex-1">
+              <div className={\`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold \${step > i + 1 ? "bg-green-500 text-white" : step === i + 1 ? "bg-amber-600 text-white" : "bg-gray-200 text-gray-500"}\`}>{step > i + 1 ? "✓" : i + 1}</div>
+              <span className={\`text-xs hidden sm:block \${step === i + 1 ? "font-semibold text-gray-900" : "text-gray-400"}\`}>{s}</span>
+              {i < 2 && <div className={\`flex-1 h-0.5 \${step > i + 1 ? "bg-green-500" : "bg-gray-200"}\`} />}
+            </div>
+          ))}
+        </div>
+
+        <div className="p-6">
+          {step === 1 && (
+            <div className="space-y-4">
+              <h3 className="font-semibold">Delivery Address</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <input placeholder="Full Name" className="px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                <input placeholder="Phone Number" className="px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              </div>
+              <input placeholder="Address Line 1" className="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <input placeholder="Address Line 2 (Optional)" className="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <div className="grid grid-cols-3 gap-3">
+                <input placeholder="City" className="px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                <input placeholder="Pincode" maxLength={6} className="px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                <select className="px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                  <option>State</option>
+                  {INDIAN_STATES.map(s => <option key={s}>{s}</option>)}
+                </select>
+              </div>
+              <button onClick={() => setStep(2)} className="w-full bg-amber-600 text-white py-3 rounded-xl font-semibold hover:bg-amber-700">Continue to Payment</button>
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-4">
+              <h3 className="font-semibold">Payment Method</h3>
+              {/* Payment Options */}
+              <div className="space-y-2">
+                {[
+                  { id: "upi", label: "BHIM UPI", icon: "📱", desc: "Google Pay, PhonePe, Paytm" },
+                  { id: "card", label: "Credit / Debit Card", icon: "💳", desc: "Visa, Mastercard, RuPay" },
+                  { id: "netbanking", label: "Net Banking", icon: "🏦", desc: "All major banks" },
+                  { id: "cod", label: "Cash on Delivery", icon: "💵", desc: "Pay when you receive" },
+                ].map((m) => (
+                  <button key={m.id} onClick={() => setPaymentMethod(m.id)} className={\`w-full flex items-center gap-3 p-4 rounded-xl border-2 transition-all \${paymentMethod === m.id ? "border-amber-500 bg-amber-50" : "border-gray-200 hover:border-gray-300"}\`}>
+                    <span className="text-xl">{m.icon}</span>
+                    <div className="text-left"><p className="font-medium text-sm">{m.label}</p><p className="text-xs text-gray-500">{m.desc}</p></div>
+                    <div className={\`ml-auto w-5 h-5 rounded-full border-2 flex items-center justify-center \${paymentMethod === m.id ? "border-amber-500" : "border-gray-300"}\`}>{paymentMethod === m.id && <div className="w-3 h-3 bg-amber-500 rounded-full" />}</div>
+                  </button>
+                ))}
+              </div>
+              {paymentMethod === "upi" && (
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-xs text-gray-500 mb-2">Enter your UPI ID</p>
+                  <input value={upiId} onChange={(e) => setUpiId(e.target.value)} placeholder="yourname@upi" className="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                </div>
+              )}
+              <div className="flex gap-3">
+                <button onClick={() => setStep(1)} className="flex-1 border border-gray-300 py-3 rounded-xl font-medium text-sm hover:bg-gray-50">Back</button>
+                <button onClick={() => setStep(3)} className="flex-1 bg-amber-600 text-white py-3 rounded-xl font-semibold hover:bg-amber-700">Review Order</button>
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="space-y-4">
+              <h3 className="font-semibold">Order Summary</h3>
+              <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
+                <div className="flex justify-between"><span className="text-gray-500">Whey Protein Isolate × 2</span><span>₹4,998</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Creatine Monohydrate × 1</span><span>₹1,499</span></div>
+                <div className="border-t pt-2 flex justify-between"><span className="text-gray-500">Subtotal</span><span>₹{subtotal.toLocaleString("en-IN")}</span></div>
+                <div className="flex justify-between text-green-600"><span>FITINDIA Discount</span><span>-₹{discount.toLocaleString("en-IN")}</span></div>
+                <div className="flex justify-between"><span className="text-gray-500">Shipping</span><span className="text-green-600">FREE</span></div>
+                <div className="border-t pt-2 flex justify-between font-bold text-lg"><span>Total</span><span>₹{total.toLocaleString("en-IN")}</span></div>
+              </div>
+              <div className="bg-amber-50 rounded-xl p-3 text-xs text-amber-800">
+                <p>📦 Estimated delivery: <strong>{new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}</strong></p>
+                <p className="mt-1">🛡️ FSSAI Certified · Lab Tested · 30-Day Returns</p>
+              </div>
+              <div className="flex gap-3">
+                <button onClick={() => setStep(2)} className="flex-1 border border-gray-300 py-3 rounded-xl font-medium text-sm hover:bg-gray-50">Back</button>
+                <button onClick={placeOrder} className="flex-1 bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700">Place Order — ₹{total.toLocaleString("en-IN")}</button>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -1106,9 +1539,9 @@ function getStatsForDomain(domain: string): Array<{ label: string; value: string
   if (domain === "ecommerce") {
     return [
       { label: "Happy Customers", value: "50,000+" },
-      { label: "Products Sold", value: "1M+" },
-      { label: "5-Star Reviews", value: "25,000+" },
-      { label: "Countries Shipped", value: "35+" },
+      { label: "Orders Delivered", value: "2,00,000+" },
+      { label: "FSSAI Certified", value: "100%" },
+      { label: "Cities Covered", value: "500+" },
     ];
   }
   if (domain === "gym-crm") {
@@ -1173,11 +1606,11 @@ function genFAQ(prompt?: string): string {
 
 function getFAQForDomain(domain: string): Array<{ q: string; a: string }> {
   if (domain === "ecommerce") return [
-    { q: "Are your supplements third-party tested?", a: "Yes, every batch is independently tested by NSF International and Informed Sport for purity, potency, and banned substances." },
-    { q: "How long does shipping take?", a: "Domestic orders ship within 24 hours and arrive in 2-5 business days. International shipping takes 7-14 business days." },
-    { q: "What is your return policy?", a: "We offer a 30-day money-back guarantee on all unopened products. If you're not satisfied, contact us for a full refund." },
-    { q: "Do you offer subscription discounts?", a: "Yes! Subscribe & Save gives you 15% off every order plus free shipping. Cancel or pause anytime." },
-    { q: "Are your products vegetarian/vegan?", a: "Many of our products are plant-based. Look for the vegan badge on product pages. Our Whey Protein has a vegetarian-friendly option." },
+    { q: "Are your supplements FSSAI certified?", a: "Yes, all our products are manufactured in ISO 22000 & GMP certified facilities with valid FSSAI license (10019062000). Every batch is third-party tested for purity and potency." },
+    { q: "How long does delivery take?", a: "Pan-India delivery in 2-5 business days. Express delivery to metros in 1-2 days. Free standard shipping on orders above ₹999." },
+    { q: "What is your return policy?", a: "We offer a 30-day money-back guarantee on all unopened products. If you're not satisfied, contact us for a full refund — no questions asked." },
+    { q: "Do you offer subscription discounts?", a: "Yes! Subscribe & Save gives you 15% off every order plus free express shipping. Cancel or pause anytime from your dashboard." },
+    { q: "Are your products vegetarian/vegan?", a: "Look for the 🟥 (veg) or 🟧 (non-veg) markers on each product. Many of our products are 100% plant-based and vegan-friendly." },
   ];
   if (domain === "gym-crm") return [
     { q: "Is there a free trial?", a: "Yes, we offer a 14-day free trial with full access to all features. No credit card required." },
@@ -2800,8 +3233,10 @@ const COMPONENT_GENERATORS: Record<string, (prompt?: string) => string> = {
   FAQ: (p) => genFAQ(p),
   Portfolio: genPortfolio,
   ProductGrid: genProductGrid,
+  CartDrawer: genCartItems,
   CartItems: genCartItems,
   CartSummary: genCartSummary,
+  CheckoutModal: genCartSummary,
   Sidebar: genSidebar,
   DashboardContent: genDashboardContent,
   LoginForm: genLoginForm,
