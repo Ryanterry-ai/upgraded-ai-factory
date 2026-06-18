@@ -77,6 +77,20 @@ const ECOMMERCE_BLUEPRINT: DomainBlueprint = {
       requiredLogic: ["useState", "handleSubmit", "validation"],
       description: "Multi-step checkout with address, payment, and order review",
     },
+    {
+      name: "ReviewList",
+      minLines: 25,
+      requiredElements: ["star", "rating", "comment", "author", "date"],
+      requiredLogic: ["useState", "sort", "filter"],
+      description: "Product reviews with star ratings, comments, and sorting",
+    },
+    {
+      name: "BrandGrid",
+      minLines: 20,
+      requiredElements: ["logo", "name", "description", "link"],
+      requiredLogic: ["useState", "filter"],
+      description: "Brand showcase grid with logos, descriptions, and product counts",
+    },
   ],
   requiredState: ["cart", "products", "filters", "selectedProduct", "wishlist"],
   requiredFlows: ["browse → add to cart → checkout → payment", "search → filter → product detail → add to cart"],
@@ -90,7 +104,7 @@ const ECOMMERCE_BLUEPRINT: DomainBlueprint = {
 const GYM_CRM_BLUEPRINT: DomainBlueprint = {
   id: "gym-crm",
   name: "Gym CRM SaaS",
-  keywords: ["gym", "crm", "fitness", "attendance", "members", "billing", "staff", "leads", "workout", "personal trainer", "health club"],
+  keywords: ["gym", "gym owner", "crm", "crm saas", "fitness", "attendance", "member management", "members", "billing", "staff management", "staff", "lead management", "leads", "workout", "personal trainer", "health club", "class schedule", "check-in"],
   complexity: "medium",
   requiredPages: [
     { name: "Dashboard", route: "/dashboard", components: ["DashboardStats", "RecentActivity", "UpcomingClasses"] },
@@ -222,7 +236,7 @@ const AGENCY_BLUEPRINT: DomainBlueprint = {
 const SAAS_DASHBOARD_BLUEPRINT: DomainBlueprint = {
   id: "saas",
   name: "SaaS Dashboard",
-  keywords: ["saas", "dashboard", "analytics", "admin", "management", "subscription", "billing", "multi-tenant"],
+  keywords: ["saas dashboard", "saas", "subscription", "multi-tenant", "multi tenant", "saas app"],
   requiredPages: [
     { name: "Dashboard", route: "/dashboard", components: ["DashboardStats", "Charts", "RecentActivity", "QuickActions"] },
     { name: "Users", route: "/users", components: ["UserTable", "UserSearch", "RoleFilter"] },
@@ -502,7 +516,7 @@ const RESTAURANT_BLUEPRINT: DomainBlueprint = {
 const ADMIN_DASHBOARD_BLUEPRINT: DomainBlueprint = {
   id: "admin-dashboard",
   name: "Admin Dashboard",
-  keywords: ["admin", "admin panel", "admin dashboard", "backoffice", "management panel", "control panel", "system admin"],
+  keywords: ["admin dashboard", "admin panel", "admin", "backoffice", "management panel", "control panel", "system admin", "ecommerce admin", "order management", "inventory management"],
   complexity: "high",
   requiredPages: [
     { name: "Dashboard", route: "/dashboard", components: ["StatsCards", "RecentActivity", "Charts", "QuickActions"] },
@@ -533,6 +547,20 @@ const ADMIN_DASHBOARD_BLUEPRINT: DomainBlueprint = {
       requiredElements: ["chart", "line", "bar", "revenue", "period", "compare"],
       requiredLogic: ["useState", "useEffect", "data processing"],
       description: "Revenue chart with line/bar toggle, period selector, and comparison mode",
+    },
+    {
+      name: "OrderTable",
+      minLines: 40,
+      requiredElements: ["table", "order", "status", "customer", "date", "amount", "filter"],
+      requiredLogic: ["useState", "sort", "filter", "search"],
+      description: "Orders management table with status filters, search, and batch operations",
+    },
+    {
+      name: "ProductTable",
+      minLines: 35,
+      requiredElements: ["table", "product", "inventory", "price", "stock", "edit"],
+      requiredLogic: ["useState", "filter", "search"],
+      description: "Product inventory table with stock levels, pricing, and quick-edit",
     },
   ],
   requiredState: ["users", "orders", "analytics", "settings", "notifications"],
