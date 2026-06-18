@@ -60,6 +60,15 @@ import {
   getIntelligenceReport,
   type IntelligenceContext,
 } from "./intelligence/intelligence-orchestrator";
+import {
+  getBehaviorProfile,
+  BehaviorSimulationEngine,
+  type BehaviorProfile,
+} from "./behavior-simulation-engine";
+import {
+  generateBehaviorFiles,
+  type BehaviorFileOutput,
+} from "./behavior-generator";
 
 export interface GenerationRequest {
   prompt: string;
@@ -90,6 +99,7 @@ export interface GenerationResult {
   systemState?: SystemState;
   intelligence?: IntelligenceContext;
   intelligenceStored?: { memoriesStored: number; knowledgeEdges: number };
+  behaviorProfile?: { domain: string; machines: number; mutations: number; chains: number; journeys: number };
 }
 
 function sanitizeName(input: string): string {
@@ -3839,6 +3849,35 @@ export async function runGeneration(
       emit("thinking", { message: `SSE: RPSE data hydrated — entities: ${Object.keys(getState().entities).length}, metrics: ${Object.keys(getState().domain.metrics).length}` });
     }
 
+    // ═══ BEHAVIOR SIMULATION ENGINE (BSE) ═══
+    // Run behavior simulation to create alive, dynamic behavior state
+    const behaviorProfile = getBehaviorProfile(rpseDomain);
+    if (behaviorProfile) {
+      const bse = new BehaviorSimulationEngine(behaviorProfile);
+
+      // Generate behavior runtime code files
+      const behaviorFiles = generateBehaviorFiles(behaviorProfile);
+      for (const bf of behaviorFiles) {
+        files.push({ path: bf.path, content: bf.content, type: "config" });
+      }
+
+      // Store behavior context in SSE for runtime access
+      const behaviorState = bse.getState();
+      sseEmit("behavior_initialized", {
+        domain: rpseDomain,
+        machines: Object.keys(behaviorState.machines),
+        timeMutations: behaviorProfile.timeMutations.length,
+        eventChains: behaviorProfile.eventChains.length,
+        userJourneys: behaviorProfile.userJourneys.length,
+      });
+
+      emit("thinking", {
+        message: `BSE: Behavior simulation initialized — ${behaviorProfile.stateMachines.length} state machines, ${behaviorProfile.timeMutations.length} time mutations, ${behaviorProfile.eventChains.length} event chains`,
+      });
+
+      bse.destroy();
+    }
+
     // Emit files incrementally in batches for live preview
     if (onFiles && files.length > 0) {
       const pageFiles = files.filter(f => f.type === "page" || f.type === "html");
@@ -4226,6 +4265,13 @@ export async function runGeneration(
       systemState: getState(),
       intelligence: intelligenceContext,
       intelligenceStored,
+      behaviorProfile: behaviorProfile ? {
+        domain: behaviorProfile.domain,
+        machines: behaviorProfile.stateMachines.length,
+        mutations: behaviorProfile.timeMutations.length,
+        chains: behaviorProfile.eventChains.length,
+        journeys: behaviorProfile.userJourneys.length,
+      } : undefined,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
