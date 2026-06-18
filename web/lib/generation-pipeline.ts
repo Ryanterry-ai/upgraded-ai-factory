@@ -11,6 +11,22 @@ import { generatePreviewHtml } from "./preview-renderer";
 import { detectBlueprint, type DomainBlueprint } from "./domain-blueprints";
 import { calculateComponentDepthScore } from "./component-depth-validator";
 import {
+  detectRPSEContext,
+  getRPSEData,
+  getRPSEChartData,
+  getRPSEDashboardStats,
+  getRPSETableData,
+  getRPSECardData,
+  getRPSEPipelineData,
+  getRPSEMenuData,
+  getRPSEActivityFeed,
+  getRPSEMetrics,
+  validateRealism,
+  generateDataProvider,
+  type RPSEContext,
+  type RPSEDataBundle,
+} from "./rpse";
+import {
   analyzeRequirements,
   planArchitecture,
   validateRequirements,
@@ -2713,6 +2729,11 @@ ${usage}
   files.push({ path: "src/app/layout.tsx", content: genLayout(projectName), type: "config" });
   files.push({ path: "src/app/globals.css", content: genStyles(llmContent?.colors), type: "config" });
 
+  // ─── RPSE DATA PROVIDER ───
+  const rpseContext = detectRPSEContext(prompt);
+  const dataProviderContent = generateDataProvider(rpseContext.domain);
+  files.push({ path: "src/lib/data-provider.ts", content: dataProviderContent, type: "config" });
+
   const config = genConfig(projectName);
   files.push({ path: config.filename, content: config.content, type: "config" });
 
@@ -2990,20 +3011,48 @@ export function ${name}() {
 }`;
   }
 
-  // Chart/Stats components — always get real visualizations
+  // Chart/Stats components — RPSE domain-specific data
   if (lower.includes("chart") || lower.includes("graph") || lower.includes("stats")) {
+    const chartData = getRPSEChartData(domain);
+    const statsData = getRPSEDashboardStats(domain);
+    const isStatsComponent = lower.includes("stats") && !lower.includes("chart") && !lower.includes("graph");
     return `"use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-const MOCK_DATA = [
-  { label: "Jan", value: 120 }, { label: "Feb", value: 180 }, { label: "Mar", value: 150 },
-  { label: "Apr", value: 220 }, { label: "May", value: 190 }, { label: "Jun", value: 280 },
-];
+const CHART_DATA = ${JSON.stringify(chartData, null, 2)};
+const STATS_DATA = ${JSON.stringify(statsData, null, 2)};
 
 export function ${name}() {
+  const [isLoading, setIsLoading] = useState(true);
   const [period, setPeriod] = useState<"monthly" | "yearly">("monthly");
-  const maxValue = Math.max(...MOCK_DATA.map((d) => d.value));
-  const total = MOCK_DATA.reduce((s, d) => s + d.value, 0);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 600);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) return (
+    <div className="animate-pulse border rounded-lg p-4 space-y-4">
+      <div className="h-4 bg-gray-200 rounded w-1/3" />
+      <div className="h-40 bg-gray-100 rounded" />
+    </div>
+  );
+
+  const maxValue = Math.max(...CHART_DATA.map((d) => d.value));
+  const total = CHART_DATA.reduce((s, d) => s + d.value, 0);
+
+  ${isStatsComponent ? `
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {STATS_DATA.map((s) => (
+        <div key={s.label} className="p-4 border rounded-lg">
+          <p className="text-sm text-gray-500">{s.label}</p>
+          <p className="text-2xl font-bold mt-1">{s.value}</p>
+          <p className={\`text-xs mt-1 \${s.trend === "up" ? "text-green-600" : "text-red-600"}\`}>{s.change}</p>
+        </div>
+      ))}
+    </div>
+  );` : `
   return (
     <div className="space-y-4">
       <div className="flex gap-2">
@@ -3017,7 +3066,7 @@ export function ${name}() {
       </div>
       <div className="border rounded-lg p-4">
         <div className="flex items-end gap-2 h-40">
-          {MOCK_DATA.map((d) => (
+          {CHART_DATA.map((d) => (
             <div key={d.label} className="flex-1 flex flex-col items-center gap-1">
               <div className="w-full bg-blue-500 rounded-t" style={{ height: \`\${(d.value / maxValue) * 100}%\` }} title={d.value.toLocaleString()} />
               <span className="text-xs text-gray-500">{d.label}</span>
@@ -3026,7 +3075,7 @@ export function ${name}() {
         </div>
       </div>
     </div>
-  );
+  );`}
 }`;
   }
 
@@ -3102,25 +3151,48 @@ export function ${name}() {
 }`;
   }
 
-  // Pipeline/Kanban components
+  // Pipeline/Kanban components — RPSE domain-specific data
   if (lower.includes("pipeline") || lower.includes("kanban")) {
+    const pipelineData = getRPSEPipelineData(domain);
+    const stages = domain === "gym-crm"
+      ? ["New", "Contacted", "Qualified", "Negotiation", "Converted"]
+      : domain === "ecommerce"
+      ? ["Pending", "Processing", "Shipped", "Completed"]
+      : ["New", "In Progress", "Review", "Done"];
     return `"use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface Item { id: string; title: string; value: string; stage: string; }
 
-const STAGES = ["New", "In Progress", "Review", "Done"];
-const MOCK_ITEMS: Item[] = [
-  { id: "1", title: "Task Alpha", value: "$1,000", stage: "New" },
-  { id: "2", title: "Task Beta", value: "$2,500", stage: "In Progress" },
-  { id: "3", title: "Task Gamma", value: "$800", stage: "Review" },
-];
+const STAGES = ${JSON.stringify(stages)};
+const INITIAL_ITEMS: Item[] = ${JSON.stringify(pipelineData, null, 2)};
 
 export function ${name}() {
-  const [items, setItems] = useState<Item[]>(MOCK_ITEMS);
+  const [isLoading, setIsLoading] = useState(true);
+  const [items, setItems] = useState<Item[]>(INITIAL_ITEMS);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
   const moveItem = (id: string, newStage: string) => {
     setItems(prev => prev.map(i => i.id === id ? { ...i, stage: newStage } : i));
   };
+
+  if (isLoading) return (
+    <div className="flex gap-4 overflow-x-auto pb-4">
+      {STAGES.map(stage => (
+        <div key={stage} className="min-w-[200px] flex-1">
+          <div className="h-4 bg-gray-200 rounded w-1/2 mb-3 animate-pulse" />
+          <div className="space-y-2 min-h-[150px] p-2 rounded-lg bg-gray-50 border-2 border-dashed border-gray-200">
+            {[1, 2].map(i => <div key={i} className="h-20 bg-gray-200 rounded animate-pulse" />)}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="flex gap-4 overflow-x-auto pb-4">
       {STAGES.map(stage => (
@@ -3132,7 +3204,7 @@ export function ${name}() {
                 <p className="font-medium text-sm">{item.title}</p>
                 <p className="text-xs text-gray-500 mt-1">{item.value}</p>
                 <div className="flex gap-1 mt-2">
-                  {STAGES.filter(s => s !== stage).map(s => (
+                  {STAGES.filter(s => s !== stage).slice(0, 2).map(s => (
                     <button key={s} onClick={() => moveItem(item.id, s)} className="text-xs text-blue-600 hover:text-blue-800">{s}</button>
                   ))}
                 </div>
@@ -3146,23 +3218,38 @@ export function ${name}() {
 }`;
   }
 
-  // Menu components
+  // Menu components — RPSE domain-specific data
   if (lower.includes("menu")) {
+    const menuData = getRPSEMenuData(domain);
+    const categories = ["All", ...new Set(menuData.map(i => i.category))];
     return `"use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
-const MENU_ITEMS = [
-  { id: "1", name: "Classic Burger", category: "Mains", price: 12.99, description: "Juicy beef patty with lettuce, tomato, and special sauce." },
-  { id: "2", name: "Caesar Salad", category: "Starters", price: 8.99, description: "Fresh romaine lettuce with parmesan and croutons." },
-  { id: "3", name: "Margherita Pizza", category: "Mains", price: 14.99, description: "Wood-fired pizza with fresh mozzarella and basil." },
-  { id: "4", name: "Chocolate Cake", category: "Desserts", price: 6.99, description: "Rich dark chocolate layer cake." },
-];
-
-const CATEGORIES = ["All", "Starters", "Mains", "Desserts"];
+const MENU_ITEMS = ${JSON.stringify(menuData, null, 2)};
+const CATEGORIES = ${JSON.stringify(categories)};
 
 export function ${name}() {
+  const [isLoading, setIsLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState("All");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 500);
+    return () => clearTimeout(timer);
+  }, []);
+
   const filtered = activeCategory === "All" ? MENU_ITEMS : MENU_ITEMS.filter(i => i.category === activeCategory);
+
+  if (isLoading) return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        {[1, 2, 3, 4].map(i => <div key={i} className="h-10 bg-gray-200 rounded-lg w-20 animate-pulse" />)}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {[1, 2, 3, 4].map(i => <div key={i} className="h-32 bg-gray-200 rounded-lg animate-pulse" />)}
+      </div>
+    </div>
+  );
+
   return (
     <div className="space-y-4">
       <div className="flex gap-2 flex-wrap">
@@ -3178,7 +3265,7 @@ export function ${name}() {
               <p className="text-sm text-gray-600 mt-1">{item.description}</p>
               <span className="text-xs text-gray-400 mt-1 inline-block">{item.category}</span>
             </div>
-            <p className="text-lg font-bold text-green-600">\${item.price}</p>
+            {item.price > 0 && <p className="text-lg font-bold text-green-600">\${item.price}</p>}
           </div>
         ))}
       </div>
@@ -3187,38 +3274,87 @@ export function ${name}() {
 }`;
   }
 
-  // Dashboard components
+  // Dashboard components — RPSE domain-specific data
   if (lower.includes("dashboard") || lower.includes("overview")) {
+    const dashStats = getRPSEDashboardStats(domain);
+    const activity = getRPSEActivityFeed(domain);
+    const chartData = getRPSEChartData(domain);
     return `"use client";
+import { useState, useEffect } from "react";
+
+const STATS = ${JSON.stringify(dashStats, null, 2)};
+const ACTIVITY = ${JSON.stringify(activity, null, 2)};
+const CHART = ${JSON.stringify(chartData.slice(0, 6), null, 2)};
+
+const ICON_MAP: Record<string, string> = {
+  check: "bg-green-500", plus: "bg-blue-500", dollar: "bg-yellow-500",
+  rotate: "bg-orange-500", calendar: "bg-purple-500", user: "bg-indigo-500",
+  play: "bg-red-500", trending: "bg-pink-500", award: "bg-amber-500",
+  star: "bg-yellow-500", alert: "bg-red-500", rocket: "bg-blue-500",
+  comment: "bg-gray-500",
+};
 
 export function ${name}() {
-  const stats = [
-    { label: "Total Users", value: "1,234", change: "+12%", up: true },
-    { label: "Revenue", value: "$12,345", change: "+8%", up: true },
-    { label: "Orders", value: "456", change: "-3%", up: false },
-    { label: "Conversion", value: "3.2%", change: "+0.5%", up: true },
-  ];
-  return (
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setIsLoading(false), 700);
+    return () => clearTimeout(timer);
+  }, []);
+
+  if (isLoading) return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map(s => (
-          <div key={s.label} className="p-4 border rounded-lg">
-            <p className="text-sm text-gray-500">{s.label}</p>
-            <p className="text-2xl font-bold mt-1">{s.value}</p>
-            <p className={\`text-xs mt-1 \${s.up ? "text-green-600" : "text-red-600"}\`}>{s.change}</p>
+        {[1, 2, 3, 4].map(i => (
+          <div key={i} className="animate-pulse border rounded-lg p-4 space-y-2">
+            <div className="h-3 bg-gray-200 rounded w-1/2" />
+            <div className="h-6 bg-gray-200 rounded w-2/3" />
+            <div className="h-2 bg-gray-200 rounded w-1/3" />
           </div>
         ))}
       </div>
-      <div className="border rounded-lg p-6">
-        <h3 className="font-semibold mb-4">Recent Activity</h3>
-        <div className="space-y-3">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="flex items-center gap-3 text-sm">
-              <div className="w-2 h-2 rounded-full bg-blue-500" />
-              <span className="text-gray-600">Activity item {i} happened recently</span>
-              <span className="text-gray-400 ml-auto">{i}h ago</span>
-            </div>
-          ))}
+    </div>
+  );
+
+  const maxVal = Math.max(...CHART.map(c => c.value));
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {STATS.map(s => (
+          <div key={s.label} className="p-4 border rounded-lg">
+            <p className="text-sm text-gray-500">{s.label}</p>
+            <p className="text-2xl font-bold mt-1">{s.value}</p>
+            <p className={\`text-xs mt-1 \${s.trend === "up" ? "text-green-600" : "text-red-600"}\`}>{s.change}</p>
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="border rounded-lg p-4">
+          <h3 className="font-semibold mb-4">Trend</h3>
+          <div className="flex items-end gap-2 h-32">
+            {CHART.map(d => (
+              <div key={d.label} className="flex-1 flex flex-col items-center gap-1">
+                <div className="w-full bg-blue-500 rounded-t" style={{ height: \`\${(d.value / maxVal) * 100}%\` }} title={d.value.toLocaleString()} />
+                <span className="text-xs text-gray-500">{d.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="border rounded-lg p-4">
+          <h3 className="font-semibold mb-4">Recent Activity</h3>
+          <div className="space-y-3">
+            {ACTIVITY.map((a, i) => (
+              <div key={i} className="flex items-center gap-3 text-sm">
+                <div className={\`w-2 h-2 rounded-full \${ICON_MAP[a.icon] || "bg-gray-400"}\`} />
+                <div>
+                  <span className="font-medium">{a.action}</span>
+                  <span className="text-gray-600 ml-1">{a.subject}</span>
+                </div>
+                <span className="text-gray-400 ml-auto whitespace-nowrap">{a.time}</span>
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     </div>
@@ -3228,12 +3364,17 @@ export function ${name}() {
 
   // ContentMap for specific named components
   const contentMap: Record<string, string> = {
-    Services: `export function Services() {
-  const services = [
-    { title: "${projectContext.serviceType || "Service"} 1", description: "Professional ${projectContext.serviceType || "service"} tailored to your needs." },
-    { title: "${projectContext.serviceType || "Service"} 2", description: "Expert ${projectContext.serviceType || "service"} solutions for growth." },
-    { title: "${projectContext.serviceType || "Service"} 3", description: "Innovative ${projectContext.serviceType || "service"} for modern businesses." },
-  ];
+    Services: (() => {
+      const menuData = getRPSEMenuData(domain);
+      const serviceItems = menuData.length > 0
+        ? menuData.slice(0, 4).map(item => ({ title: item.name, description: item.description }))
+        : [
+            { title: projectContext.serviceType ? `${projectContext.serviceType} 1` : "Service 1", description: `Professional ${projectContext.serviceType || "service"} tailored to your needs.` },
+            { title: projectContext.serviceType ? `${projectContext.serviceType} 2` : "Service 2", description: `Expert ${projectContext.serviceType || "service"} solutions for growth.` },
+            { title: projectContext.serviceType ? `${projectContext.serviceType} 3` : "Service 3", description: `Innovative ${projectContext.serviceType || "service"} for modern businesses.` },
+          ];
+      return `export function Services() {
+  const services = ${JSON.stringify(serviceItems, null, 2)};
   return (
     <section className="py-16">
       <div className="container mx-auto px-4">
@@ -3249,7 +3390,8 @@ export function ${name}() {
       </div>
     </section>
   );
-}`,
+}`;
+    })(),
     Team: `export function Team() {
   const members = [
     { name: "Sarah Johnson", role: "CEO & Founder" },
@@ -3275,12 +3417,13 @@ export function ${name}() {
     </section>
   );
 }`,
-    Stats: `export function Stats() {
+    Stats: (() => {
+      const statsData = getRPSEDashboardStats(domain);
+      const metrics = getRPSEMetrics(domain);
+      const metricEntries = Object.entries(metrics).slice(0, 4);
+      return `export function Stats() {
   const stats = [
-    { label: "Projects", value: "250+" },
-    { label: "Clients", value: "120+" },
-    { label: "Team", value: "40+" },
-    { label: "Experience", value: "10+" },
+    ${metricEntries.map(([key, value]) => `{ label: "${key.replace(/([A-Z])/g, " $1").replace(/^./, s => s.toUpperCase())}", value: "${value}" }`).join(",\n    ")}
   ];
   return (
     <section className="py-16 bg-gray-50 dark:bg-gray-900">
@@ -3296,7 +3439,8 @@ export function ${name}() {
       </div>
     </section>
   );
-}`,
+}`;
+    })(),
   };
 
   return contentMap[name] || `export function ${name}() {
@@ -3374,7 +3518,8 @@ export function Header() {
 
 function calculateQualityScore(
   files: { path: string; content: string; type: string }[],
-  depthScore?: number
+  depthScore?: number,
+  domain?: string
 ): number {
   let score = 0;
 
@@ -3390,6 +3535,9 @@ function calculateQualityScore(
   if (files.some((f) => f.path === "tsconfig.json")) score += 0.03;
   if (files.some((f) => f.path.includes("tailwind.config"))) score += 0.02;
 
+  // RPSE: Bonus for data provider file
+  if (files.some((f) => f.path.includes("data-provider.ts"))) score += 0.05;
+
   const componentCount = files.filter((f) => f.path.includes("components/")).length;
   if (componentCount >= 8) score += 0.20;
   else if (componentCount >= 5) score += 0.15;
@@ -3404,6 +3552,13 @@ function calculateQualityScore(
   // P7: Weight final score by component depth to penalize placeholders
   if (depthScore !== undefined) {
     score = score * (0.6 + 0.4 * (depthScore / 100));
+  }
+
+  // RPSE: Realism validation — penalize scaffolding
+  if (domain) {
+    const realism = validateRealism(files, domain);
+    // Realism contributes 15% of the final score
+    score = score * 0.85 + (realism.score / 100) * 0.15;
   }
 
   return Math.min(1, score);
@@ -3571,6 +3726,9 @@ export async function runGeneration(
     const configCount = files.filter(f => f.type === "config").length;
     emit("thinking", { message: `Generated ${files.length} files: ${pageCount} pages, ${componentCount} components, ${configCount} config` });
 
+    // RPSE domain detection for realism validation
+    const rpseDomain = detectRPSEContext(request.prompt).domain;
+
     // Detect domain blueprint for regeneration
     const pipelineBlueprint = detectBlueprint(request.prompt);
 
@@ -3603,7 +3761,7 @@ export async function runGeneration(
       }
     }
 
-    const qualityScore = calculateQualityScore(files);
+    const qualityScore = calculateQualityScore(files, undefined, rpseDomain);
     const buildValidation = validateBuild(files);
 
     // Calculate component depth score for honest quality assessment
@@ -3673,6 +3831,18 @@ export async function runGeneration(
         qualityScores,
         componentDepth: depthResult,
       });
+    }
+
+    // ═══ RPSE REALISM VALIDATION ═══
+    const realismResult = validateRealism(files, rpseDomain);
+    emit("thinking", { message: `RPSE Realism Score: ${realismResult.score}/100 | Issues: ${realismResult.issues.length}` });
+    if (realismResult.issues.length > 0) {
+      for (const issue of realismResult.issues.slice(0, 5)) {
+        emit("thinking", { message: `  ⚠ ${issue}` });
+      }
+    }
+    if (!realismResult.passed) {
+      emit("thinking", { message: `RPSE realism check failed (score: ${realismResult.score}). Output may look like scaffolding.` });
     }
 
     // Generate preview from files (React preview for non-scraped, HTML for scraped)
