@@ -304,14 +304,30 @@ app.post("/generate", async (c) => {
           await new Promise((r) => setTimeout(r, 200));
 
           // Step 2: Detect if URL — plan the approach
-          const isUrl = /https?:\/\//i.test(prompt.trim());
+          // Enhanced URL detection - handles http://, https://, www., and domain.com formats
+          let isUrl = /https?:\/\//i.test(prompt.trim());
+          let detectedUrl = prompt.trim().match(/(https?:\/\/[^\s]+)/i)?.[1];
+          
+          // Also detect bare domains like "netflix.com" or "www.netflix.com"
+          if (!isUrl) {
+            const bareDomainMatch = prompt.trim().match(/^((?:www\.)?[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,})(?:\/[^\s]*)?$/i);
+            if (bareDomainMatch) {
+              const detectedDomain = bareDomainMatch[1];
+              const tlds = ['.com', '.io', '.org', '.net', '.co', '.ai', '.dev', '.app', '.me', '.tv', '.gg'];
+              const hasTLD = tlds.some(tld => detectedDomain.toLowerCase().endsWith(tld));
+              if (hasTLD && !detectedDomain.includes(' ')) {
+                detectedUrl = detectedDomain.startsWith('www.') ? `https://${detectedDomain}` : `https://${detectedDomain}`;
+                isUrl = true;
+              }
+            }
+          }
+          
           if (isUrl) {
-            const url = prompt.trim().match(/(https?:\/\/[^\s]+)/i)?.[1];
             send("agent_start", { agent: "Router", action: "Detecting project type" });
             await new Promise((r) => setTimeout(r, 200));
             send("agent_complete", { agent: "Router", detail: "URL clone detected" });
-            send("thinking", { message: `I'll clone the website at ${url}. Let me start by crawling all pages and downloading assets.` });
-            send("agent_start", { agent: "Web Crawler", action: `Scraping ${url}` });
+            send("thinking", { message: `I'll clone the website at ${detectedUrl}. Let me start by crawling all pages and downloading assets.` });
+            send("agent_start", { agent: "Web Crawler", action: `Scraping ${detectedUrl}` });
             send("thinking", { message: "Discovering all internal links, navigation, and asset URLs..." });
           } else {
             send("thinking", { message: "Let me analyze what you want and plan the project structure." });
@@ -338,13 +354,16 @@ app.post("/generate", async (c) => {
             allFiles = [...allFiles, ...files];
             send("files", { files: allFiles });
 
-            // Regenerate preview from accumulated files
-            try {
-              const { generateReactPreview } = require("@/lib/preview-renderer");
-              const previewHtml = generateReactPreview(allFiles, name?.trim() || "Project");
-              send("preview_url", { url: `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}` });
-            } catch (err) {
-              console.error("Live preview generation failed:", err);
+            // For URL clones, don't generate React preview - we'll use the scraped HTML
+            if (!isUrl) {
+              // Regenerate preview from accumulated files (only for non-URL builds)
+              try {
+                const { generateReactPreview } = require("@/lib/preview-renderer");
+                const previewHtml = generateReactPreview(allFiles, name?.trim() || "Project");
+                send("preview_url", { url: `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}` });
+              } catch (err) {
+                console.error("Live preview generation failed:", err);
+              }
             }
           });
 
@@ -380,23 +399,37 @@ app.post("/generate", async (c) => {
             send("files", { files: result.files });
           }
 
-          // Send preview URL if not already sent incrementally
-          if (allFiles.length === 0 && result.files && result.files.length > 0) {
-            try {
-              const scraped = result.scraped;
-              const homePage = scraped?.pages?.find(p => p.path === "/") || scraped?.pages?.[0];
-
-              if (homePage?.fullHtml) {
-                const previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(homePage.fullHtml)}`;
+          // Send preview URL - prioritize scraped HTML for URL clones
+          try {
+            const scraped = result.scraped;
+            
+            if (isUrl && scraped && scraped.pages.length > 0) {
+              // For URL clones, check if scraped HTML is substantial
+              const homePage = scraped.pages.find(p => p.path === "/") || scraped.pages[0];
+              const hasSubstantialHtml = homePage?.fullHtml && homePage.fullHtml.length > 2000 && 
+                (homePage.headings.length > 2 || homePage.sections.length > 2 || homePage.images.length > 2);
+              
+              if (hasSubstantialHtml) {
+                console.log(`[Preview] Using scraped HTML from ${homePage!.url} (${homePage!.fullHtml!.length} chars)`);
+                const previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(homePage!.fullHtml!)}`;
                 send("preview_url", { url: previewUrl });
               } else {
-                const previewHtml = generatePreviewHtml(scraped || null, name?.trim() || "Project");
+                // Scraped HTML is minimal, generate rich preview from structured data
+                console.log(`[Preview] Scraped HTML is minimal, generating rich preview from ${scraped.pages.length} pages`);
+                const { generatePreviewHtml } = require("@/lib/preview-renderer");
+                const previewHtml = generatePreviewHtml(scraped, name?.trim() || "Project");
                 const previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}`;
                 send("preview_url", { url: previewUrl });
               }
-            } catch (previewErr) {
-              console.error("Preview generation failed:", previewErr);
+            } else if (!isUrl && allFiles.length === 0 && result.files && result.files.length > 0) {
+              // For non-URL builds, generate React preview from files
+              const { generateReactPreview } = require("@/lib/preview-renderer");
+              const previewHtml = generateReactPreview(result.files, name?.trim() || "Project");
+              const previewUrl = `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}`;
+              send("preview_url", { url: previewUrl });
             }
+          } catch (previewErr) {
+            console.error("Preview generation failed:", previewErr);
           }
 
           // Send preview URL if project exists

@@ -3422,8 +3422,28 @@ export async function runGeneration(
   // ═══ ARCHITECTURE-DRIVEN GENERATION ═══
   let requirements: RequirementMatrix | undefined;
   let architecture: ArchitecturePlan | undefined;
-  const urlMatch = request.prompt.trim().match(/(https?:\/\/[^\s]+)/i);
-  const isUrl = !!urlMatch;
+  
+  // Enhanced URL detection - handles http://, https://, www., and domain.com formats
+  let urlMatch = request.prompt.trim().match(/(https?:\/\/[^\s]+)/i);
+  let isUrl = !!urlMatch;
+  
+  // Also detect bare domains like "netflix.com" or "www.netflix.com"
+  if (!isUrl) {
+    const bareDomainMatch = request.prompt.trim().match(/^((?:www\.)?[a-zA-Z0-9][a-zA-Z0-9-]*\.[a-zA-Z]{2,})(?:\/[^\s]*)?$/i);
+    if (bareDomainMatch) {
+      const detectedDomain = bareDomainMatch[1];
+      // Check if it looks like a domain (has TLD, not a common word)
+      const tlds = ['.com', '.io', '.org', '.net', '.co', '.ai', '.dev', '.app', '.me', '.tv', '.gg'];
+      const hasTLD = tlds.some(tld => detectedDomain.toLowerCase().endsWith(tld));
+      if (hasTLD && !detectedDomain.includes(' ')) {
+        // Convert to full URL
+        const fullUrl = detectedDomain.startsWith('www.') ? `https://${detectedDomain}` : `https://${detectedDomain}`;
+        urlMatch = [fullUrl, fullUrl];
+        isUrl = true;
+        emit("thinking", { message: `Detected domain: ${detectedDomain} → ${fullUrl}` });
+      }
+    }
+  }
 
   if (!isUrl) {
     // Step 0: Detect domain blueprint FIRST for scope isolation
@@ -3456,6 +3476,16 @@ export async function runGeneration(
     try {
       scraped = await scrapeSite(detectedUrl, 50);
       emit("thinking", { message: `Found ${scraped.pages.length} pages, ${(scraped.assets || []).length} assets from ${scraped.baseUrl}` });
+      
+      // Log detailed scraping results
+      const homePage = scraped.pages.find(p => p.path === "/") || scraped.pages[0];
+      if (homePage) {
+        emit("thinking", { message: `Homepage: ${homePage.title} | fullHtml: ${homePage.fullHtml ? `${homePage.fullHtml.length} chars` : "MISSING"}` });
+        if (homePage.fullHtml) {
+          emit("thinking", { message: `Homepage HTML preview: ${homePage.fullHtml.slice(0, 200)}...` });
+        }
+      }
+      
       warnings.push(`Crawled ${scraped.pages.length} pages from ${scraped.baseUrl}: Tech: ${scraped.techStack.join(", ") || "unknown"}`);
     } catch (err) {
       emit("thinking", { message: `Scraping failed: ${err instanceof Error ? err.message : "unknown"}. Generating from prompt only.` });
@@ -3633,14 +3663,23 @@ export async function runGeneration(
       try {
         if (scraped && scraped.pages.length > 0) {
           const homePage = scraped.pages.find(p => p.path === "/") || scraped.pages[0];
-          if (homePage?.fullHtml) {
-            emit("preview_url", { url: `data:text/html;charset=utf-8,${encodeURIComponent(homePage.fullHtml)}` });
+          
+          // Check if scraped HTML is substantial enough (more than just a shell)
+          const hasSubstantialHtml = homePage?.fullHtml && homePage.fullHtml.length > 2000 && 
+            (homePage.headings.length > 2 || homePage.sections.length > 2 || homePage.images.length > 2);
+          
+          if (hasSubstantialHtml) {
+            console.log(`[Preview] Using scraped HTML from homepage (${homePage!.fullHtml!.length} chars, ${homePage!.headings.length} headings, ${homePage!.sections.length} sections)`);
+            emit("preview_url", { url: `data:text/html;charset=utf-8,${encodeURIComponent(homePage!.fullHtml!)}` });
           } else {
+            // Scraped HTML is minimal (likely SPA), generate a rich preview from structured data
+            console.log(`[Preview] Scraped HTML is minimal (${homePage?.fullHtml?.length || 0} chars), generating rich preview from structured data`);
             const previewHtml = generatePreviewHtml(scraped, projectName);
             emit("preview_url", { url: `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}` });
           }
         } else {
           // Generate React preview from the component files
+          console.log(`[Preview] Generating React preview from ${files.length} files`);
           const { generateReactPreview } = await import("./preview-renderer");
           const previewHtml = generateReactPreview(files, projectName);
           emit("preview_url", { url: `data:text/html;charset=utf-8,${encodeURIComponent(previewHtml)}` });

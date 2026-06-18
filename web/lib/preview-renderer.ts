@@ -593,7 +593,7 @@ export function generatePreviewHtml(scraped: ScrapedSite | null | undefined, pro
   const footer = renderFooter(scraped, colors);
 
   // Additional pages as links section
-  const otherPages = scraped.pages.filter(p => p.path !== "/").slice(0, 4);
+  const otherPages = scraped.pages.filter(p => p.path !== "/").slice(0, 6);
   let pagesSection = "";
   if (otherPages.length > 0) {
     pagesSection = `
@@ -602,10 +602,27 @@ export function generatePreviewHtml(scraped: ScrapedSite | null | undefined, pro
           <h2 style="font-size:24px;font-weight:700;color:white;text-align:center;margin-bottom:32px;">Explore</h2>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
             ${otherPages.map(p => `
-              <div style="padding:20px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);">
+              <div style="padding:20px;border-radius:10px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);transition:border-color 0.2s;" onmouseover="this.style.borderColor='${colors.primary}40'" onmouseout="this.style.borderColor='rgba(255,255,255,0.05)'">
                 <h3 style="font-size:15px;font-weight:600;color:white;margin-bottom:8px;">${escapeHtml(p.title || p.path)}</h3>
-                <p style="font-size:13px;color:#71717a;line-height:1.5;">${escapeHtml((p.description || p.bodyText || "").slice(0, 100))}${(p.description || p.bodyText || "").length > 100 ? "..." : ""}</p>
+                <p style="font-size:13px;color:#71717a;line-height:1.5;">${escapeHtml((p.description || p.bodyText || "").slice(0, 120))}${(p.description || p.bodyText || "").length > 120 ? "..." : ""}</p>
+                <p style="font-size:11px;color:#52525b;margin-top:8px;">${p.images?.length || 0} images · ${p.links?.filter(l => l.isInternal).length || 0} links</p>
               </div>
+            `).join("")}
+          </div>
+        </div>
+      </section>`;
+  }
+
+  // Tech stack section
+  let techSection = "";
+  if (scraped.techStack && scraped.techStack.length > 0) {
+    techSection = `
+      <section style="padding:40px 24px;">
+        <div style="max-width:1000px;margin:0 auto;text-align:center;">
+          <p style="font-size:13px;color:#52525b;margin-bottom:12px;">TECHNOLOGIES DETECTED</p>
+          <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;">
+            ${scraped.techStack.map(tech => `
+              <span style="padding:6px 14px;border-radius:20px;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.08);font-size:12px;color:#a1a1aa;">${escapeHtml(tech)}</span>
             `).join("")}
           </div>
         </div>
@@ -641,6 +658,7 @@ export function generatePreviewHtml(scraped: ScrapedSite | null | undefined, pro
   ${products}
   ${images}
   ${pagesSection}
+  ${techSection}
   ${footer}
 </body>
 </html>`;
