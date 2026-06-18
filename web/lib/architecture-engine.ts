@@ -175,6 +175,27 @@ export function analyzeRequirements(prompt: string, blueprint?: DomainBlueprint 
     // BLUEPRINT MODE: Only add pages from the matched blueprint — no cross-domain leakage
     for (const bpPage of blueprint.requiredPages) {
       if (bpPage.route === "/") continue; // Home already added
+      // Create meaningful keywords from page name and components
+      const keywords = [
+        bpPage.name.toLowerCase(),
+        ...bpPage.components.map(c => c.toLowerCase()),
+      ];
+      // Add domain-specific keywords based on page name
+      if (bpPage.name === "Members") {
+        keywords.push("member", "membership", "member management");
+      } else if (bpPage.name === "Leads") {
+        keywords.push("lead", "pipeline", "prospect", "lead management");
+      } else if (bpPage.name === "Attendance") {
+        keywords.push("attendance", "check-in", "checkin", "tracking");
+      } else if (bpPage.name === "Billing") {
+        keywords.push("billing", "invoice", "payment", "billing management");
+      } else if (bpPage.name === "Staff") {
+        keywords.push("staff", "employee", "team", "staff management");
+      } else if (bpPage.name === "Classes") {
+        keywords.push("class", "schedule", "booking", "class management");
+      } else if (bpPage.name === "Reports") {
+        keywords.push("report", "analytics", "chart", "reporting");
+      }
       pages.push({
         id: `page-${bpPage.name.toLowerCase().replace(/\s+/g, "-")}`,
         type: "page",
@@ -182,7 +203,7 @@ export function analyzeRequirements(prompt: string, blueprint?: DomainBlueprint 
         description: `${bpPage.name} page`,
         required: true,
         route: bpPage.route,
-        keywords: bpPage.components.map(c => c.toLowerCase()),
+        keywords,
       });
     }
   } else {
@@ -427,15 +448,30 @@ export function planArchitecture(matrix: RequirementMatrix, projectName: string)
     } else if (page.name === "Admin") {
       route.components = ["DashboardContent", "DataTable"];
     } else if (page.name === "Leads") {
-      route.components = ["DataTable", "LeadForm"];
+      // Use blueprint components if available, otherwise fallback
+      route.components = page.keywords.some(k => ["lead", "pipeline"].includes(k))
+        ? ["LeadPipeline", "LeadCard", "LeadForm"]
+        : ["DataTable", "LeadForm"];
     } else if (page.name === "Members") {
-      route.components = ["DataTable", "MemberForm"];
+      // Use blueprint components if available, otherwise fallback
+      route.components = page.keywords.some(k => ["member", "membership"].includes(k))
+        ? ["MemberTable", "MemberSearch", "MemberForm"]
+        : ["DataTable", "MemberForm"];
     } else if (page.name === "Attendance") {
-      route.components = ["AttendanceCalendar"];
+      // Use blueprint components if available, otherwise fallback
+      route.components = page.keywords.some(k => ["attendance", "check-in"].includes(k))
+        ? ["AttendanceCalendar", "AttendanceTable", "CheckInButton", "AttendanceStats"]
+        : ["AttendanceCalendar"];
     } else if (page.name === "Billing") {
-      route.components = ["BillingTable", "InvoiceGenerator"];
+      // Use blueprint components if available, otherwise fallback
+      route.components = page.keywords.some(k => ["billing", "invoice"].includes(k))
+        ? ["InvoiceTable", "PaymentForm", "PlanSelector"]
+        : ["BillingTable", "InvoiceGenerator"];
     } else if (page.name === "Staff") {
-      route.components = ["StaffTable", "StaffForm"];
+      // Use blueprint components if available, otherwise fallback
+      route.components = page.keywords.some(k => ["staff", "employee"].includes(k))
+        ? ["StaffTable", "StaffSchedule", "StaffForm"]
+        : ["StaffTable", "StaffForm"];
     } else if (page.name === "Reports") {
       route.components = ["ReportsDashboard", "Charts"];
     } else if (page.name === "Orders") {
@@ -454,6 +490,11 @@ export function planArchitecture(matrix: RequirementMatrix, projectName: string)
       route.components = ["SettingsForm"];
     } else if (page.name === "Profile") {
       route.components = ["ProfileForm"];
+    } else if (page.name === "Classes") {
+      // Use blueprint components if available, otherwise fallback
+      route.components = page.keywords.some(k => ["class", "schedule"].includes(k))
+        ? ["ClassSchedule", "ClassCard", "BookingButton"]
+        : ["ClassSchedule"];
     }
 
     routes.push(route);

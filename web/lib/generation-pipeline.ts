@@ -2772,7 +2772,7 @@ function getTableDataForDomain(domain: string, componentName: string): Array<{ i
     ];
   }
   if (domain === "gym-crm") {
-    if (componentName.includes("member")) {
+    if (componentName.includes("member") || componentName.includes("user")) {
       return [
         { id: "M001", name: "Alex Thompson", status: "active", date: "2024-01-15" },
         { id: "M002", name: "Maria Garcia", status: "active", date: "2024-02-20" },
@@ -2789,6 +2789,23 @@ function getTableDataForDomain(domain: string, componentName: string): Array<{ i
         { id: "L004", name: "Christopher Lee", status: "negotiation", date: "2024-06-12" },
       ];
     }
+    if (componentName.includes("billing") || componentName.includes("invoice")) {
+      return [
+        { id: "INV-001", name: "Alex Thompson — Premium Plan", status: "active", date: "2024-06-01" },
+        { id: "INV-002", name: "Maria Garcia — Standard Plan", status: "active", date: "2024-06-01" },
+        { id: "INV-003", name: "David Kim — Premium Plan", status: "pending", date: "2024-06-01" },
+        { id: "INV-004", name: "Sarah Wilson — Basic Plan", status: "expired", date: "2024-05-01" },
+      ];
+    }
+    if (componentName.includes("staff")) {
+      return [
+        { id: "S001", name: "Mike Johnson — Trainer", status: "active", date: "2024-01-10" },
+        { id: "S002", name: "Lisa Chen — Yoga Instructor", status: "active", date: "2024-02-15" },
+        { id: "S003", name: "Tom Williams — Manager", status: "active", date: "2024-03-20" },
+        { id: "S004", name: "Emma Davis — Receptionist", status: "part-time", date: "2024-04-05" },
+      ];
+    }
+    // Default gym-crm data
     return [
       { id: "INV-001", name: "Alex Thompson — Premium Plan", status: "active", date: "2024-06-01" },
       { id: "INV-002", name: "Maria Garcia — Standard Plan", status: "active", date: "2024-06-01" },
