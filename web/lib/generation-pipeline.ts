@@ -36,6 +36,17 @@ import {
   type QualityScores,
 } from "./architecture-engine";
 import {
+  initializeSystemState,
+  getState,
+  emit as sseEmit,
+  hydrateStateWithRPSE,
+  startWorkflow,
+  advanceWorkflow,
+  completeWorkflow,
+  getActiveWorkflows,
+  type SystemState,
+} from "./system-state-engine";
+import {
   getDesignTokens,
   generateGlobalCSS,
   generateUIComponents,
@@ -69,6 +80,7 @@ export interface GenerationResult {
   qualityPrediction?: QualityPrediction;
   optimizedBlueprint?: OptimizedBlueprint;
   scraped?: ScrapedSite;
+  systemState?: SystemState;
 }
 
 function sanitizeName(input: string): string {
@@ -3625,6 +3637,26 @@ export async function runGeneration(
     onProgress?.(event, data);
   };
 
+  // ═══ SYSTEM STATE ENGINE INITIALIZATION ═══
+  // Initialize the SSE as the central runtime layer
+  const detectedBlueprint = detectBlueprint(request.prompt);
+  const rpseContext = detectRPSEContext(request.prompt);
+
+  initializeSystemState({
+    domain: rpseContext.domain,
+    projectName,
+    blueprint: detectedBlueprint,
+  });
+
+  emit("thinking", { message: `System State Engine initialized — domain: ${rpseContext.domain}, workflows: ${Object.keys(getState().workflows).length}` });
+
+  // Emit navigation event for initial page
+  sseEmit({
+    type: "NAVIGATE",
+    payload: { page: "/" },
+    source: "system",
+  });
+
   // ═══ ARCHITECTURE-DRIVEN GENERATION ═══
   let requirements: RequirementMatrix | undefined;
   let architecture: ArchitecturePlan | undefined;
@@ -3765,6 +3797,28 @@ export async function runGeneration(
 
     // Detect domain blueprint for regeneration
     const pipelineBlueprint = detectBlueprint(request.prompt);
+
+    // ═══ SSE WORKFLOW EVENTS ═══
+    // Emit workflow events for each blueprint flow
+    const sseState = getState();
+    for (const wfId of Object.keys(sseState.workflows)) {
+      const wf = sseState.workflows[wfId];
+      if (wf.status === "idle") {
+        sseEmit({
+          type: "WORKFLOW_START",
+          payload: { workflowId: wfId, name: wf.name, steps: wf.steps },
+          source: "system",
+        });
+      }
+    }
+
+    // ═══ SSE RPSE HYDRATION ═══
+    // Hydrate state with RPSE data after files are generated
+    const rpseData = getRPSEData(rpseDomain);
+    if (rpseData) {
+      hydrateStateWithRPSE(rpseData, rpseDomain);
+      emit("thinking", { message: `SSE: RPSE data hydrated — entities: ${Object.keys(getState().entities).length}, metrics: ${Object.keys(getState().domain.metrics).length}` });
+    }
 
     // Emit files incrementally in batches for live preview
     if (onFiles && files.length > 0) {
@@ -4058,6 +4112,23 @@ export async function runGeneration(
 
     const status = errors.length > 0 ? "partial" : "completed";
 
+    // ═══ SSE WORKFLOW COMPLETION ═══
+    // Complete all active workflows in the state engine
+    const finalSseState = getState();
+    for (const wfId of Object.keys(finalSseState.workflows)) {
+      const wf = finalSseState.workflows[wfId];
+      if (wf.status === "active") {
+        sseEmit({
+          type: "WORKFLOW_COMPLETE",
+          payload: {
+            workflowId: wfId,
+            context: { fileCount: files.length, qualityScore, buildSuccess: buildValidation.buildSuccess },
+          },
+          source: "system",
+        });
+      }
+    }
+
     // Record generation for future memory retrieval
     await recordGeneration({
       projectId,
@@ -4116,6 +4187,7 @@ export async function runGeneration(
       qualityPrediction,
       optimizedBlueprint: undefined,
       scraped,
+      systemState: getState(),
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
