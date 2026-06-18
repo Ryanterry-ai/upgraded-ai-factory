@@ -3092,6 +3092,133 @@ export function InvoiceTable() {
 `;
 }
 
+function genStaffTable(): string {
+  return `"use client";
+import { useState } from "react";
+
+interface Staff {
+  id: string;
+  name: string;
+  role: string;
+  phone: string;
+  email: string;
+  specialization: string;
+  shift: "Morning" | "Afternoon" | "Evening" | "Split";
+  schedule: string;
+  status: "active" | "on-leave" | "inactive";
+  joinedDate: string;
+  certifications: string[];
+}
+
+const MOCK_STAFF: Staff[] = [
+  { id: "STF-001", name: "Raj Malhotra", role: "Head Trainer", phone: "+91 98765 11111", email: "raj@ironpeak.in", specialization: "Olympic Weightlifting", shift: "Morning", schedule: "6 AM – 2 PM", status: "active", joinedDate: "Jan 2023", certifications: ["NSCA-CSCS", "Olympic Lvl 2"] },
+  { id: "STF-002", name: "Ananya Desai", role: "Yoga Instructor", phone: "+91 87654 22222", email: "ananya@ironpeak.in", specialization: "Vinyasa & Hatha Yoga", shift: "Morning", schedule: "7 AM – 1 PM", status: "active", joinedDate: "Mar 2023", certifications: ["RYT-500", "Prenatal Yoga"] },
+  { id: "STF-003", name: "Vikram Joshi", role: "Personal Trainer", phone: "+91 76543 33333", email: "vikram@ironpeak.in", specialization: "Body Transformation", shift: "Evening", schedule: "4 PM – 10 PM", status: "active", joinedDate: "Jun 2023", certifications: ["ACE-CPT", "Nutrition Coach"] },
+  { id: "STF-004", name: "Meera Nair", role: "Group Fitness Lead", phone: "+91 65432 44444", email: "meera@ironpeak.in", specialization: "HIIT & CrossFit", shift: "Split", schedule: "6–10 AM, 5–9 PM", status: "active", joinedDate: "Sep 2023", certifications: ["CrossFit Lvl 2", "TRX"] },
+  { id: "STF-005", name: "Arjun Bhat", role: "Strength Coach", phone: "+91 54321 55555", email: "arjun@ironpeak.in", specialization: "Powerlifting & Strength", shift: "Afternoon", schedule: "12 PM – 8 PM", status: "on-leave", joinedDate: "Feb 2024", certifications: ["IPF Coach", "Kettlebell Specialist"] },
+  { id: "STF-006", name: "Priya Sharma", role: "Receptionist", phone: "+91 43210 66666", email: "priya@ironpeak.in", specialization: "Front Desk & Member Services", shift: "Morning", schedule: "8 AM – 4 PM", status: "active", joinedDate: "Nov 2024", certifications: ["Customer Service"] },
+];
+
+const SHIFT_COLORS: Record<string, string> = { Morning: "bg-amber-100 text-amber-700", Afternoon: "bg-blue-100 text-blue-700", Evening: "bg-purple-100 text-purple-700", Split: "bg-green-100 text-green-700" };
+const STATUS_COLORS: Record<string, string> = { active: "bg-green-100 text-green-700", "on-leave": "bg-amber-100 text-amber-700", inactive: "bg-gray-100 text-gray-700" };
+
+export function StaffTable() {
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("all");
+  const [shiftFilter, setShiftFilter] = useState("all");
+
+  const filtered = MOCK_STAFF
+    .filter(s => roleFilter === "all" || s.role === roleFilter)
+    .filter(s => shiftFilter === "all" || s.shift === shiftFilter)
+    .filter(s => search === "" || s.name.toLowerCase().includes(search.toLowerCase()) || s.specialization.toLowerCase().includes(search.toLowerCase()));
+
+  const roles = [...new Set(MOCK_STAFF.map(s => s.role))];
+
+  return (
+    <div className="space-y-5" style={{ fontFamily: "'Inter', sans-serif" }}>
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Staff Coordinator</h2>
+          <p className="text-xs text-gray-500">{MOCK_STAFF.filter(s => s.status === "active").length} active staff members</p>
+        </div>
+        <button className="bg-amber-600 text-white px-4 py-2 rounded-xl text-sm font-semibold hover:bg-amber-700">+ Add Staff</button>
+      </div>
+
+      {/* Shift Overview */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {(["Morning", "Afternoon", "Evening", "Split"] as const).map((shift) => {
+          const count = MOCK_STAFF.filter(s => s.shift === shift && s.status === "active").length;
+          return (
+            <div key={shift} className="bg-white rounded-xl border p-4 text-center">
+              <span className={\`px-2.5 py-1 rounded-full text-[10px] font-bold \${SHIFT_COLORS[shift]}\`}>{shift}</span>
+              <p className="text-2xl font-bold mt-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{count}</p>
+              <p className="text-[10px] text-gray-400">staff on shift</p>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Filters */}
+      <div className="flex flex-wrap gap-2">
+        <input type="text" placeholder="Search by name or specialization..." value={search} onChange={(e) => setSearch(e.target.value)} className="px-3 py-2 border rounded-xl text-sm flex-1 min-w-[200px] focus:outline-none focus:ring-2 focus:ring-amber-500" />
+        <select value={roleFilter} onChange={(e) => setRoleFilter(e.target.value)} className="px-3 py-2 border rounded-xl text-sm bg-white">
+          <option value="all">All Roles</option>
+          {roles.map(r => <option key={r}>{r}</option>)}
+        </select>
+        <select value={shiftFilter} onChange={(e) => setShiftFilter(e.target.value)} className="px-3 py-2 border rounded-xl text-sm bg-white">
+          <option value="all">All Shifts</option>
+          <option>Morning</option><option>Afternoon</option><option>Evening</option><option>Split</option>
+        </select>
+      </div>
+
+      {/* Staff Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filtered.map((staff) => (
+          <div key={staff.id} className="bg-white rounded-2xl border p-5 hover:shadow-md transition-all">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 bg-amber-100 text-amber-700 rounded-xl flex items-center justify-center text-sm font-bold">{staff.name.split(" ").map(n => n[0]).join("")}</div>
+                <div>
+                  <p className="font-semibold text-sm">{staff.name}</p>
+                  <p className="text-[10px] text-gray-500">{staff.role}</p>
+                </div>
+              </div>
+              <span className={\`px-2 py-0.5 rounded-full text-[10px] font-bold \${STATUS_COLORS[staff.status]}\`}>{staff.status}</span>
+            </div>
+            <div className="space-y-2 mb-3">
+              <div className="flex items-center gap-2 text-xs text-gray-600">
+                <span className="text-amber-600">⚡</span>
+                <span className="font-medium">{staff.specialization}</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-gray-600">
+                <span>🕐</span>
+                <span>{staff.schedule}</span>
+                <span className={\`ml-auto px-2 py-0.5 rounded-full text-[10px] font-bold \${SHIFT_COLORS[staff.shift]}\`}>{staff.shift}</span>
+              </div>
+              <div className="flex items-center gap-2 text-xs text-gray-600">
+                <span>📞</span>
+                <span>{staff.phone}</span>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1 mb-3">
+              {staff.certifications.map((cert, i) => (
+                <span key={i} className="text-[9px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">{cert}</span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <button className="flex-1 text-xs bg-gray-100 py-2 rounded-xl font-medium hover:bg-gray-200">Profile</button>
+              <button className="flex-1 text-xs bg-amber-50 text-amber-700 py-2 rounded-xl font-medium hover:bg-amber-100">Schedule</button>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+`;
+}
+
 function genClassSchedule(): string {
   return `"use client";
 import { useState } from "react";
@@ -3602,6 +3729,7 @@ const COMPONENT_GENERATORS: Record<string, (prompt?: string) => string> = {
   LeadPipeline: genLeadPipeline,
   RevenueChart: genRevenueChart,
   InvoiceTable: genInvoiceTable,
+  StaffTable: genStaffTable,
   ClassSchedule: genClassSchedule,
   DashboardStats: genDashboardStats,
   FilterSidebar: genFilterSidebar,
