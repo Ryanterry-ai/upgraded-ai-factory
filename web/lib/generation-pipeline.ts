@@ -3549,7 +3549,7 @@ export async function runGeneration(
     }
 
     const files = await generateFiles(request.prompt, factory, projectName, llmContent, scraped, architecture);
-    const pageCount = files.filter(f => f.type === "page").length;
+    const pageCount = files.filter(f => f.type === "page" || f.type === "html").length;
     const componentCount = files.filter(f => f.type === "component").length;
     const configCount = files.filter(f => f.type === "config").length;
     emit("thinking", { message: `Generated ${files.length} files: ${pageCount} pages, ${componentCount} components, ${configCount} config` });
@@ -3559,7 +3559,7 @@ export async function runGeneration(
 
     // Emit files incrementally in batches for live preview
     if (onFiles && files.length > 0) {
-      const pageFiles = files.filter(f => f.type === "page");
+      const pageFiles = files.filter(f => f.type === "page" || f.type === "html");
       const componentFiles = files.filter(f => f.type === "component");
       const configFiles = files.filter(f => f.type === "config");
 

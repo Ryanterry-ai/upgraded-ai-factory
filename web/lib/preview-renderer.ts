@@ -4,6 +4,21 @@
  * to render a realistic preview in the iframe.
  */
 
+interface ExtractedComponents {
+  header: { exists: boolean; html?: string; links?: { text: string; href: string }[] };
+  footer: { exists: boolean; html?: string; links?: { text: string; href: string }[]; socialLinks?: string[]; contact?: { email?: string; phone?: string; address?: string } };
+  sidebar: { exists: boolean; html?: string; items?: string[] };
+  tabs: { exists: boolean; items?: string[] };
+}
+
+interface ExtractedProduct {
+  name: string;
+  price: string;
+  image?: string;
+  description?: string;
+  url?: string;
+}
+
 interface ScrapedPage {
   url: string;
   path: string;
@@ -19,6 +34,11 @@ interface ScrapedPage {
   metaTags: Record<string, string>;
   structuredData: unknown[];
   techStack: string[];
+  fullHtml?: string;
+  components: ExtractedComponents;
+  products: ExtractedProduct[];
+  breadcrumbs: string[];
+  forms: { action?: string; method?: string; fields: { type: string; name?: string; placeholder?: string; label?: string }[] }[];
 }
 
 interface ScrapedSite {
@@ -30,6 +50,9 @@ interface ScrapedSite {
   globalFonts: string[];
   techStack: string[];
   images: { src: string; alt: string; localPath: string }[];
+  homepageHtml?: string;
+  assets: { url: string; localPath: string; buffer: ArrayBuffer; contentType: string }[];
+  securityHeaders?: { present: string[]; missing: string[]; score: number };
 }
 
 function escapeHtml(text: string): string {
@@ -56,7 +79,7 @@ function renderNav(scraped: ScrapedSite, colors: ReturnType<typeof getColors>): 
   // Use extracted header links if available, otherwise fall back to navigation
   const headerLinks = scraped.pages[0]?.components?.header?.links || [];
   const items = headerLinks.length > 0
-    ? headerLinks.map(l => l.text).slice(0, 6)
+    ? headerLinks.map((l: { text: string; href: string }) => l.text).slice(0, 6)
     : scraped.navigation.length > 0
       ? scraped.navigation
       : scraped.pages[0]?.navItems?.slice(0, 6) || [];
@@ -72,7 +95,7 @@ function renderNav(scraped: ScrapedSite, colors: ReturnType<typeof getColors>): 
         <span style="font-weight:600;color:white;font-size:14px;">${escapeHtml(brand.slice(0, 20))}</span>
       </div>
       <div style="display:flex;align-items:center;gap:24px;">
-        ${items.slice(0, 6).map(item => `
+        ${items.slice(0, 6).map((item: string) => `
           <a href="#" style="font-size:13px;color:#a1a1aa;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#a1a1aa'">${escapeHtml(item)}</a>
         `).join("")}
       </div>
@@ -175,7 +198,7 @@ function renderProducts(page: ScrapedPage, colors: ReturnType<typeof getColors>)
       <div style="max-width:1000px;margin:0 auto;">
         <h2 style="font-size:24px;font-weight:700;color:white;text-align:center;margin-bottom:32px;">Products</h2>
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;">
-          ${products.map(product => `
+          ${products.map((product: ExtractedProduct) => `
             <div style="border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);overflow:hidden;transition:border-color 0.2s;" onmouseover="this.style.borderColor='${colors.primary}40'" onmouseout="this.style.borderColor='rgba(255,255,255,0.05)'">
               ${product.image ? `<div style="aspect-ratio:1;background:rgba(255,255,255,0.05);"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'" /></div>` : ""}
               <div style="padding:16px;">
@@ -198,13 +221,13 @@ function renderFooter(scraped: ScrapedSite, colors: ReturnType<typeof getColors>
   const contact = footerData?.contact;
 
   const linkHtml = footerLinks.length > 0
-    ? footerLinks.map(l => `<a href="${escapeHtml(l.href)}" style="font-size:13px;color:#a1a1aa;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#a1a1aa'">${escapeHtml(l.text)}</a>`).join("")
+    ? footerLinks.map((l: { text: string; href: string }) => `<a href="${escapeHtml(l.href)}" style="font-size:13px;color:#a1a1aa;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#a1a1aa'">${escapeHtml(l.text)}</a>`).join("")
     : `<a href="#" style="font-size:13px;color:#52525b;text-decoration:none;">Privacy</a>
        <a href="#" style="font-size:13px;color:#52525b;text-decoration:none;">Terms</a>`;
 
   const socialHtml = socialLinks.length > 0
     ? `<div style="display:flex;gap:12px;margin-top:12px;">
-        ${socialLinks.slice(0, 5).map(url => {
+        ${socialLinks.slice(0, 5).map((url: string) => {
           const name = url.includes("twitter") || url.includes("x.com") ? "Twitter" :
                        url.includes("facebook") ? "Facebook" :
                        url.includes("instagram") ? "Instagram" :
