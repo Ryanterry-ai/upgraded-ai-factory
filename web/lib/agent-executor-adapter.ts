@@ -1,6 +1,7 @@
 import { callLLMWithFallback, isLLMAvailable, type LLMMessage } from "./llm-adapter";
 import { detectRPSEContext, getRPSEMetrics } from "./rpse";
 import { detectBlueprint } from "./domain-blueprints";
+import { enrichPromptWithSkills, type Skill } from "./agent-skills";
 
 export interface AgentDefinition {
   id: string;
@@ -453,8 +454,11 @@ async function runAgent(
     };
   }
 
+  // Enrich system prompt with Agent Skills instructions
+  const enrichedPrompt = enrichPromptWithSkills(agent.systemPrompt, agent.name, context);
+
   const messages: LLMMessage[] = [
-    { role: "system", content: agent.systemPrompt },
+    { role: "system", content: enrichedPrompt },
     { role: "user", content: context },
   ];
 
