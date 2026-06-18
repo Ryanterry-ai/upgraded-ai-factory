@@ -15,6 +15,7 @@ export interface DomainBlueprint {
   id: string;
   name: string;
   keywords: string[];
+  complexity?: "low" | "medium" | "medium-high" | "high";  // Determines generation depth
   requiredPages: { name: string; route: string; components: string[] }[];
   requiredComponents: ComponentSpec[];
   requiredState: string[];     // useState/useReducer patterns needed
@@ -29,7 +30,8 @@ export interface DomainBlueprint {
 const ECOMMERCE_BLUEPRINT: DomainBlueprint = {
   id: "ecommerce",
   name: "Ecommerce Store",
-  keywords: ["ecommerce", "e-commerce", "shop", "store", "product", "cart", "checkout", "hyugalife", "supplement", "marketplace"],
+  keywords: ["ecommerce", "e-commerce", "shop", "store", "product", "cart", "checkout", "supplement", "marketplace", "brand"],
+  complexity: "medium-high",
   requiredPages: [
     { name: "Home", route: "/", components: ["Hero", "FeaturedProducts", "CategoryGrid", "Testimonials", "CTA"] },
     { name: "Products", route: "/products", components: ["ProductGrid", "FilterSidebar", "SortDropdown", "SearchBar"] },
@@ -89,6 +91,7 @@ const GYM_CRM_BLUEPRINT: DomainBlueprint = {
   id: "gym-crm",
   name: "Gym CRM SaaS",
   keywords: ["gym", "crm", "fitness", "attendance", "members", "billing", "staff", "leads", "workout", "personal trainer", "health club"],
+  complexity: "medium",
   requiredPages: [
     { name: "Dashboard", route: "/dashboard", components: ["DashboardStats", "RecentActivity", "UpcomingClasses"] },
     { name: "Members", route: "/members", components: ["MemberTable", "MemberSearch", "MemberForm"] },
@@ -318,6 +321,225 @@ const PORTFOLIO_BLUEPRINT: DomainBlueprint = {
   dataModels: ["Project", "Skill", "Experience"],
 };
 
+const STARTUP_LANDING_BLUEPRINT: DomainBlueprint = {
+  id: "startup-landing",
+  name: "Startup Landing Page",
+  keywords: ["landing page", "startup", "saas landing", "product launch", "coming soon", "waitlist", "early access", "beta launch", "mvp launch"],
+  requiredPages: [
+    {
+      name: "Home",
+      route: "/",
+      components: ["Hero", "ProblemSection", "Features", "Benefits", "HowItWorks", "SocialProof", "Testimonials", "Pricing", "FAQ", "CTA", "Footer"],
+    },
+  ],
+  requiredComponents: [
+    {
+      name: "Hero",
+      minLines: 30,
+      requiredElements: ["headline", "subheadline", "cta", "hero image or video", "social proof badge"],
+      requiredLogic: ["useState"],
+      description: "Main hero with value proposition, CTA, and social proof",
+    },
+    {
+      name: "ProblemSection",
+      minLines: 25,
+      requiredElements: ["problem statement", "pain points", "statistics", "empathy"],
+      requiredLogic: [],
+      description: "Problem/solution section highlighting user pain points",
+    },
+    {
+      name: "Features",
+      minLines: 35,
+      requiredElements: ["feature cards", "icons", "descriptions", "grid layout"],
+      requiredLogic: ["useState", "map"],
+      description: "Feature showcase with grid layout and icons",
+    },
+    {
+      name: "Benefits",
+      minLines: 25,
+      requiredElements: ["benefit list", "icons", "descriptions"],
+      requiredLogic: [],
+      description: "Benefits section with icon + text pairs",
+    },
+    {
+      name: "HowItWorks",
+      minLines: 30,
+      requiredElements: ["step numbers", "step descriptions", "step icons", "flow"],
+      requiredLogic: [],
+      description: "Step-by-step how it works section",
+    },
+    {
+      name: "SocialProof",
+      minLines: 25,
+      requiredElements: ["logos", "company names", "metrics", "counts"],
+      requiredLogic: [],
+      description: "Social proof with company logos and key metrics",
+    },
+    {
+      name: "Testimonials",
+      minLines: 30,
+      requiredElements: ["testimonial cards", "quotes", "author", "avatar", "rating"],
+      requiredLogic: ["useState"],
+      description: "Customer testimonials carousel or grid",
+    },
+    {
+      name: "Pricing",
+      minLines: 40,
+      requiredElements: ["pricing tiers", "price", "feature list", "cta", "toggle"],
+      requiredLogic: ["useState", "toggle"],
+      description: "Pricing tiers with feature comparison and monthly/annual toggle",
+    },
+    {
+      name: "FAQ",
+      minLines: 30,
+      requiredElements: ["questions", "answers", "accordion", "expand/collapse"],
+      requiredLogic: ["useState", "toggle"],
+      description: "FAQ accordion with expand/collapse",
+    },
+    {
+      name: "CTA",
+      minLines: 20,
+      requiredElements: ["headline", "subheadline", "cta button", "email input"],
+      requiredLogic: ["useState"],
+      description: "Final call-to-action with email capture",
+    },
+  ],
+  requiredState: ["activeTestimonial", "pricingPeriod", "openFAQ", "email"],
+  requiredFlows: ["view hero → see features → view pricing → click CTA → enter email → submit"],
+  dataModels: ["User", "PricingPlan", "Testimonial", "FAQ"],
+};
+
+const STREAMING_MEDIA_BLUEPRINT: DomainBlueprint = {
+  id: "streaming",
+  name: "Streaming Media Platform",
+  keywords: ["netflix", "streaming", "video", "movie", "series", "watch", "player", "media", "entertainment", "tv show", "binge", "content platform"],
+  complexity: "high",
+  requiredPages: [
+    { name: "Home", route: "/", components: ["Hero", "ContinueWatching", "TrendingNow", "TopPicks", "CategoryRows"] },
+    { name: "Browse", route: "/browse", components: ["CategoryTabs", "ContentGrid", "FilterBar"] },
+    { name: "Player", route: "/watch/[id]", components: ["VideoPlayer", "EpisodeList", "MoreLikeThis", "Comments"] },
+    { name: "Profiles", route: "/profiles", components: ["ProfileGrid", "ProfileEditor", "KidsProfile"] },
+    { name: "My List", route: "/mylist", components: ["SavedGrid", "RemoveButton"] },
+    { name: "Search", route: "/search", components: ["SearchBar", "SearchResults", "TrendingSearches"] },
+    { name: "Account", route: "/account", components: ["SubscriptionPlan", "PaymentMethod", "ViewingHistory", "ParentalControls"] },
+  ],
+  requiredComponents: [
+    {
+      name: "VideoPlayer",
+      minLines: 50,
+      requiredElements: ["video", "controls", "progress", "fullscreen", "play", "pause", "volume", "skip"],
+      requiredLogic: ["useState", "useEffect", "useRef", "setInterval"],
+      description: "Full video player with play/pause, progress bar, volume, fullscreen, skip intro/credits",
+    },
+    {
+      name: "CategoryRows",
+      minLines: 35,
+      requiredElements: ["row", "scroll", "poster", "title", "hover", "preview"],
+      requiredLogic: ["useState", "useRef", "map", "scroll"],
+      description: "Horizontal scrollable category rows with hover preview cards (Netflix-style)",
+    },
+    {
+      name: "ProfileGrid",
+      minLines: 30,
+      requiredElements: ["avatar", "name", "edit", "kids", "lock"],
+      requiredLogic: ["useState", "navigate"],
+      description: "Profile selection grid with avatar, name, and edit/kids lock controls",
+    },
+    {
+      name: "SubscriptionPlan",
+      minLines: 35,
+      requiredElements: ["plan", "price", "features", "upgrade", "downgrade", "cancel"],
+      requiredLogic: ["useState", "handleSubmit"],
+      description: "Subscription management with plan comparison, upgrade/downgrade, cancel flow",
+    },
+  ],
+  requiredState: ["currentProfile", "watchHistory", " myList", "playbackPosition", "subscriptions"],
+  requiredFlows: ["browse → select content → play → pause/resume → next episode", "search → select → play", "profile select → browse → my list", "subscribe → payment → activate"],
+  dataModels: ["Profile", "Content", "WatchHistory", "Subscription", "Playlist"],
+};
+
+const RESTAURANT_BLUEPRINT: DomainBlueprint = {
+  id: "restaurant",
+  name: "Restaurant / Food Service",
+  keywords: ["restaurant", "food", "menu", "dining", "cafe", "order", "delivery", "reservation", "book table", "dish", "cuisine", "chef", "bistro", "pizzeria", "sushi"],
+  complexity: "medium",
+  requiredPages: [
+    { name: "Home", route: "/", components: ["Hero", "FeaturedDishes", "Testimonials", "CTA"] },
+    { name: "Menu", route: "/menu", components: ["MenuGrid", "CategoryFilter", "DishCard", "SearchBar"] },
+    { name: "Reservations", route: "/reservations", components: ["ReservationForm", "AvailabilityCalendar", "TimeSlotPicker"] },
+    { name: "Order Online", route: "/order", components: ["OrderCart", "CheckoutForm", "OrderTracking"] },
+    { name: "About", route: "/about", components: ["ChefBio", "Story", "Gallery"] },
+    { name: "Contact", route: "/contact", components: ["ContactForm", "MapLocation", "HoursInfo"] },
+  ],
+  requiredComponents: [
+    {
+      name: "MenuGrid",
+      minLines: 35,
+      requiredElements: ["dish", "price", "image", "description", "category", "add to cart"],
+      requiredLogic: ["useState", "filter", "map"],
+      description: "Menu display with dish cards, prices, images, and category filtering",
+    },
+    {
+      name: "ReservationForm",
+      minLines: 35,
+      requiredElements: ["date", "time", "guests", "name", "phone", "special requests"],
+      requiredLogic: ["useState", "handleSubmit", "validation"],
+      description: "Reservation form with date/time picker, party size, and validation",
+    },
+    {
+      name: "OrderCart",
+      minLines: 30,
+      requiredElements: ["items", "quantity", "remove", "total", "checkout"],
+      requiredLogic: ["useState", "add", "remove", "total"],
+      description: "Order cart with item list, quantity controls, and total calculation",
+    },
+  ],
+  requiredState: ["menuItems", "cartItems", "reservations", "orderHistory"],
+  requiredFlows: ["browse menu → add to cart → checkout → track order", "select date/time → fill form → confirm reservation", "view menu → filter by category → select dish → add to cart"],
+  dataModels: ["Dish", "Category", "Reservation", "Order", "OrderItem"],
+};
+
+const ADMIN_DASHBOARD_BLUEPRINT: DomainBlueprint = {
+  id: "admin-dashboard",
+  name: "Admin Dashboard",
+  keywords: ["admin", "admin panel", "admin dashboard", "backoffice", "management panel", "control panel", "system admin"],
+  complexity: "high",
+  requiredPages: [
+    { name: "Dashboard", route: "/dashboard", components: ["StatsCards", "RecentActivity", "Charts", "QuickActions"] },
+    { name: "Users", route: "/users", components: ["UserTable", "UserFilters", "UserActions"] },
+    { name: "Analytics", route: "/analytics", components: ["RevenueChart", "TrafficChart", "ConversionFunnel"] },
+    { name: "Settings", route: "/settings", components: ["SettingsForm", "ToggleSettings", "EmailTemplates"] },
+    { name: "Orders", route: "/orders", components: ["OrderTable", "OrderFilters", "OrderDetail"] },
+    { name: "Products", route: "/products", components: ["ProductTable", "ProductForm", "InventoryStatus"] },
+  ],
+  requiredComponents: [
+    {
+      name: "StatsCards",
+      minLines: 30,
+      requiredElements: ["card", "value", "change", "icon", "trend"],
+      requiredLogic: ["useState", "useEffect"],
+      description: "Dashboard stats cards with KPIs, trend indicators, and comparison values",
+    },
+    {
+      name: "UserTable",
+      minLines: 40,
+      requiredElements: ["table", "columns", "sort", "filter", "pagination", "actions", "bulk"],
+      requiredLogic: ["useState", "sort", "filter", "pagination"],
+      description: "Data table with sorting, filtering, pagination, bulk actions, and row-level operations",
+    },
+    {
+      name: "RevenueChart",
+      minLines: 35,
+      requiredElements: ["chart", "line", "bar", "revenue", "period", "compare"],
+      requiredLogic: ["useState", "useEffect", "data processing"],
+      description: "Revenue chart with line/bar toggle, period selector, and comparison mode",
+    },
+  ],
+  requiredState: ["users", "orders", "analytics", "settings", "notifications"],
+  requiredFlows: ["view dashboard → drill into metric → take action", "manage users → edit → save", "view orders → filter → process → ship"],
+  dataModels: ["User", "Order", "Product", "Analytics", "Setting"],
+};
+
 // ═══════════════════════════════════════════════════════════
 // BLUEPRINT REGISTRY
 // ═══════════════════════════════════════════════════════════
@@ -329,6 +551,10 @@ const ALL_BLUEPRINTS: DomainBlueprint[] = [
   SAAS_DASHBOARD_BLUEPRINT,
   BLOG_BLUEPRINT,
   PORTFOLIO_BLUEPRINT,
+  STARTUP_LANDING_BLUEPRINT,
+  STREAMING_MEDIA_BLUEPRINT,
+  RESTAURANT_BLUEPRINT,
+  ADMIN_DASHBOARD_BLUEPRINT,
 ];
 
 /**
@@ -365,4 +591,29 @@ export function getBlueprint(id: string): DomainBlueprint | undefined {
  */
 export function listBlueprints(): { id: string; name: string; keywords: string[] }[] {
   return ALL_BLUEPRINTS.map(bp => ({ id: bp.id, name: bp.name, keywords: bp.keywords }));
+}
+
+/**
+ * Get complexity multiplier for scaling generation depth.
+ * Returns a multiplier for file count, component lines, and regeneration depth.
+ */
+export function getComplexityMultiplier(blueprint: DomainBlueprint | null): {
+  fileMultiplier: number;
+  componentMinLines: number;
+  maxRegenerationAttempts: number;
+  depthWeight: number;
+} {
+  const complexity = blueprint?.complexity ?? "medium";
+  switch (complexity) {
+    case "low":
+      return { fileMultiplier: 0.8, componentMinLines: 20, maxRegenerationAttempts: 2, depthWeight: 0.25 };
+    case "medium":
+      return { fileMultiplier: 1.0, componentMinLines: 30, maxRegenerationAttempts: 3, depthWeight: 0.35 };
+    case "medium-high":
+      return { fileMultiplier: 1.3, componentMinLines: 40, maxRegenerationAttempts: 4, depthWeight: 0.40 };
+    case "high":
+      return { fileMultiplier: 1.8, componentMinLines: 50, maxRegenerationAttempts: 5, depthWeight: 0.45 };
+    default:
+      return { fileMultiplier: 1.0, componentMinLines: 30, maxRegenerationAttempts: 3, depthWeight: 0.35 };
+  }
 }

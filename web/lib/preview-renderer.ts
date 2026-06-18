@@ -53,9 +53,13 @@ function getColors(scraped: ScrapedSite): { primary: string; secondary: string; 
 }
 
 function renderNav(scraped: ScrapedSite, colors: ReturnType<typeof getColors>): string {
-  const items = scraped.navigation.length > 0
-    ? scraped.navigation
-    : scraped.pages[0]?.navItems?.slice(0, 6) || [];
+  // Use extracted header links if available, otherwise fall back to navigation
+  const headerLinks = scraped.pages[0]?.components?.header?.links || [];
+  const items = headerLinks.length > 0
+    ? headerLinks.map(l => l.text).slice(0, 6)
+    : scraped.navigation.length > 0
+      ? scraped.navigation
+      : scraped.pages[0]?.navItems?.slice(0, 6) || [];
 
   const brand = scraped.pages[0]?.title || scraped.rootDomain;
 
@@ -162,17 +166,75 @@ function renderImages(page: ScrapedPage): string {
     </section>`;
 }
 
+function renderProducts(page: ScrapedPage, colors: ReturnType<typeof getColors>): string {
+  const products = page.products.slice(0, 6);
+  if (products.length === 0) return "";
+
+  return `
+    <section style="padding:60px 24px;background:rgba(255,255,255,0.02);">
+      <div style="max-width:1000px;margin:0 auto;">
+        <h2 style="font-size:24px;font-weight:700;color:white;text-align:center;margin-bottom:32px;">Products</h2>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;">
+          ${products.map(product => `
+            <div style="border-radius:12px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);overflow:hidden;transition:border-color 0.2s;" onmouseover="this.style.borderColor='${colors.primary}40'" onmouseout="this.style.borderColor='rgba(255,255,255,0.05)'">
+              ${product.image ? `<div style="aspect-ratio:1;background:rgba(255,255,255,0.05);"><img src="${escapeHtml(product.image)}" alt="${escapeHtml(product.name)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'" /></div>` : ""}
+              <div style="padding:16px;">
+                <h3 style="font-size:14px;font-weight:600;color:white;margin-bottom:8px;">${escapeHtml(product.name)}</h3>
+                ${product.price ? `<p style="font-size:16px;font-weight:700;color:${colors.primary};">${escapeHtml(product.price)}</p>` : ""}
+                ${product.description ? `<p style="font-size:12px;color:#71717a;margin-top:8px;line-height:1.5;">${escapeHtml(product.description.slice(0, 100))}</p>` : ""}
+              </div>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    </section>`;
+}
+
 function renderFooter(scraped: ScrapedSite, colors: ReturnType<typeof getColors>): string {
   const brand = scraped.pages[0]?.title || scraped.rootDomain;
+  const footerData = scraped.pages[0]?.components?.footer;
+  const footerLinks = footerData?.links?.slice(0, 6) || [];
+  const socialLinks = footerData?.socialLinks || [];
+  const contact = footerData?.contact;
+
+  const linkHtml = footerLinks.length > 0
+    ? footerLinks.map(l => `<a href="${escapeHtml(l.href)}" style="font-size:13px;color:#a1a1aa;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='white'" onmouseout="this.style.color='#a1a1aa'">${escapeHtml(l.text)}</a>`).join("")
+    : `<a href="#" style="font-size:13px;color:#52525b;text-decoration:none;">Privacy</a>
+       <a href="#" style="font-size:13px;color:#52525b;text-decoration:none;">Terms</a>`;
+
+  const socialHtml = socialLinks.length > 0
+    ? `<div style="display:flex;gap:12px;margin-top:12px;">
+        ${socialLinks.slice(0, 5).map(url => {
+          const name = url.includes("twitter") || url.includes("x.com") ? "Twitter" :
+                       url.includes("facebook") ? "Facebook" :
+                       url.includes("instagram") ? "Instagram" :
+                       url.includes("linkedin") ? "LinkedIn" :
+                       url.includes("youtube") ? "YouTube" :
+                       url.includes("github") ? "GitHub" : "Social";
+          return `<a href="${escapeHtml(url)}" style="font-size:12px;color:#71717a;text-decoration:none;">${name}</a>`;
+        }).join("")}
+       </div>`
+    : "";
+
+  const contactHtml = contact?.email || contact?.phone
+    ? `<div style="margin-top:12px;font-size:12px;color:#52525b;">
+        ${contact.email ? `<span>Email: ${escapeHtml(contact.email)}</span>` : ""}
+        ${contact.phone ? ` <span>Phone: ${escapeHtml(contact.phone)}</span>` : ""}
+       </div>`
+    : "";
+
   return `
     <footer style="padding:32px 24px;border-top:1px solid rgba(255,255,255,0.05);">
       <div style="max-width:1000px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-size:13px;color:#52525b;">&copy; 2024 ${escapeHtml(brand)}. All rights reserved.</span>
+        <div>
+          <span style="font-size:13px;color:#52525b;">&copy; 2024 ${escapeHtml(brand)}. All rights reserved.</span>
+          ${contactHtml}
+        </div>
         <div style="display:flex;gap:16px;">
-          <a href="#" style="font-size:13px;color:#52525b;text-decoration:none;">Privacy</a>
-          <a href="#" style="font-size:13px;color:#52525b;text-decoration:none;">Terms</a>
+          ${linkHtml}
         </div>
       </div>
+      ${socialHtml}
     </footer>`;
 }
 
@@ -527,6 +589,7 @@ export function generatePreviewHtml(scraped: ScrapedSite | null | undefined, pro
   const hero = renderHero(scraped, colors);
   const sections = renderSections(homePage, colors);
   const images = renderImages(homePage);
+  const products = renderProducts(homePage, colors);
   const footer = renderFooter(scraped, colors);
 
   // Additional pages as links section
@@ -575,6 +638,7 @@ export function generatePreviewHtml(scraped: ScrapedSite | null | undefined, pro
   ${nav}
   ${hero}
   ${sections}
+  ${products}
   ${images}
   ${pagesSection}
   ${footer}

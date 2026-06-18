@@ -123,8 +123,8 @@ function WorkspacePage() {
           routes: event.routes as CoverageCategory,
           entities: event.entities as CoverageCategory,
           missingItems: event.missingItems as string[],
-          qualityScores: event.qualityScores as CoverageReport["qualityScores"],
-          componentDepth: event.componentDepth as CoverageReport["componentDepth"],
+          qualityScores: event.qualityScores as CoverageReportType["qualityScores"],
+          componentDepth: event.componentDepth as CoverageReportType["componentDepth"],
         };
         updateState({ coverageReport });
         const coveragePct = Math.round((event.overallCoverage as number) * 100);
@@ -161,25 +161,20 @@ function WorkspacePage() {
       id: crypto.randomUUID(), role: "user", content: prompt, timestamp: Date.now(),
     };
 
-    const isEdit = state.projectId && state.status === "completed";
-    const apiUrl = isEdit
-      ? `/api/projects/${state.projectId}/edit`
-      : "/api/generate";
-    const body = isEdit
-      ? { instruction: prompt, files: state.files }
-      : { prompt, factory: selectedFactory || undefined };
-
     updateState({
       status: "generating",
-      chatMessages: [...state.chatMessages, userMsg],
-      agentEvents: isEdit ? state.agentEvents : [],
-      buildLogs: isEdit ? state.buildLogs : [],
+      chatMessages: [userMsg],
+      agentEvents: [],
+      buildLogs: [],
       progress: 0,
       error: null,
     });
 
     addBuildLog("Starting generation pipeline...");
     addAgentEvent({ agent: "Router", action: "Detecting factory type", status: "running" });
+
+    const apiUrl = "/api/generate";
+    const body = { prompt, factory: selectedFactory || undefined };
 
     try {
       const response = await fetch(apiUrl, {
@@ -231,7 +226,7 @@ function WorkspacePage() {
       updateState({ status: "error", error: err instanceof Error ? err.message : "Generation failed" });
       addBuildLog(`Error: ${err instanceof Error ? err.message : "Unknown error"}`);
     }
-  }, [updateState, addAgentEvent, addBuildLog, state, selectedFactory, handleSSEEvent]);
+  }, [selectedFactory, updateState, addAgentEvent, addBuildLog, handleSSEEvent]);
 
   const sendMessage = useCallback((msg: string) => {
     if (state.status === "generating") return;

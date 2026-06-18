@@ -37,8 +37,23 @@ export function analyzeComponentDepth(
     /export\s+function\s+\w+\(\)\s*\{\s*return\s*\(/,   // export function X() { return (
   ];
 
+  const placeholderKeywords = [
+    "coming soon",
+    "todo",
+    "lorem ipsum",
+    "sample component",
+    "component content",
+    "this section provides",
+    "feature coming soon",
+  ];
+
+  // Check for placeholder keywords, but exclude React prop usage (placeholder="...")
+  const contentWithoutProps = content.replace(/placeholder=["'][^"']*["']/g, "");
+  const hasPlaceholderText = placeholderKeywords.some(k => contentWithoutProps.toLowerCase().includes(k));
+
   const isPlaceholder = placeholderPatterns.some(p => p.test(content)) ||
-    (lineCount < 15 && /<h[12]>/.test(content) && !/<input|<select|<table|<form|<div\s+className/.test(content));
+    hasPlaceholderText ||
+    (lineCount < 20 && /<h[12]>/.test(content) && !/<input|<select|<table|<form|<div\s+className/.test(content));
 
   // Check for real UI elements
   const uiElements = [
@@ -134,12 +149,22 @@ export function analyzeComponentDepth(
 
 /**
  * Analyze all component files and return depth results.
+ * Inspects components/, app/, features/, and widgets/ directories.
  */
 export function analyzeAllComponents(
   files: Array<{ path: string; content: string; type: string }>
 ): DepthResult[] {
   return files
-    .filter(f => f.path.includes("components/") && (f.path.endsWith(".tsx") || f.path.endsWith(".jsx")))
+    .filter(f => {
+      const path = f.path.toLowerCase();
+      const isReactFile = path.endsWith(".tsx") || path.endsWith(".jsx");
+      const isUIFile =
+        path.includes("/components/") ||
+        path.includes("/app/") ||
+        path.includes("/features/") ||
+        path.includes("/widgets/");
+      return isReactFile && isUIFile;
+    })
     .map(f => analyzeComponentDepth(f.path, f.content));
 }
 

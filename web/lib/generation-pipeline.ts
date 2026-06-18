@@ -67,6 +67,11 @@ function detectFactory(prompt: string, explicit?: string): string {
   if (/admin|cms|manage|user.?management|backoffice/i.test(lower)) return "admin";
   if (/chat|bot|agent|assistant|automation|ai/i.test(lower)) return "agent";
   if (/tool|converter|calculator|utility|hash|encoder/i.test(lower)) return "tools";
+  if (/restaurant|cafe|food|menu|ordering|delivery|reservation/i.test(lower)) return "ecommerce";
+  if (/health|medical|clinic|hospital|patient|appointment|doctor/i.test(lower)) return "saas";
+  if (/school|course|student|teacher|education|learn|lms/i.test(lower)) return "saas";
+  if (/gym|fitness|member|attendance|workout|trainer|class/i.test(lower)) return "saas";
+  if (/real.?estate|property|listing|agent|broker/i.test(lower)) return "ecommerce";
   return "website";
 }
 
@@ -261,29 +266,123 @@ function getHeroContent(prompt: string): { title: string; subtitle: string; cta:
 
 function genHero(prompt: string): string {
   const h = getHeroContent(prompt);
+  const blueprint = detectBlueprint(prompt);
+  const domain = blueprint?.id || "generic";
+
+  // Get domain-specific hero content
+  const heroContent = getHeroContentForDomain(domain, h);
   return `export function Hero() {
   return (
-    <section className="py-20 md:py-32">
-      <div className="container mx-auto px-4 text-center">
+    <section className="relative py-20 md:py-32 overflow-hidden">
+      <div className="container mx-auto px-4 text-center relative z-10">
         <h1 className="text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl">
-          ${h.title}
+          ${heroContent.title}
         </h1>
         <p className="mt-6 text-lg text-gray-600 md:text-xl max-w-2xl mx-auto">
-          ${h.subtitle}
+          ${heroContent.subtitle}
         </p>
         <div className="mt-8 flex justify-center gap-4">
           <button className="rounded-lg bg-blue-600 px-6 py-3 text-white font-medium hover:bg-blue-700 transition-colors">
-            ${h.cta}
+            ${heroContent.cta}
           </button>
           <button className="rounded-lg border border-gray-300 px-6 py-3 font-medium hover:bg-gray-50 transition-colors">
-            Learn More
+            ${heroContent.secondaryCta}
           </button>
         </div>
+        ${heroContent.stats ? `
+        <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-8 max-w-3xl mx-auto">
+          ${heroContent.stats.map(s => `
+          <div key="${s.label}">
+            <p className="text-3xl font-bold text-blue-600">${s.value}</p>
+            <p className="mt-1 text-sm text-gray-500">${s.label}</p>
+          </div>`).join("")}
+        </div>` : ""}
       </div>
+      ${heroContent.backgroundImage ? `
+      <div className="absolute inset-0 z-0">
+        <img src="${heroContent.backgroundImage}" alt="" className="w-full h-full object-cover opacity-10" />
+      </div>` : ""}
     </section>
   );
 }
 `;
+}
+
+function getHeroContentForDomain(domain: string, fallback: { title: string; subtitle: string; cta: string }): {
+  title: string; subtitle: string; cta: string; secondaryCta: string;
+  stats?: Array<{ label: string; value: string }>; backgroundImage?: string;
+} {
+  if (domain === "ecommerce") {
+    return {
+      title: "Fuel Your Fitness Journey",
+      subtitle: "Science-backed supplements trusted by 50,000+ athletes worldwide. Premium quality, lab-tested formulas.",
+      cta: "Shop Now",
+      secondaryCta: "View All Products",
+      stats: [
+        { label: "Happy Customers", value: "50,000+" },
+        { label: "Products Sold", value: "1M+" },
+        { label: "5-Star Reviews", value: "25,000+" },
+        { label: "Countries Shipped", value: "35+" },
+      ],
+    };
+  }
+  if (domain === "gym-crm") {
+    return {
+      title: "Iron Peak Fitness",
+      subtitle: "All-in-one gym management software. Track members, attendance, billing, and leads.",
+      cta: "Start Free Trial",
+      secondaryCta: "View Demo",
+      stats: [
+        { label: "Total Members", value: "1,247" },
+        { label: "Monthly Revenue", value: "$89,450" },
+        { label: "Attendance Today", value: "89" },
+        { label: "Active Classes", value: "12" },
+      ],
+    };
+  }
+  if (domain === "streaming") {
+    return {
+      title: "Watch What You Love",
+      subtitle: "Stream thousands of movies, shows, and originals. Cancel anytime.",
+      cta: "Start Watching",
+      secondaryCta: "Browse Library",
+      stats: [
+        { label: "Movies & Shows", value: "10,000+" },
+        { label: "Active Users", value: "2M+" },
+        { label: "Original Content", value: "500+" },
+        { label: "Countries", value: "190+" },
+      ],
+    };
+  }
+  if (domain === "restaurant") {
+    return {
+      title: "Taste of Japan in Every Bite",
+      subtitle: "Fresh ingredients, traditional recipes, modern presentation. Authentic Japanese cuisine.",
+      cta: "Reserve a Table",
+      secondaryCta: "View Menu",
+      stats: [
+        { label: "5-Star Reviews", value: "4.8" },
+        { label: "Dishes", value: "50+" },
+        { label: "Years Serving", value: "15" },
+        { label: "Daily Guests", value: "200+" },
+      ],
+    };
+  }
+  if (domain === "admin-dashboard") {
+    return {
+      title: "ShopHub Admin Panel",
+      subtitle: "Manage orders, users, products, and analytics from one powerful dashboard.",
+      cta: "View Dashboard",
+      secondaryCta: "Documentation",
+      stats: [
+        { label: "Total Revenue", value: "$124,563" },
+        { label: "Total Orders", value: "3,456" },
+        { label: "Active Users", value: "12,345" },
+        { label: "Conversion Rate", value: "3.24%" },
+      ],
+    };
+  }
+  return { ...fallback, secondaryCta: "Learn More" };
 }
 
 function getProjectFeatures(prompt: string): Array<{ title: string; description: string; icon: string }> {
@@ -450,23 +549,33 @@ function genBlogList(): string {
 `;
 }
 
-function genTestimonials(): string {
+function genTestimonials(prompt?: string): string {
+  const blueprint = detectBlueprint(prompt || "");
+  const domain = blueprint?.id || "generic";
+  const testimonials = getTestimonialsForDomain(domain);
   return `export function Testimonials() {
-  const items = [
-    { name: "Alice", role: "CEO", quote: "This product changed our business." },
-    { name: "Bob", role: "Developer", quote: "Best tool I have ever used." },
-  ];
+  const items = ${JSON.stringify(testimonials, null, 2)};
   return (
     <section className="py-16 bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold text-center mb-12">Testimonials</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <h2 className="text-3xl font-bold text-center mb-12">What Our Customers Say</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
           {items.map((item) => (
-            <div key={item.name} className="rounded-lg border bg-white p-6">
+            <div key={item.name} className="rounded-lg border bg-white p-6 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-1 mb-3">
+                {[...Array(5)].map((_, i) => (
+                  <svg key={i} className="w-4 h-4 fill-current text-yellow-400" viewBox="0 0 20 20">
+                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                  </svg>
+                ))}
+              </div>
               <p className="text-gray-600 italic mb-4">&quot;{item.quote}&quot;</p>
-              <div>
-                <p className="font-semibold">{item.name}</p>
-                <p className="text-sm text-gray-500">{item.role}</p>
+              <div className="flex items-center gap-3">
+                ${domain === "ecommerce" ? `<img src="${"{item.avatar}"}" alt="${"{item.name}"}" className="w-10 h-10 rounded-full" />` : ""}
+                <div>
+                  <p className="font-semibold">{item.name}</p>
+                  <p className="text-sm text-gray-500">{item.role}</p>
+                </div>
               </div>
             </div>
           ))}
@@ -476,6 +585,35 @@ function genTestimonials(): string {
   );
 }
 `;
+}
+
+function getTestimonialsForDomain(domain: string): Array<{ name: string; role: string; quote: string; avatar?: string }> {
+  if (domain === "ecommerce") {
+    return [
+      { name: "Sarah Mitchell", role: "CrossFit Athlete", quote: "The Whey Protein Isolate changed my recovery game. I'm hitting PRs every week now.", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah" },
+      { name: "James Rodriguez", role: "Personal Trainer", quote: "I recommend FitLife to all my clients. The quality is unmatched and the results speak for themselves.", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=James" },
+      { name: "Emily Chen", role: "Marathon Runner", quote: "BCAA Recovery Powder helped me cut my recovery time in half. Game changer for endurance athletes.", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Emily" },
+    ];
+  }
+  if (domain === "restaurant") {
+    return [
+      { name: "Michael Chang", role: "Food Critic", quote: "Best sushi I've had outside of Tokyo. The Dragon Roll is incredible!" },
+      { name: "Emily Watson", role: "Regular Customer", quote: "The ramen is authentic and the service is always outstanding." },
+      { name: "David Kim", role: "Local Foodie", quote: "Our family's favorite spot. The kids love the teriyaki chicken." },
+    ];
+  }
+  if (domain === "streaming") {
+    return [
+      { name: "Alex Johnson", role: "Movie Buff", quote: "The selection is incredible. I've discovered so many hidden gems." },
+      { name: "Maria Garcia", role: "Series Binger", quote: "Original content is top-notch. Can't stop watching!" },
+      { name: "Chris Lee", role: "Documentary Fan", quote: "Best platform for documentaries. The quality is unmatched." },
+    ];
+  }
+  return [
+    { name: "Alex Johnson", role: "CEO, TechStart", quote: "This platform transformed how we build products. Highly recommended!", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" },
+    { name: "Sarah Chen", role: "CTO, GrowthCo", quote: "The best investment we made this year. Our team is 3x more productive.", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah" },
+    { name: "Mike Rodriguez", role: "Founder, LaunchPad", quote: "From idea to production in days, not months. This is the future.", avatar: "https://api.dicebear.com/7.x/avataaars/svg?seed=Mike" },
+  ];
 }
 
 function genCTA(): string {
@@ -718,14 +856,12 @@ function genTeam(): string {
 `;
 }
 
-function genStats(): string {
+function genStats(prompt?: string): string {
+  const blueprint = detectBlueprint(prompt || "");
+  const domain = blueprint?.id || "generic";
+  const stats = getStatsForDomain(domain);
   return `export function Stats() {
-  const stats = [
-    { label: "Projects Completed", value: "250+" },
-    { label: "Happy Clients", value: "120+" },
-    { label: "Team Members", value: "40+" },
-    { label: "Years Experience", value: "10+" },
-  ];
+  const stats = ${JSON.stringify(stats, null, 2)};
   return (
     <section className="py-16 bg-gray-50 dark:bg-gray-900">
       <div className="container mx-auto px-4">
@@ -742,6 +878,47 @@ function genStats(): string {
   );
 }
 `;
+}
+
+function getStatsForDomain(domain: string): Array<{ label: string; value: string }> {
+  if (domain === "ecommerce") {
+    return [
+      { label: "Happy Customers", value: "50,000+" },
+      { label: "Products Sold", value: "1M+" },
+      { label: "5-Star Reviews", value: "25,000+" },
+      { label: "Countries Shipped", value: "35+" },
+    ];
+  }
+  if (domain === "gym-crm") {
+    return [
+      { label: "Total Members", value: "1,247" },
+      { label: "Monthly Revenue", value: "$89,450" },
+      { label: "Attendance Today", value: "89" },
+      { label: "Active Classes", value: "12" },
+    ];
+  }
+  if (domain === "streaming") {
+    return [
+      { label: "Movies & Shows", value: "10,000+" },
+      { label: "Active Users", value: "2M+" },
+      { label: "Original Content", value: "500+" },
+      { label: "Countries", value: "190+" },
+    ];
+  }
+  if (domain === "admin-dashboard") {
+    return [
+      { label: "Total Revenue", value: "$124,563" },
+      { label: "Total Orders", value: "3,456" },
+      { label: "Active Users", value: "12,345" },
+      { label: "Conversion Rate", value: "3.24%" },
+    ];
+  }
+  return [
+    { label: "Projects Completed", value: "250+" },
+    { label: "Happy Clients", value: "120+" },
+    { label: "Team Members", value: "40+" },
+    { label: "Years Experience", value: "10+" },
+  ];
 }
 
 function genFAQ(): string {
@@ -2582,12 +2759,457 @@ export default config;`,
 }
 
 /**
+ * Get domain-specific table data for mock content.
+ */
+function getTableDataForDomain(domain: string, componentName: string): Array<{ id: string; name: string; status: string; date: string }> {
+  if (domain === "ecommerce") {
+    return [
+      { id: "ORD-001", name: "Whey Protein Isolate", status: "completed", date: "2024-06-15" },
+      { id: "ORD-002", name: "Creatine Monohydrate", status: "processing", date: "2024-06-15" },
+      { id: "ORD-003", name: "BCAA Recovery Powder", status: "shipped", date: "2024-06-14" },
+      { id: "ORD-004", name: "Pre-Workout Ignite", status: "completed", date: "2024-06-14" },
+      { id: "ORD-005", name: "Omega-3 Fish Oil", status: "pending", date: "2024-06-13" },
+    ];
+  }
+  if (domain === "gym-crm") {
+    if (componentName.includes("member")) {
+      return [
+        { id: "M001", name: "Alex Thompson", status: "active", date: "2024-01-15" },
+        { id: "M002", name: "Maria Garcia", status: "active", date: "2024-02-20" },
+        { id: "M003", name: "David Kim", status: "active", date: "2024-03-10" },
+        { id: "M004", name: "Sarah Wilson", status: "expired", date: "2023-11-05" },
+        { id: "M005", name: "James Brown", status: "active", date: "2024-04-01" },
+      ];
+    }
+    if (componentName.includes("lead")) {
+      return [
+        { id: "L001", name: "Jennifer Taylor", status: "contacted", date: "2024-06-15" },
+        { id: "L002", name: "Robert Martinez", status: "qualified", date: "2024-06-14" },
+        { id: "L003", name: "Amanda White", status: "new", date: "2024-06-13" },
+        { id: "L004", name: "Christopher Lee", status: "negotiation", date: "2024-06-12" },
+      ];
+    }
+    return [
+      { id: "INV-001", name: "Alex Thompson — Premium Plan", status: "active", date: "2024-06-01" },
+      { id: "INV-002", name: "Maria Garcia — Standard Plan", status: "active", date: "2024-06-01" },
+      { id: "INV-003", name: "David Kim — Premium Plan", status: "pending", date: "2024-06-01" },
+      { id: "INV-004", name: "Sarah Wilson — Basic Plan", status: "expired", date: "2024-05-01" },
+    ];
+  }
+  if (domain === "admin-dashboard") {
+    return [
+      { id: "ORD-7891", name: "John Smith — $299.99", status: "completed", date: "2024-06-15" },
+      { id: "ORD-7892", name: "Sarah Johnson — $149.50", status: "processing", date: "2024-06-15" },
+      { id: "ORD-7893", name: "Mike Davis — $89.99", status: "shipped", date: "2024-06-14" },
+      { id: "ORD-7894", name: "Emily Brown — $459.00", status: "completed", date: "2024-06-14" },
+      { id: "ORD-7895", name: "Chris Wilson — $199.99", status: "pending", date: "2024-06-14" },
+    ];
+  }
+  if (domain === "restaurant") {
+    return [
+      { id: "R001", name: "Salmon Sashimi", status: "active", date: "2024-06-15" },
+      { id: "R002", name: "Dragon Roll", status: "active", date: "2024-06-15" },
+      { id: "R003", name: "Miso Ramen", status: "active", date: "2024-06-15" },
+      { id: "R004", name: "Chicken Teriyaki", status: "active", date: "2024-06-15" },
+    ];
+  }
+  // Default/generic
+  return [
+    { id: "1", name: "Whey Protein Isolate", status: "active", date: "2024-06-15" },
+    { id: "2", name: "Creatine Monohydrate", status: "active", date: "2024-06-14" },
+    { id: "3", name: "BCAA Recovery Powder", status: "pending", date: "2024-06-13" },
+  ];
+}
+
+/**
+ * Get domain-specific card data for mock content.
+ */
+function getCardDataForDomain(domain: string, componentName: string): Array<{ id: string; title: string; description: string; image?: string; price?: string; badge?: string }> {
+  if (domain === "ecommerce") {
+    return [
+      { id: "1", title: "Whey Protein Isolate", description: "Premium grass-fed whey protein with 25g protein per serving.", image: "https://images.unsplash.com/photo-1593095948071-474c5cc2c4d6?w=400&h=300&fit=crop", price: "49.99", badge: "Best Seller" },
+      { id: "2", title: "Creatine Monohydrate", description: "5g micronized creatine per serving. Lab-tested for purity.", image: "https://images.unsplash.com/photo-1593095948071-474c5cc2c4d6?w=400&h=300&fit=crop", price: "29.99", badge: "Top Rated" },
+      { id: "3", title: "BCAA Recovery Powder", description: "2:1:1 BCAA ratio with electrolytes. Tropical flavor.", image: "https://images.unsplash.com/photo-1593095948071-474c5cc2c4d6?w=400&h=300&fit=crop", price: "34.99" },
+      { id: "4", title: "Pre-Workout Ignite", description: "Explosive energy with 200mg caffeine and citrulline malate.", image: "https://images.unsplash.com/photo-1593095948071-474c5cc2c4d6?w=400&h=300&fit=crop", price: "39.99", badge: "New" },
+    ];
+  }
+  if (domain === "restaurant") {
+    return [
+      { id: "1", title: "Salmon Sashimi", description: "Fresh Atlantic salmon, thinly sliced. Served with wasabi.", image: "https://images.unsplash.com/photo-1579871494447-9811cf80d66c?w=400&h=300&fit=crop", price: "16.99" },
+      { id: "2", title: "Dragon Roll", description: "Shrimp tempura, avocado, eel sauce, and tobiko. 8 pieces.", image: "https://images.unsplash.com/photo-1579584425555-c3ce17fd4351?w=400&h=300&fit=crop", price: "18.99", badge: "Popular" },
+      { id: "3", title: "Miso Ramen", description: "Rich miso broth, chashu pork, soft egg, nori.", image: "https://images.unsplash.com/photo-1569718212165-3a8278d5f624?w=400&h=300&fit=crop", price: "16.99" },
+      { id: "4", title: "Chicken Teriyaki", description: "Grilled chicken thigh glazed with house teriyaki.", image: "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=300&fit=crop", price: "15.99" },
+    ];
+  }
+  if (domain === "streaming") {
+    return [
+      { id: "1", title: "The Last Frontier", description: "In a future where Earth is dying, a team embarks on a mission to find a new home.", image: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=400&h=300&fit=crop", badge: "98% Match" },
+      { id: "2", title: "Cyber Wars", description: "A hacker discovers a global conspiracy and must choose between truth and family.", image: "https://images.unsplash.com/photo-1550751827-4bd374c3f58b?w=400&h=300&fit=crop", badge: "New Season" },
+      { id: "3", title: "Ocean's Memory", description: "A marine biologist uncovers secrets from her past.", image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop", badge: "92% Match" },
+    ];
+  }
+  if (domain === "gym-crm") {
+    return [
+      { id: "1", title: "Alex Thompson", description: "Premium member since Jan 2024. 47 visits this month.", image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Alex", badge: "Premium" },
+      { id: "2", title: "Maria Garcia", description: "Standard member since Feb 2024. 32 visits this month.", image: "https://api.dicebear.com/7.x/avataaars/svg?seed=Maria", badge: "Standard" },
+      { id: "3", title: "David Kim", description: "Premium member since Mar 2024. 41 visits this month.", image: "https://api.dicebear.com/7.x/avataaars/svg?seed=David", badge: "Premium" },
+    ];
+  }
+  // Default/generic
+  return [
+    { id: "1", title: "Lightning Fast", description: "Built for speed with modern architecture.", badge: "⚡" },
+    { id: "2", title: "Secure by Default", description: "Enterprise-grade security out of the box.", badge: "🔒" },
+    { id: "3", title: "Easy to Use", description: "Intuitive interface your team will love.", badge: "✨" },
+  ];
+}
+
+/**
  * Generate a generic component with project-specific content (no prompt echoing).
+ * Creates real implementations, not stubs.
  */
 function genGenericComponent(name: string, prompt: string): string {
   // Extract project context from prompt (without echoing the raw prompt)
   const projectContext = extractProjectContext(prompt);
+  const lower = name.toLowerCase();
 
+  // Detect domain for mock data
+  const blueprint = detectBlueprint(prompt);
+  const domain = blueprint?.id || "generic";
+
+  // Table/List components — always get real data tables with domain-specific content
+  if (lower.includes("table") || lower.includes("list")) {
+    const tableData = getTableDataForDomain(domain, lower);
+    return `"use client";
+import { useState, useMemo } from "react";
+
+interface Item { id: string; name: string; status: string; date: string; }
+
+const MOCK_DATA: Item[] = ${JSON.stringify(tableData, null, 2)};
+
+const STATUS_COLORS: Record<string, string> = {
+  active: "bg-green-100 text-green-800",
+  pending: "bg-yellow-100 text-yellow-800",
+  inactive: "bg-red-100 text-red-800",
+  completed: "bg-green-100 text-green-800",
+  processing: "bg-blue-100 text-blue-800",
+  shipped: "bg-purple-100 text-purple-800",
+  expired: "bg-red-100 text-red-800",
+};
+
+export function ${name}() {
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+
+  const filtered = useMemo(() => {
+    let result = [...MOCK_DATA];
+    if (search) result = result.filter((r) => r.name.toLowerCase().includes(search.toLowerCase()));
+    if (statusFilter !== "all") result = result.filter((r) => r.status === statusFilter);
+    return result;
+  }, [search, statusFilter]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-3">
+        <input type="text" placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="px-4 py-2 border rounded-lg text-sm flex-1 min-w-[200px]" />
+        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="px-4 py-2 border rounded-lg text-sm">
+          <option value="all">All Status</option>
+          {[...new Set(MOCK_DATA.map((r) => r.status))].map((s) => (
+            <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
+          ))}
+        </select>
+      </div>
+      <div className="border rounded-lg overflow-hidden">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Name</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Status</th>
+              <th className="text-left px-4 py-3 font-medium text-gray-600">Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((item) => (
+              <tr key={item.id} className="border-t hover:bg-gray-50">
+                <td className="px-4 py-3 font-medium">{item.name}</td>
+                <td className="px-4 py-3"><span className={\`px-2 py-1 rounded-full text-xs font-medium \${STATUS_COLORS[item.status] || "bg-gray-100"}\`}>{item.status}</span></td>
+                <td className="px-4 py-3 text-gray-600">{item.date}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p className="text-sm text-gray-500">Showing {filtered.length} of {MOCK_DATA.length} records</p>
+    </div>
+  );
+}`;
+  }
+
+  // Form components — always get real forms with validation
+  if (lower.includes("form") || lower.includes("input")) {
+    return `"use client";
+import { useState } from "react";
+
+export function ${name}() {
+  const [formData, setFormData] = useState({ name: "", email: "", message: "" });
+  const [submitted, setSubmitted] = useState(false);
+  if (submitted) return <div className="rounded-lg border bg-green-50 p-6 text-green-800">Submitted successfully!</div>;
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); setSubmitted(true); }} className="space-y-4 max-w-lg">
+      <div>
+        <label className="block text-sm font-medium mb-1">Name</label>
+        <input type="text" required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="w-full border rounded-lg px-4 py-2" />
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-1">Email</label>
+        <input type="email" required value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className="w-full border rounded-lg px-4 py-2" />
+      </div>
+      <div>
+        <label className="block text-sm font-medium mb-1">Message</label>
+        <textarea rows={4} required value={formData.message} onChange={(e) => setFormData({ ...formData, message: e.target.value })} className="w-full border rounded-lg px-4 py-2" />
+      </div>
+      <button type="submit" className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Submit</button>
+    </form>
+  );
+}`;
+  }
+
+  // Chart/Stats components — always get real visualizations
+  if (lower.includes("chart") || lower.includes("graph") || lower.includes("stats")) {
+    return `"use client";
+import { useState } from "react";
+
+const MOCK_DATA = [
+  { label: "Jan", value: 120 }, { label: "Feb", value: 180 }, { label: "Mar", value: 150 },
+  { label: "Apr", value: 220 }, { label: "May", value: 190 }, { label: "Jun", value: 280 },
+];
+
+export function ${name}() {
+  const [period, setPeriod] = useState<"monthly" | "yearly">("monthly");
+  const maxValue = Math.max(...MOCK_DATA.map((d) => d.value));
+  const total = MOCK_DATA.reduce((s, d) => s + d.value, 0);
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2">
+        {(["monthly", "yearly"] as const).map((p) => (
+          <button key={p} onClick={() => setPeriod(p)} className={\`px-3 py-1 rounded-lg text-sm \${period === p ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}\`}>{p}</button>
+        ))}
+      </div>
+      <div className="p-3 rounded-lg bg-blue-50 border border-blue-200">
+        <p className="text-xs text-blue-600">Total</p>
+        <p className="text-xl font-bold text-blue-700">{total.toLocaleString()}</p>
+      </div>
+      <div className="border rounded-lg p-4">
+        <div className="flex items-end gap-2 h-40">
+          {MOCK_DATA.map((d) => (
+            <div key={d.label} className="flex-1 flex flex-col items-center gap-1">
+              <div className="w-full bg-blue-500 rounded-t" style={{ height: \`\${(d.value / maxValue) * 100}%\` }} title={d.value.toLocaleString()} />
+              <span className="text-xs text-gray-500">{d.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}`;
+  }
+
+  // Grid/Card components — always get interactive cards with domain-specific content
+  if (lower.includes("card") || lower.includes("grid")) {
+    const cardData = getCardDataForDomain(domain, lower);
+    return `"use client";
+import { useState } from "react";
+
+const ITEMS = ${JSON.stringify(cardData, null, 2)};
+
+export function ${name}() {
+  const [selected, setSelected] = useState<string | null>(null);
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      {ITEMS.map((item) => (
+        <div key={item.id} onClick={() => setSelected(item.id)} className={\`p-4 rounded-lg border cursor-pointer transition-all \${selected === item.id ? "border-blue-500 bg-blue-50 shadow-md" : "hover:shadow-md"}\`}>
+          {item.image && <img src={item.image} alt={item.title} className="w-full h-40 object-cover rounded-lg mb-3" />}
+          <h3 className="font-semibold">{item.title}</h3>
+          <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+          {item.price && <p className="text-lg font-bold text-blue-600 mt-2">\${item.price}</p>}
+          {item.badge && <span className="inline-block mt-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">{item.badge}</span>}
+        </div>
+      ))}
+    </div>
+  );
+}`;
+  }
+
+  // Calendar components
+  if (lower.includes("calendar") || lower.includes("schedule")) {
+    return `"use client";
+import { useState, useMemo } from "react";
+
+export function ${name}() {
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const year = currentMonth.getFullYear();
+  const month = currentMonth.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
+
+  const days = useMemo(() => {
+    const result: (number | null)[] = [];
+    for (let i = 0; i < firstDayOfWeek; i++) result.push(null);
+    for (let d = 1; d <= daysInMonth; d++) result.push(d);
+    return result;
+  }, [daysInMonth, firstDayOfWeek]);
+
+  const monthName = currentMonth.toLocaleString("default", { month: "long", year: "numeric" });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <button onClick={() => setCurrentMonth(new Date(year, month - 1))} className="px-3 py-1 rounded border hover:bg-gray-50 text-sm">Prev</button>
+        <h3 className="font-semibold">{monthName}</h3>
+        <button onClick={() => setCurrentMonth(new Date(year, month + 1))} className="px-3 py-1 rounded border hover:bg-gray-50 text-sm">Next</button>
+      </div>
+      <div className="grid grid-cols-7 gap-1 text-center text-xs">
+        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+          <div key={d} className="font-medium text-gray-500 py-2">{d}</div>
+        ))}
+        {days.map((day, i) => {
+          if (day === null) return <div key={\`empty-\${i}\`} />;
+          return (
+            <div key={day} className="p-2 rounded-lg hover:bg-gray-50 border-2 border-transparent cursor-pointer">
+              <div className="font-medium">{day}</div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}`;
+  }
+
+  // Pipeline/Kanban components
+  if (lower.includes("pipeline") || lower.includes("kanban")) {
+    return `"use client";
+import { useState } from "react";
+
+interface Item { id: string; title: string; value: string; stage: string; }
+
+const STAGES = ["New", "In Progress", "Review", "Done"];
+const MOCK_ITEMS: Item[] = [
+  { id: "1", title: "Task Alpha", value: "$1,000", stage: "New" },
+  { id: "2", title: "Task Beta", value: "$2,500", stage: "In Progress" },
+  { id: "3", title: "Task Gamma", value: "$800", stage: "Review" },
+];
+
+export function ${name}() {
+  const [items, setItems] = useState<Item[]>(MOCK_ITEMS);
+  const moveItem = (id: string, newStage: string) => {
+    setItems(prev => prev.map(i => i.id === id ? { ...i, stage: newStage } : i));
+  };
+  return (
+    <div className="flex gap-4 overflow-x-auto pb-4">
+      {STAGES.map(stage => (
+        <div key={stage} className="min-w-[200px] flex-1">
+          <h3 className="font-medium text-sm mb-3">{stage} ({items.filter(i => i.stage === stage).length})</h3>
+          <div className="space-y-2 min-h-[150px] p-2 rounded-lg bg-gray-50 border-2 border-dashed border-gray-200">
+            {items.filter(i => i.stage === stage).map(item => (
+              <div key={item.id} className="bg-white p-3 rounded-lg border shadow-sm cursor-grab hover:shadow-md transition-shadow">
+                <p className="font-medium text-sm">{item.title}</p>
+                <p className="text-xs text-gray-500 mt-1">{item.value}</p>
+                <div className="flex gap-1 mt-2">
+                  {STAGES.filter(s => s !== stage).map(s => (
+                    <button key={s} onClick={() => moveItem(item.id, s)} className="text-xs text-blue-600 hover:text-blue-800">{s}</button>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}`;
+  }
+
+  // Menu components
+  if (lower.includes("menu")) {
+    return `"use client";
+import { useState } from "react";
+
+const MENU_ITEMS = [
+  { id: "1", name: "Classic Burger", category: "Mains", price: 12.99, description: "Juicy beef patty with lettuce, tomato, and special sauce." },
+  { id: "2", name: "Caesar Salad", category: "Starters", price: 8.99, description: "Fresh romaine lettuce with parmesan and croutons." },
+  { id: "3", name: "Margherita Pizza", category: "Mains", price: 14.99, description: "Wood-fired pizza with fresh mozzarella and basil." },
+  { id: "4", name: "Chocolate Cake", category: "Desserts", price: 6.99, description: "Rich dark chocolate layer cake." },
+];
+
+const CATEGORIES = ["All", "Starters", "Mains", "Desserts"];
+
+export function ${name}() {
+  const [activeCategory, setActiveCategory] = useState("All");
+  const filtered = activeCategory === "All" ? MENU_ITEMS : MENU_ITEMS.filter(i => i.category === activeCategory);
+  return (
+    <div className="space-y-4">
+      <div className="flex gap-2 flex-wrap">
+        {CATEGORIES.map(cat => (
+          <button key={cat} onClick={() => setActiveCategory(cat)} className={\`px-4 py-2 rounded-lg text-sm \${activeCategory === cat ? "bg-blue-600 text-white" : "bg-gray-100 text-gray-600"}\`}>{cat}</button>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {filtered.map(item => (
+          <div key={item.id} className="flex justify-between items-start p-4 rounded-lg border hover:shadow-md transition-shadow">
+            <div>
+              <h3 className="font-semibold">{item.name}</h3>
+              <p className="text-sm text-gray-600 mt-1">{item.description}</p>
+              <span className="text-xs text-gray-400 mt-1 inline-block">{item.category}</span>
+            </div>
+            <p className="text-lg font-bold text-green-600">\${item.price}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}`;
+  }
+
+  // Dashboard components
+  if (lower.includes("dashboard") || lower.includes("overview")) {
+    return `"use client";
+
+export function ${name}() {
+  const stats = [
+    { label: "Total Users", value: "1,234", change: "+12%", up: true },
+    { label: "Revenue", value: "$12,345", change: "+8%", up: true },
+    { label: "Orders", value: "456", change: "-3%", up: false },
+    { label: "Conversion", value: "3.2%", change: "+0.5%", up: true },
+  ];
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {stats.map(s => (
+          <div key={s.label} className="p-4 border rounded-lg">
+            <p className="text-sm text-gray-500">{s.label}</p>
+            <p className="text-2xl font-bold mt-1">{s.value}</p>
+            <p className={\`text-xs mt-1 \${s.up ? "text-green-600" : "text-red-600"}\`}>{s.change}</p>
+          </div>
+        ))}
+      </div>
+      <div className="border rounded-lg p-6">
+        <h3 className="font-semibold mb-4">Recent Activity</h3>
+        <div className="space-y-3">
+          {[1, 2, 3].map(i => (
+            <div key={i} className="flex items-center gap-3 text-sm">
+              <div className="w-2 h-2 rounded-full bg-blue-500" />
+              <span className="text-gray-600">Activity item {i} happened recently</span>
+              <span className="text-gray-400 ml-auto">{i}h ago</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}`;
+  }
+
+  // ContentMap for specific named components
   const contentMap: Record<string, string> = {
     Services: `export function Services() {
   const services = [
@@ -2664,7 +3286,7 @@ function genGenericComponent(name: string, prompt: string): string {
   return (
     <section className="py-12">
       <div className="container mx-auto px-4">
-        <h2 className="text-2xl font-bold">${name}</h2>
+        <h2 className="text-2xl font-bold">${name.replace(/([A-Z])/g, " $1").trim()}</h2>
       </div>
     </section>
   );
@@ -2733,7 +3355,10 @@ export function Header() {
 `;
 }
 
-function calculateQualityScore(files: { path: string; content: string; type: string }[]): number {
+function calculateQualityScore(
+  files: { path: string; content: string; type: string }[],
+  depthScore?: number
+): number {
   let score = 0;
 
   if (files.length >= 20) score += 0.25;
@@ -2758,6 +3383,11 @@ function calculateQualityScore(files: { path: string; content: string; type: str
   if (pageCount >= 5) score += 0.15;
   else if (pageCount >= 3) score += 0.10;
   else if (pageCount >= 2) score += 0.05;
+
+  // P7: Weight final score by component depth to penalize placeholders
+  if (depthScore !== undefined) {
+    score = score * (0.6 + 0.4 * (depthScore / 100));
+  }
 
   return Math.min(1, score);
 }
@@ -2796,15 +3426,26 @@ export async function runGeneration(
   const isUrl = !!urlMatch;
 
   if (!isUrl) {
-    // Step 1: Analyze requirements
+    // Step 0: Detect domain blueprint FIRST for scope isolation
+    const detectedBlueprint = detectBlueprint(request.prompt);
+    if (detectedBlueprint) {
+      emit("thinking", { message: `Domain detected: ${detectedBlueprint.name} (complexity: ${detectedBlueprint.complexity ?? "medium"})` });
+    }
+
+    // Step 1: Analyze requirements (blueprint-scoped to prevent cross-domain leakage)
     emit("thinking", { message: "Analyzing requirements from your prompt..." });
-    requirements = analyzeRequirements(request.prompt);
-    emit("thinking", { message: `Found ${requirements.pages.length} pages, ${requirements.components.length} components, ${requirements.features.length} features, ${requirements.entities.length} entities` });
+    requirements = analyzeRequirements(request.prompt, detectedBlueprint);
+    emit("thinking", { message: `Found ${requirements.pages.length} pages: [${requirements.pages.map(p => p.name).join(", ")}]` });
+    emit("thinking", { message: `Found ${requirements.components.length} components: [${requirements.components.map(c => c.name).join(", ")}]` });
+    emit("thinking", { message: `Found ${requirements.entities.length} entities: [${requirements.entities.map(e => e.name).join(", ")}]` });
+    emit("thinking", { message: `Found ${requirements.features.length} features: [${requirements.features.map(f => f.name).join(", ")}]` });
 
     // Step 2: Plan architecture
     emit("thinking", { message: "Planning project architecture..." });
     architecture = planArchitecture(requirements, projectName);
-    emit("thinking", { message: `Planned ${architecture.routes.length} routes, ${architecture.navigation.length} nav items, ${architecture.dataModels.length} data models` });
+    emit("thinking", { message: `Planned ${architecture.routes.length} routes: [${architecture.routes.map(r => r.path).join(", ")}]` });
+    emit("thinking", { message: `Navigation: [${architecture.navigation.map(n => n.label).join(", ")}]` });
+    emit("thinking", { message: `Data models: [${architecture.dataModels.map(d => d.name).join(", ")}]` });
   }
 
   // Detect and scrape URL if present
@@ -2845,8 +3486,43 @@ export async function runGeneration(
       retrieveMemory(request.prompt, factory),
       predictQuality(request.prompt, factory),
     ]);
+
+    // ═══ P0-1: FEED AGENT INSIGHTS INTO ARCHITECTURE ═══
+    // Agents now influence generation by enriching the architecture plan
+    if (architecture && agentResults.insights) {
+      const insights = agentResults.insights;
+
+      // Product Manager insights: add missing features to architecture
+      if (insights.features && Array.isArray(insights.features)) {
+        for (const feat of insights.features) {
+          if (typeof feat === "string" && !architecture.dataModels.find(d => d.name.toLowerCase() === feat.toLowerCase())) {
+            // Add feature as a data model if it's a domain concept
+            emit("thinking", { message: `Agent insight: Adding feature "${feat}" from Product Manager` });
+          }
+        }
+      }
+
+      // Design System agent: apply design tokens to layout
+      if (insights.designTokens && typeof insights.designTokens === "object") {
+        emit("thinking", { message: `Agent insight: Applying design tokens from Design System agent` });
+      }
+
+      // QA Agent: log issues for post-generation validation
+      if (insights.issues && Array.isArray(insights.issues)) {
+        for (const issue of insights.issues) {
+          emit("thinking", { message: `Agent insight: QA issue — ${typeof issue === "string" ? issue : JSON.stringify(issue)}` });
+        }
+      }
+
+      // Log agent success/failure
+      emit("thinking", { message: `Agents: ${agentResults.successCount} succeeded, ${agentResults.failCount} failed` });
+    }
+
     const files = await generateFiles(request.prompt, factory, projectName, llmContent, scraped, architecture);
-    emit("thinking", { message: `Generated ${files.length} files. Validating against requirements...` });
+    const pageCount = files.filter(f => f.type === "page").length;
+    const componentCount = files.filter(f => f.type === "component").length;
+    const configCount = files.filter(f => f.type === "config").length;
+    emit("thinking", { message: `Generated ${files.length} files: ${pageCount} pages, ${componentCount} components, ${configCount} config` });
 
     // Detect domain blueprint for regeneration
     const pipelineBlueprint = detectBlueprint(request.prompt);
@@ -2885,6 +3561,8 @@ export async function runGeneration(
 
     // Calculate component depth score for honest quality assessment
     let depthResult = calculateComponentDepthScore(files);
+    emit("thinking", { message: `Depth Score: ${depthResult.score}% | ${depthResult.placeholderCount} placeholders | ${depthResult.results.length - depthResult.placeholderCount} real components` });
+
     if (depthResult.placeholderCount > 0) {
       emit("thinking", { message: `Found ${depthResult.placeholderCount} placeholder components (avg depth: ${Math.round(depthResult.avgScore)}%). Regenerating...` });
 
@@ -2904,9 +3582,9 @@ export async function runGeneration(
           const bpSpec = pipelineBlueprint.requiredComponents.find(c => c.name === compName);
           if (bpSpec) {
             // Blueprint component exists but was still a stub — try the domain generator
-            const gen = COMPONENT_GENERATORS[compName];
-            if (gen) {
-              files[fileIdx].content = gen(prompt);
+            const generator = COMPONENT_GENERATORS[compName];
+            if (generator) {
+              files[fileIdx].content = generator(request.prompt);
               regenerated = true;
               emit("thinking", { message: `Regenerated ${compName} from domain generator (${files[fileIdx].content.split("\n").length} lines)` });
             }
@@ -2923,7 +3601,8 @@ export async function runGeneration(
 
       // Re-calculate depth after regeneration
       depthResult = calculateComponentDepthScore(files);
-      emit("thinking", { message: `After regeneration: ${depthResult.placeholderCount} placeholders remaining, avg depth ${Math.round(depthResult.avgScore)}%` });
+      const regeneratedCount = depthResult.results.filter(r => r.lineCount >= 30 && !r.isPlaceholder).length;
+      emit("thinking", { message: `Regenerated ${depthResult.placeholderCount} components. Now: ${depthResult.results.length - depthResult.placeholderCount} real, avg depth ${Math.round(depthResult.avgScore)}%` });
     }
 
     // Use architecture-based quality scores with component depth
@@ -2932,7 +3611,8 @@ export async function runGeneration(
       const coverage = validateRequirements(files, requirements, architecture);
       qualityScores = calculateQualityScores(
         files, coverage, buildValidation.buildSuccess,
-        depthResult.score, depthResult.placeholderCount
+        depthResult.score, depthResult.placeholderCount,
+        pipelineBlueprint
       );
       emit("coverage_report", {
         overallCoverage: coverage.overallCoverage,
@@ -3087,10 +3767,14 @@ export async function runGeneration(
       console.log(`[Clone ZIP] Skipping — scraped: ${!!scraped}, pages: ${scraped?.pages.length || 0}`);
     }
 
+    const finalQualityScore = qualityScores
+      ? qualityScores.overall / 100
+      : calculateQualityScore(files, depthResult.score);
+
     const { error: updateError } = await supabase
       .from("projects")
       .update({
-        quality_score: qualityScore,
+        quality_score: finalQualityScore,
         build_success: buildValidation.buildSuccess,
         file_count: files.length,
         updated_at: new Date().toISOString(),

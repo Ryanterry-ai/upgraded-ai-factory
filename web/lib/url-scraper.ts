@@ -18,6 +18,37 @@ export interface ScrapedPage {
   structuredData: unknown[];
   techStack: string[];
   fullHtml?: string;
+  components: ExtractedComponents;
+  products: ExtractedProduct[];
+  breadcrumbs: string[];
+  forms: ExtractedForm[];
+}
+
+export interface ExtractedComponents {
+  header: { exists: boolean; html?: string; links?: { text: string; href: string }[] };
+  footer: { exists: boolean; html?: string; links?: { text: string; href: string }[]; socialLinks?: string[]; contact?: { email?: string; phone?: string; address?: string } };
+  sidebar: { exists: boolean; html?: string; items?: string[] };
+  tabs: { exists: boolean; items?: string[] };
+}
+
+export interface ExtractedProduct {
+  name: string;
+  price: string;
+  image?: string;
+  description?: string;
+  url?: string;
+}
+
+export interface ExtractedForm {
+  action?: string;
+  method?: string;
+  fields: { type: string; name?: string; placeholder?: string; label?: string }[];
+}
+
+export interface SecurityHeaders {
+  present: string[];
+  missing: string[];
+  score: number;
 }
 
 export interface ScrapedAsset {
@@ -38,6 +69,7 @@ export interface ScrapedSite {
   images: { src: string; alt: string; localPath: string }[];
   homepageHtml?: string;
   assets: ScrapedAsset[];
+  securityHeaders?: SecurityHeaders;
 }
 
 // ── Helpers ────────────────────────────────────────────────
@@ -182,6 +214,265 @@ function detectTechStack(html: string, $: cheerio.CheerioAPI): string[] {
   return [...new Set(tech)];
 }
 
+// ── Component Extraction ────────────────────────────────────
+
+function extractComponents($: cheerio.CheerioAPI, pageUrl: string): ExtractedComponents {
+  // Header extraction
+  const headerEl = $("header, [role='banner'], .header, .navbar, nav").first();
+  const headerLinks: { text: string; href: string }[] = [];
+  headerEl.find("a[href]").each((_, el) => {
+    const text = $(el).text().trim();
+    const href = $(el).attr("href") || "";
+    if (text && text.length < 50) headerLinks.push({ text, href: resolveUrl(href, pageUrl) || href });
+  });
+
+  // Footer extraction
+  const footerEl = $("footer, [role='contentinfo'], .footer").first();
+  const footerLinks: { text: string; href: string }[] = [];
+  const socialLinks: string[] = [];
+  const contact: { email?: string; phone?: string; address?: string } = {};
+
+  footerEl.find("a[href]").each((_, el) => {
+    const href = $(el).attr("href") || "";
+    const text = $(el).text().trim().toLowerCase();
+    const fullHref = resolveUrl(href, pageUrl) || href;
+
+    if (text.match(/twitter|x\.com|facebook|instagram|linkedin|youtube|github|tiktok/i) || href.match(/twitter\.com|x\.com|facebook\.com|instagram\.com|linkedin\.com|youtube\.com|github\.com|tiktok\.com/i)) {
+      socialLinks.push(fullHref);
+    } else if (text && text.length < 50) {
+      footerLinks.push({ text, href: fullHref });
+    }
+  });
+
+  const footerText = footerEl.text();
+  const emailMatch = footerText.match(/[\w.-]+@[\w.-]+\.\w{2,}/);
+  const phoneMatch = footerText.match(/[\+]?[\d\s\-\(\)]{7,15}/);
+  const addressMatch = footerText.match(/\d+\s+[\w\s]+(?:Street|St|Avenue|Ave|Road|Rd|Boulevard|Blvd|Drive|Dr|Court|Ct|Way|Lane|Ln)[\w\s,]*/i);
+  if (emailMatch) contact.email = emailMatch[0];
+  if (phoneMatch) contact.phone = phoneMatch[0].trim();
+  if (addressMatch) contact.address = addressMatch[0].trim();
+
+  // Sidebar extraction
+  const sidebarEl = $("[role='complementary'], .sidebar, aside, [class*='sidebar']").first();
+  const sidebarItems: string[] = [];
+  sidebarEl.find("a, li, .menu-item, .nav-item").each((_, el) => {
+    const text = $(el).text().trim();
+    if (text && text.length < 50 && !sidebarItems.includes(text)) sidebarItems.push(text);
+  });
+
+  // Tabs extraction
+  const tabEls = $("[role='tablist'], .tabs, [class*='tab-'], .nav-tabs");
+  const tabItems: string[] = [];
+  tabEls.find("[role='tab'], .tab, a, button").each((_, el) => {
+    const text = $(el).text().trim();
+    if (text && text.length < 30 && !tabItems.includes(text)) tabItems.push(text);
+  });
+
+  return {
+    header: {
+      exists: headerEl.length > 0,
+      html: headerEl.html()?.slice(0, 3000),
+      links: headerLinks.slice(0, 20),
+    },
+    footer: {
+      exists: footerEl.length > 0,
+      html: footerEl.html()?.slice(0, 3000),
+      links: footerLinks.slice(0, 20),
+      socialLinks: [...new Set(socialLinks)].slice(0, 10),
+      contact,
+    },
+    sidebar: {
+      exists: sidebarEl.length > 0,
+      html: sidebarEl.html()?.slice(0, 2000),
+      items: sidebarItems.slice(0, 15),
+    },
+    tabs: {
+      exists: tabEls.length > 0,
+      items: tabItems.slice(0, 10),
+    },
+  };
+}
+
+// ── Product Extraction ──────────────────────────────────────
+
+function extractProducts($: cheerio.CheerioAPI, pageUrl: string): ExtractedProduct[] {
+  const products: ExtractedProduct[] = [];
+  const productSelectors = [
+    "[class*='product']",
+    "[class*='item']",
+    "[data-product]",
+    "[itemtype*='Product']",
+    ".product-card",
+    ".product-item",
+    ".ecommerce-item",
+  ];
+
+  for (const selector of productSelectors) {
+    $(selector).each((_, el) => {
+      const nameEl = $(el).find("[class*='name'], [class*='title'], h2, h3, h4, .product-title, .product-name").first();
+      const priceEl = $(el).find("[class*='price'], .price, .amount, [data-price]").first();
+      const imgEl = $(el).find("img").first();
+      const descEl = $(el).find("[class*='desc'], [class*='description'], p").first();
+      const linkEl = $(el).find("a[href]").first();
+
+      const name = nameEl.text().trim();
+      const price = priceEl.text().trim();
+
+      if (name && name.length > 1 && name.length < 200) {
+        const product: ExtractedProduct = { name, price: price || "" };
+        const imgSrc = imgEl.attr("src") || imgEl.attr("data-src") || "";
+        if (imgSrc) product.image = resolveUrl(imgSrc, pageUrl) || imgSrc;
+        const desc = descEl.text().trim().slice(0, 300);
+        if (desc) product.description = desc;
+        const href = linkEl.attr("href");
+        if (href) product.url = resolveUrl(href, pageUrl) || href;
+
+        if (!products.some(p => p.name === name)) {
+          products.push(product);
+        }
+      }
+    });
+  }
+
+  // Also check structured data for products
+  $('script[type="application/ld+json"]').each((_, el) => {
+    try {
+      const data = JSON.parse($(el).html() || "");
+      if (data["@type"] === "Product") {
+        const product: ExtractedProduct = {
+          name: data.name || "",
+          price: data.offers?.price ? `$${data.offers.price}` : "",
+          description: data.description?.slice(0, 300),
+        };
+        if (data.image) product.image = Array.isArray(data.image) ? data.image[0] : data.image;
+        if (product.name && !products.some(p => p.name === product.name)) {
+          products.push(product);
+        }
+      }
+      if (data["@type"] === "ItemList" && Array.isArray(data.itemListElement)) {
+        for (const item of data.itemListElement) {
+          if (item.item?.["@type"] === "Product") {
+            const product: ExtractedProduct = {
+              name: item.item.name || "",
+              price: item.item.offers?.price ? `$${item.item.offers.price}` : "",
+              description: item.item.description?.slice(0, 300),
+            };
+            if (item.item.image) product.image = Array.isArray(item.item.image) ? item.item.image[0] : item.item.image;
+            if (product.name && !products.some(p => p.name === product.name)) {
+              products.push(product);
+            }
+          }
+        }
+      }
+    } catch {}
+  });
+
+  return products.slice(0, 30);
+}
+
+// ── Breadcrumb Extraction ───────────────────────────────────
+
+function extractBreadcrumbs($: cheerio.CheerioAPI): string[] {
+  const breadcrumbs: string[] = [];
+
+  // Check structured data first
+  $('script[type="application/ld+json"]').each((_, el) => {
+    try {
+      const data = JSON.parse($(el).html() || "");
+      if (data["@type"] === "BreadcrumbList" && Array.isArray(data.itemListElement)) {
+        for (const item of data.itemListElement) {
+          if (item.name) breadcrumbs.push(item.name);
+        }
+      }
+    } catch {}
+  });
+
+  // If no structured data, check HTML
+  if (breadcrumbs.length === 0) {
+    const breadcrumbEl = $("[aria-label*='breadcrumb'], [class*='breadcrumb'], .breadcrumbs, nav ol, nav ul").first();
+    breadcrumbEl.find("li, a, span").each((_, el) => {
+      const text = $(el).text().trim();
+      if (text && text.length < 50 && !breadcrumbs.includes(text)) {
+        breadcrumbs.push(text);
+      }
+    });
+  }
+
+  return breadcrumbs.slice(0, 10);
+}
+
+// ── Form Extraction ─────────────────────────────────────────
+
+function extractForms($: cheerio.CheerioAPI): ExtractedForm[] {
+  const forms: ExtractedForm[] = [];
+
+  $("form").each((_, el) => {
+    const form: ExtractedForm = {
+      action: $(el).attr("action") || undefined,
+      method: $(el).attr("method") || "GET",
+      fields: [],
+    };
+
+    $(el).find("input, textarea, select").each((_, field) => {
+      const type = $(field).attr("type") || (field.tagName === "textarea" ? "textarea" : field.tagName === "select" ? "select" : "text");
+      if (type === "hidden" || type === "submit" || type === "button") return;
+
+      const name = $(field).attr("name") || undefined;
+      const placeholder = $(field).attr("placeholder") || undefined;
+      const label = $(`label[for="${$(field).attr("id")}"]`).text().trim() || undefined;
+
+      form.fields.push({ type, name, placeholder, label });
+    });
+
+    if (form.fields.length > 0) {
+      forms.push(form);
+    }
+  });
+
+  return forms.slice(0, 10);
+}
+
+// ── Security Headers ────────────────────────────────────────
+
+export async function detectSecurityHeaders(url: string): Promise<SecurityHeaders> {
+  const securityHeaders = [
+    "strict-transport-security",
+    "content-security-policy",
+    "x-content-type-options",
+    "x-frame-options",
+    "x-xss-protection",
+    "referrer-policy",
+    "permissions-policy",
+    "cross-origin-opener-policy",
+    "cross-origin-resource-policy",
+    "cross-origin-embedder-policy",
+  ];
+
+  try {
+    const resp = await fetch(url, {
+      method: "HEAD",
+      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
+      signal: AbortSignal.timeout(10000),
+    });
+
+    const present: string[] = [];
+    const missing: string[] = [];
+
+    for (const header of securityHeaders) {
+      if (resp.headers.get(header)) {
+        present.push(header);
+      } else {
+        missing.push(header);
+      }
+    }
+
+    const score = Math.round((present.length / securityHeaders.length) * 100);
+    return { present, missing, score };
+  } catch {
+    return { present: [], missing: securityHeaders, score: 0 };
+  }
+}
+
 // ── Page Scraper ───────────────────────────────────────────
 
 async function scrapePage(url: string, rootDomain: string): Promise<ScrapedPage> {
@@ -291,6 +582,10 @@ async function scrapePage(url: string, rootDomain: string): Promise<ScrapedPage>
 
     const bodyText = $("body").text().replace(/\s+/g, " ").trim().slice(0, 5000);
     const techStack = detectTechStack(html, $);
+    const components = extractComponents($, url);
+    const products = extractProducts($, url);
+    const breadcrumbs = extractBreadcrumbs($);
+    const forms = extractForms($);
 
     return {
       url,
@@ -307,6 +602,10 @@ async function scrapePage(url: string, rootDomain: string): Promise<ScrapedPage>
       metaTags,
       structuredData,
       techStack,
+      components,
+      products,
+      breadcrumbs,
+      forms,
     };
   } catch (err) {
     clearTimeout(timeout);
@@ -325,6 +624,10 @@ async function scrapePage(url: string, rootDomain: string): Promise<ScrapedPage>
       metaTags: {},
       structuredData: [],
       techStack: [],
+      components: { header: { exists: false }, footer: { exists: false }, sidebar: { exists: false }, tabs: { exists: false } },
+      products: [],
+      breadcrumbs: [],
+      forms: [],
     };
   }
 }
@@ -601,6 +904,13 @@ export async function scrapeSite(startUrl: string, maxPages = 50): Promise<Scrap
 
   console.log(`[Scraper] Assets downloaded: ${totalDownloaded}, failed: ${totalFailed}`);
 
+  // Detect security headers
+  let securityHeaders: SecurityHeaders | undefined;
+  try {
+    securityHeaders = await detectSecurityHeaders(normalizedUrl);
+    console.log(`[Scraper] Security headers score: ${securityHeaders.score}%`);
+  } catch {}
+
   // Fetch full homepage HTML for preview (if not already fetched)
   let homepageHtml: string | undefined;
   const homePage = pages.find(p => p.path === "/");
@@ -640,6 +950,7 @@ export async function scrapeSite(startUrl: string, maxPages = 50): Promise<Scrap
     images: Array.from(allImages.values()),
     homepageHtml,
     assets: downloadedAssets,
+    securityHeaders,
   };
 }
 
@@ -649,16 +960,43 @@ export function formatScrapedForLLM(scraped: ScrapedSite): string {
   const pagesSummary = scraped.pages.map((p, i) => {
     const headings = p.headings.slice(0, 5).map(h => `  H${h.level}: ${h.text}`).join("\n");
     const sections = p.sections.slice(0, 5).map((s, j) => `  Section ${j + 1}: ${s.text.slice(0, 200)}`).join("\n");
+    const productInfo = p.products.length > 0 ? `\n  Products: ${p.products.length} found (${p.products.slice(0, 3).map(pr => pr.name).join(", ")})` : "";
+    const formInfo = p.forms.length > 0 ? `\n  Forms: ${p.forms.length} found` : "";
+    const breadcrumbInfo = p.breadcrumbs.length > 0 ? `\n  Breadcrumbs: ${p.breadcrumbs.join(" > ")}` : "";
     return `Page ${i + 1}: ${p.path}
   Title: ${p.title}
   Description: ${p.description.slice(0, 150)}
   Headings:
 ${headings}
   Content:
-${sections}
+${sections}${productInfo}${formInfo}${breadcrumbInfo}
   Images: ${p.images.length}
   Internal links: ${p.links.filter(l => l.isInternal).length}`;
   }).join("\n\n");
+
+  // Component summary
+  const homepagePage = scraped.pages.find(p => p.path === "/");
+  const components = homepagePage?.components;
+  const componentSummary = components ? `
+COMPONENTS:
+  Header: ${components.header.exists ? "Yes" : "No"} (${components.header.links?.length || 0} links)
+  Footer: ${components.footer.exists ? "Yes" : "No"} (${components.footer.links?.length || 0} links, ${components.footer.socialLinks?.length || 0} social links)
+  Sidebar: ${components.sidebar.exists ? "Yes" : "No"} (${components.sidebar.items?.length || 0} items)
+  Tabs: ${components.tabs.exists ? "Yes" : "No"} (${components.tabs.items?.length || 0} tabs)
+  Contact: ${components.footer.contact?.email ? `Email: ${components.footer.contact.email}` : ""} ${components.footer.contact?.phone ? `Phone: ${components.footer.contact.phone}` : ""}` : "";
+
+  // Security summary
+  const securitySummary = scraped.securityHeaders ? `
+SECURITY HEADERS:
+  Score: ${scraped.securityHeaders.score}%
+  Present: ${scraped.securityHeaders.present.join(", ") || "None"}
+  Missing: ${scraped.securityHeaders.missing.join(", ") || "None"}` : "";
+
+  // Product summary
+  const allProducts = scraped.pages.flatMap(p => p.products);
+  const productSummary = allProducts.length > 0 ? `
+PRODUCTS (${allProducts.length} total):
+${allProducts.slice(0, 10).map(p => `  - ${p.name} | ${p.price}${p.image ? " | [image]" : ""}`).join("\n")}` : "";
 
   return `
 WEBSITE ANALYSIS (${scraped.pages.length} pages crawled):
@@ -669,6 +1007,7 @@ Global Navigation: ${scraped.navigation.join(", ")}
 Global Colors: ${scraped.globalColors.join(", ")}
 Total Images: ${scraped.images.length}
 Total Assets: ${scraped.assets.length}
+${componentSummary}${securitySummary}${productSummary}
 
 PAGES:
 ${pagesSummary}

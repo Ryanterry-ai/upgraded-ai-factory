@@ -3,6 +3,8 @@
  * Replaces template-driven generation with architecture-driven generation.
  */
 
+import type { DomainBlueprint } from "./domain-blueprints";
+
 // ═══════════════════════════════════════════════════════════
 // STEP 1: REQUIREMENT ANALYZER
 // ═══════════════════════════════════════════════════════════
@@ -101,6 +103,7 @@ export interface ValidationResult {
   features: ValidationCoverage;
   routes: ValidationCoverage;
   entities: ValidationCoverage;
+  workflows: ValidationCoverage;
   overallCoverage: number;
   passed: boolean;
   missingItems: string[];
@@ -125,8 +128,9 @@ export interface QualityScores {
 
 /**
  * Analyze a user prompt and extract structured requirements.
+ * When a blueprint is provided, pages/components are scoped to the blueprint domain only.
  */
-export function analyzeRequirements(prompt: string): RequirementMatrix {
+export function analyzeRequirements(prompt: string, blueprint?: DomainBlueprint | null): RequirementMatrix {
   const lower = prompt.toLowerCase();
   const pages: Requirement[] = [];
   const components: Requirement[] = [];
@@ -137,58 +141,99 @@ export function analyzeRequirements(prompt: string): RequirementMatrix {
 
   // ─── PROJECT TYPE DETECTION ───
   let projectType = "website";
-  if (/\b(ecommerce|e-commerce|shop|store|marketplace|product|cart|checkout)\b/.test(lower)) {
-    projectType = "ecommerce";
-  } else if (/\b(crm|dashboard|admin|saas|dashboard|analytics|manage|management)\b/.test(lower)) {
-    projectType = "saas";
-  } else if (/\b(blog|news|magazine|content|article|editorial)\b/.test(lower)) {
-    projectType = "blog";
-  } else if (/\b(portfolio|agency|freelance|showcase)\b/.test(lower)) {
-    projectType = "portfolio";
-  } else if (/\b(landing|marketing|promotional)\b/.test(lower)) {
-    projectType = "landing";
+  if (blueprint) {
+    // When blueprint is detected, project type comes from the blueprint ID
+    projectType = blueprint.id === "ecommerce" ? "ecommerce"
+      : blueprint.id === "gym-crm" ? "saas"
+      : blueprint.id === "admin-dashboard" ? "saas"
+      : blueprint.id === "streaming" ? "saas"
+      : blueprint.id === "saas" ? "saas"
+      : blueprint.id === "blog" ? "blog"
+      : blueprint.id === "portfolio" ? "portfolio"
+      : blueprint.id === "restaurant" ? "ecommerce"
+      : blueprint.id === "startup-landing" ? "landing"
+      : "website";
+  } else {
+    if (/\b(ecommerce|e-commerce|shop|store|marketplace|product|cart|checkout)\b/.test(lower)) {
+      projectType = "ecommerce";
+    } else if (/\b(crm|dashboard|admin|saas|dashboard|analytics|manage|management)\b/.test(lower)) {
+      projectType = "saas";
+    } else if (/\b(blog|news|magazine|content|article|editorial)\b/.test(lower)) {
+      projectType = "blog";
+    } else if (/\b(portfolio|agency|freelance|showcase)\b/.test(lower)) {
+      projectType = "portfolio";
+    } else if (/\b(landing|marketing|promotional)\b/.test(lower)) {
+      projectType = "landing";
+    }
   }
 
   // ─── ALWAYS: HOME PAGE ───
   pages.push({ id: "page-home", type: "page", name: "Home", description: "Main landing page", required: true, route: "/", keywords: ["home", "landing", "homepage"] });
 
-  // ─── PAGE DETECTION ───
-  const pagePatterns: { pattern: RegExp; name: string; route: string; keywords: string[] }[] = [
-    { pattern: /\b(about\s*(page|us|company)?)\b/i, name: "About", route: "/about", keywords: ["about", "about us", "company"] },
-    { pattern: /\b(services?\s*(page)?)\b/i, name: "Services", route: "/services", keywords: ["services", "offerings", "what we do"] },
-    { pattern: /\b(contact\s*(page|us|form)?)\b/i, name: "Contact", route: "/contact", keywords: ["contact", "get in touch", "contact form"] },
-    { pattern: /\b(blog\s*(page|section|listing)?)\b/i, name: "Blog", route: "/blog", keywords: ["blog", "articles", "posts"] },
-    { pattern: /\b(pricing\s*(page|table|section)?)\b/i, name: "Pricing", route: "/pricing", keywords: ["pricing", "plans", "tiers", "packages"] },
-    { pattern: /\b(portfolio\s*(page|gallery|section)?)\b/i, name: "Portfolio", route: "/portfolio", keywords: ["portfolio", "work", "projects"] },
-    { pattern: /\b(team\s*(page|section)?)\b/i, name: "Team", route: "/team", keywords: ["team", "members", "staff"] },
-    { pattern: /\b(careers?\s*(page|section)?)\b/i, name: "Careers", route: "/careers", keywords: ["careers", "jobs", "hiring"] },
-    { pattern: /\b(faq\s*(page|section)?)\b/i, name: "FAQ", route: "/faq", keywords: ["faq", "questions", "answers"] },
-    { pattern: /\b(testimonials?\s*(page|section|reviews?|case\s*studies)?)\b/i, name: "Testimonials", route: "/testimonials", keywords: ["testimonials", "reviews", "case studies", "what clients say"] },
-    { pattern: /\b(products?\s*(page|catalog|listing|listings|grid)?)\b/i, name: "Products", route: "/products", keywords: ["products", "catalog", "listing"] },
-    { pattern: /\b(cart|shopping\s*cart|bag)\b/i, name: "Cart", route: "/cart", keywords: ["cart", "shopping cart", "bag"] },
-    { pattern: /\b(checkout\s*(page|section)?)\b/i, name: "Checkout", route: "/checkout", keywords: ["checkout", "payment", "purchase"] },
-    { pattern: /\b(account\s*(page|section|settings)?)\b/i, name: "Account", route: "/account", keywords: ["account", "my account", "user account"] },
-    { pattern: /\b(admin\s*(dashboard|panel|page)?)\b/i, name: "Admin", route: "/admin", keywords: ["admin", "admin dashboard", "admin panel"] },
-    { pattern: /\b(wishlist|wish\s*list)\b/i, name: "Wishlist", route: "/wishlist", keywords: ["wishlist", "wish list", "saved"] },
-    { pattern: /\b(reviews?\s*(page|section)?)\b/i, name: "Reviews", route: "/reviews", keywords: ["reviews", "ratings", "feedback"] },
-    { pattern: /\b(reports?|reporting|analytics|insights?)\s*(page|dashboard)?\b/i, name: "Reports", route: "/reports", keywords: ["reports", "analytics", "insights", "reporting"] },
-    { pattern: /\b(members?|memberships?)\b/i, name: "Members", route: "/members", keywords: ["members", "membership", "subscribers"] },
-    { pattern: /\b(attendance|check.?in)\b/i, name: "Attendance", route: "/attendance", keywords: ["attendance", "check-in", "checkin"] },
-    { pattern: /\b(billing|invoices?|payments?)\b/i, name: "Billing", route: "/billing", keywords: ["billing", "invoices", "payments"] },
-    { pattern: /\b(staff|employees?|team\s*manage)\b/i, name: "Staff", route: "/staff", keywords: ["staff", "employees", "team management"] },
-    { pattern: /\b(leads?|prospects?|clients?)\b/i, name: "Leads", route: "/leads", keywords: ["leads", "prospects", "clients", "pipeline"] },
-    { pattern: /\b(orders?)\b/i, name: "Orders", route: "/orders", keywords: ["orders", "order management"] },
-    { pattern: /\b(brand\s*(pages?|section)?)\b/i, name: "Brands", route: "/brands", keywords: ["brands", "brand pages"] },
-    { pattern: /\b(settings?\s*(page|section)?)\b/i, name: "Settings", route: "/settings", keywords: ["settings", "preferences", "configuration"] },
-    { pattern: /\b(profile\s*(page|section)?)\b/i, name: "Profile", route: "/profile", keywords: ["profile", "account", "user profile"] },
-    { pattern: /\b(login|sign.?in)\b/i, name: "Login", route: "/login", keywords: ["login", "sign in"] },
-    { pattern: /\b(register|sign.?up|create\s*account)\b/i, name: "Register", route: "/register", keywords: ["register", "sign up", "create account"] },
-    { pattern: /\b(dashboard)\b/i, name: "Dashboard", route: "/dashboard", keywords: ["dashboard", "overview", "home"] },
-  ];
+  // ─── PAGE DETECTION (DOMAIN-ISOLATED) ───
+  if (blueprint) {
+    // BLUEPRINT MODE: Only add pages from the matched blueprint — no cross-domain leakage
+    for (const bpPage of blueprint.requiredPages) {
+      if (bpPage.route === "/") continue; // Home already added
+      pages.push({
+        id: `page-${bpPage.name.toLowerCase().replace(/\s+/g, "-")}`,
+        type: "page",
+        name: bpPage.name,
+        description: `${bpPage.name} page`,
+        required: true,
+        route: bpPage.route,
+        keywords: bpPage.components.map(c => c.toLowerCase()),
+      });
+    }
+  } else {
+    // NO BLUEPRINT: Fall back to regex keyword matching (legacy behavior)
+    const pagePatterns: { pattern: RegExp; name: string; route: string; keywords: string[] }[] = [
+      { pattern: /\b(about\s*(page|us|company)?)\b/i, name: "About", route: "/about", keywords: ["about", "about us", "company"] },
+      { pattern: /\b(services?\s*(page)?)\b/i, name: "Services", route: "/services", keywords: ["services", "offerings", "what we do"] },
+      { pattern: /\b(contact\s*(page|us|form)?)\b/i, name: "Contact", route: "/contact", keywords: ["contact", "get in touch", "contact form"] },
+      { pattern: /\b(blog\s*(page|section|listing)?)\b/i, name: "Blog", route: "/blog", keywords: ["blog", "articles", "posts"] },
+      { pattern: /\b(pricing\s*(page|table|section)?)\b/i, name: "Pricing", route: "/pricing", keywords: ["pricing", "plans", "tiers", "packages"] },
+      { pattern: /\b(portfolio\s*(page|gallery|section)?)\b/i, name: "Portfolio", route: "/portfolio", keywords: ["portfolio", "work", "projects"] },
+      { pattern: /\b(team\s*(page|section)?)\b/i, name: "Team", route: "/team", keywords: ["team", "members", "staff"] },
+      { pattern: /\b(careers?\s*(page|section)?)\b/i, name: "Careers", route: "/careers", keywords: ["careers", "jobs", "hiring"] },
+      { pattern: /\b(faq\s*(page|section)?)\b/i, name: "FAQ", route: "/faq", keywords: ["faq", "questions", "answers"] },
+      { pattern: /\b(testimonials?\s*(page|section|reviews?|case\s*studies)?)\b/i, name: "Testimonials", route: "/testimonials", keywords: ["testimonials", "reviews", "case studies"] },
+      { pattern: /\b(products?\s*(page|catalog|listing|listings|grid)?)\b/i, name: "Products", route: "/products", keywords: ["products", "catalog", "listing"] },
+      { pattern: /\b(cart|shopping\s*cart|bag)\b/i, name: "Cart", route: "/cart", keywords: ["cart", "shopping cart"] },
+      { pattern: /\b(checkout\s*(page|section)?)\b/i, name: "Checkout", route: "/checkout", keywords: ["checkout", "payment", "purchase"] },
+      { pattern: /\b(account\s*(page|section|settings)?)\b/i, name: "Account", route: "/account", keywords: ["account", "my account"] },
+      { pattern: /\b(admin\s*(dashboard|panel|page)?)\b/i, name: "Admin", route: "/admin", keywords: ["admin", "admin panel"] },
+      { pattern: /\b(wishlist|wish\s*list)\b/i, name: "Wishlist", route: "/wishlist", keywords: ["wishlist", "saved"] },
+      { pattern: /\b(reviews?\s*(page|section)?)\b/i, name: "Reviews", route: "/reviews", keywords: ["reviews", "ratings"] },
+      { pattern: /\b(reports?|reporting|analytics|insights?)\s*(page|dashboard)?\b/i, name: "Reports", route: "/reports", keywords: ["reports", "analytics"] },
+      { pattern: /\b(members?|memberships?)\b/i, name: "Members", route: "/members", keywords: ["members", "membership"] },
+      { pattern: /\b(attendance|check.?in)\b/i, name: "Attendance", route: "/attendance", keywords: ["attendance", "check-in"] },
+      { pattern: /\b(billing|invoices?|payments?)\b/i, name: "Billing", route: "/billing", keywords: ["billing", "invoices"] },
+      { pattern: /\b(staff|employees?|team\s*manage)\b/i, name: "Staff", route: "/staff", keywords: ["staff", "employees"] },
+      { pattern: /\b(leads?|prospects?|clients?)\b/i, name: "Leads", route: "/leads", keywords: ["leads", "prospects", "pipeline"] },
+      { pattern: /\b(orders?)\b/i, name: "Orders", route: "/orders", keywords: ["orders", "order management"] },
+      { pattern: /\b(brand\s*(pages?|section)?)\b/i, name: "Brands", route: "/brands", keywords: ["brands", "brand pages"] },
+      { pattern: /\b(settings?\s*(page|section)?)\b/i, name: "Settings", route: "/settings", keywords: ["settings", "preferences"] },
+      { pattern: /\b(profile\s*(page|section)?)\b/i, name: "Profile", route: "/profile", keywords: ["profile", "user profile"] },
+      { pattern: /\b(login|sign.?in)\b/i, name: "Login", route: "/login", keywords: ["login", "sign in"] },
+      { pattern: /\b(register|sign.?up|create\s*account)\b/i, name: "Register", route: "/register", keywords: ["register", "sign up"] },
+      { pattern: /\b(dashboard)\b/i, name: "Dashboard", route: "/dashboard", keywords: ["dashboard", "overview"] },
+      { pattern: /\b(menu|food\s*items?|dishes?|eat\b)/i, name: "Menu", route: "/menu", keywords: ["menu", "food", "dishes"] },
+      { pattern: /\b(reservations?|table\s*reservation|book\s*table)/i, name: "Reservations", route: "/reservations", keywords: ["reservations", "booking"] },
+      { pattern: /\b(appointments?|book\s*appointment)/i, name: "Appointments", route: "/appointments", keywords: ["appointments", "booking"] },
+      { pattern: /\b(patients?|patient\s*record)/i, name: "Patients", route: "/patients", keywords: ["patients", "records"] },
+      { pattern: /\b(doctors?|physicians?|providers?)/i, name: "Doctors", route: "/doctors", keywords: ["doctors", "physicians"] },
+      { pattern: /\b(courses?|class\s*listing|lessons?)/i, name: "Courses", route: "/courses", keywords: ["courses", "classes"] },
+      { pattern: /\b(students?|learners?)/i, name: "Students", route: "/students", keywords: ["students", "learners"] },
+      { pattern: /\b(teachers?|instructors?|faculty)/i, name: "Teachers", route: "/teachers", keywords: ["teachers", "instructors"] },
+      { pattern: /\b(properties?|listings?|real\s*estate)/i, name: "Properties", route: "/properties", keywords: ["properties", "listings"] },
+      { pattern: /\b(schedule|calendar|timetable)/i, name: "Schedule", route: "/schedule", keywords: ["schedule", "calendar"] },
+    ];
 
-  for (const { pattern, name, route, keywords } of pagePatterns) {
-    if (pattern.test(lower)) {
-      pages.push({ id: `page-${name.toLowerCase()}`, type: "page", name, description: `${name} page`, required: true, route, keywords });
+    for (const { pattern, name, route, keywords } of pagePatterns) {
+      if (pattern.test(lower)) {
+        pages.push({ id: `page-${name.toLowerCase()}`, type: "page", name, description: `${name} page`, required: true, route, keywords });
+      }
     }
   }
 
@@ -252,6 +297,15 @@ export function analyzeRequirements(prompt: string): RequirementMatrix {
     { pattern: /\b(tasks?|todos?)\b/i, name: "Task", keywords: ["task", "todo"] },
     { pattern: /\b(deals?|opportunities?)\b/i, name: "Deal", keywords: ["deal", "opportunity"] },
     { pattern: /\b(classes?|sessions?|bookings?)\b/i, name: "Class", keywords: ["class", "session", "booking"] },
+    { pattern: /\b(menu\s*items?|dishes?|food\s*items?)\b/i, name: "MenuItem", keywords: ["menu item", "dish", "food"] },
+    { pattern: /\b(reservations?|table\s*bookings?)\b/i, name: "Reservation", keywords: ["reservation", "table booking"] },
+    { pattern: /\b(appointments?)\b/i, name: "Appointment", keywords: ["appointment"] },
+    { pattern: /\b(patients?)\b/i, name: "Patient", keywords: ["patient"] },
+    { pattern: /\b(doctors?|physicians?)\b/i, name: "Doctor", keywords: ["doctor", "physician"] },
+    { pattern: /\b(courses?|lessons?)\b/i, name: "Course", keywords: ["course", "lesson"] },
+    { pattern: /\b(students?|learners?)\b/i, name: "Student", keywords: ["student", "learner"] },
+    { pattern: /\b(teachers?|instructors?)\b/i, name: "Teacher", keywords: ["teacher", "instructor"] },
+    { pattern: /\b(properties?|listings?)\b/i, name: "Property", keywords: ["property", "listing"] },
   ];
 
   for (const { pattern, name, keywords } of entityPatterns) {
@@ -271,15 +325,30 @@ export function analyzeRequirements(prompt: string): RequirementMatrix {
     roles.push({ id: "role-user", type: "role", name: "User", description: "User role", required: true, keywords: ["user", "customer"] });
   }
 
-  // ─── WORKFLOW DETECTION ───
-  if (/\b(checkout|purchase|buying)\b/i.test(lower)) {
-    workflows.push({ id: "wf-checkout", type: "workflow", name: "Checkout", description: "Purchase workflow", required: true, keywords: ["checkout", "purchase"] });
-  }
-  if (/\b(booking|reservation|scheduling)\b/i.test(lower)) {
-    workflows.push({ id: "wf-booking", type: "workflow", name: "Booking", description: "Booking workflow", required: true, keywords: ["booking", "reservation"] });
-  }
-  if (/\b(onboarding|signup|registration)\b/i.test(lower)) {
-    workflows.push({ id: "wf-onboarding", type: "workflow", name: "Onboarding", description: "User onboarding", required: true, keywords: ["onboarding", "signup"] });
+  // ─── WORKFLOW DETECTION (DOMAIN-ISOLATED) ───
+  if (blueprint) {
+    // BLUEPRINT MODE: Use workflows from the matched blueprint
+    for (const flow of blueprint.requiredFlows) {
+      workflows.push({
+        id: `wf-${flow.replace(/\s+/g, "-").substring(0, 30).toLowerCase()}`,
+        type: "workflow",
+        name: flow.split("→")[0]?.trim() || flow.substring(0, 50),
+        description: flow,
+        required: true,
+        keywords: flow.split(/[→,\s]+/).filter(w => w.length > 2),
+      });
+    }
+  } else {
+    // NO BLUEPRINT: Fall back to regex keyword matching
+    if (/\b(checkout|purchase|buying)\b/i.test(lower)) {
+      workflows.push({ id: "wf-checkout", type: "workflow", name: "Checkout", description: "Purchase workflow", required: true, keywords: ["checkout", "purchase"] });
+    }
+    if (/\b(booking|reservation|scheduling)\b/i.test(lower)) {
+      workflows.push({ id: "wf-booking", type: "workflow", name: "Booking", description: "Booking workflow", required: true, keywords: ["booking", "reservation"] });
+    }
+    if (/\b(onboarding|signup|registration)\b/i.test(lower)) {
+      workflows.push({ id: "wf-onboarding", type: "workflow", name: "Onboarding", description: "User onboarding", required: true, keywords: ["onboarding", "signup"] });
+    }
   }
 
   const all = [...pages, ...components, ...features, ...entities, ...roles, ...workflows];
@@ -311,9 +380,22 @@ export function planArchitecture(matrix: RequirementMatrix, projectName: string)
       description: page.description,
     };
 
-    // Map pages to their components
+    // Map pages to their components (project-type-aware)
     if (page.name === "Home") {
-      route.components = ["Hero", "Features", "Testimonials", "CTA", "Stats"];
+      // Project-type-aware home page components
+      if (matrix.projectType === "ecommerce") {
+        route.components = ["Hero", "FeaturedProducts", "CategoryGrid", "Testimonials", "CTA"];
+      } else if (matrix.projectType === "saas") {
+        // SaaS home = dashboard
+        route.components = ["DashboardStats", "Charts", "RecentActivity", "QuickActions"];
+      } else if (matrix.projectType === "blog") {
+        route.components = ["FeaturedPost", "PostGrid", "CategoryNav"];
+      } else if (matrix.projectType === "portfolio") {
+        route.components = ["Hero", "ProjectGrid", "Skills", "CTA"];
+      } else {
+        // Generic website/landing
+        route.components = ["Hero", "Features", "Testimonials", "CTA", "Stats"];
+      }
     } else if (page.name === "About") {
       route.components = ["Team", "Stats"];
     } else if (page.name === "Services") {
@@ -591,10 +673,14 @@ export function validateRequirements(
   const generatedPages = files
     .filter(f => f.path.includes("page.tsx") || f.path.endsWith(".html"))
     .map(f => {
+      // Handle home page: src/app/page.tsx (no nested route)
+      if (f.path === "src/app/page.tsx") return "Home";
       const match = f.path.match(/src\/app\/(.+)\/page\.tsx/);
       if (match) {
-        const route = match[1].replace(/\(.*\)\//, "");
-        return route === "" ? "Home" : route.charAt(0).toUpperCase() + route.slice(1);
+        let route = match[1].replace(/\(.*\)\//, "");
+        // Convert route to page name: /members -> Members, /attendance -> Attendance
+        if (route === "") return "Home";
+        return route.split("/").pop()?.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase()) || null;
       }
       if (f.path === "index.html") return "Home";
       return null;
@@ -628,16 +714,18 @@ export function validateRequirements(
 
   // Validate routes
   const requiredRoutes = architecture.routes.map(r => r.path);
-  const generatedRoutes = files
+  const generatedRoutes: string[] = files
     .filter(f => f.path.includes("page.tsx"))
     .map(f => {
+      if (f.path === "src/app/page.tsx") return "/";
       const match = f.path.match(/src\/app\/(.+)\/page\.tsx/);
       if (match) {
-        const route = match[1].replace(/\(.*\)\//, "");
+        let route = match[1].replace(/\(.*\)\//, "");
         return `/${route}`;
       }
-      return "/";
-    });
+      return null;
+    })
+    .filter((r): r is string => r !== null);
 
   const missingRoutes = requiredRoutes.filter(r => !generatedRoutes.includes(r));
   if (missingRoutes.length > 0) missingItems.push(...missingRoutes.map(r => `Route: ${r}`));
@@ -653,6 +741,22 @@ export function validateRequirements(
     features: { type: "features", required: requiredFeatures, generated: requiredFeatures.filter(f => !missingFeatures.includes(f)), missing: missingFeatures, coverage: requiredFeatures.length > 0 ? (requiredFeatures.length - missingFeatures.length) / requiredFeatures.length : 1 },
     routes: { type: "routes", required: requiredRoutes, generated: generatedRoutes, missing: missingRoutes, coverage: requiredRoutes.length > 0 ? (requiredRoutes.length - missingRoutes.length) / requiredRoutes.length : 1 },
     entities: { type: "entities", required: matrix.entities.map(e => e.name), generated: [], missing: [], coverage: 1 },
+    // Validate workflows: check if workflow keywords appear in file content
+    workflows: (() => {
+      const requiredWorkflows = matrix.workflows.map(w => w.name);
+      const foundWorkflows = requiredWorkflows.filter(wf => {
+        const wfKeywords = matrix.workflows.find(w => w.name === wf)?.keywords || [];
+        return wfKeywords.some(kw => allContent.includes(kw.toLowerCase()));
+      });
+      const missingWorkflows = requiredWorkflows.filter(w => !foundWorkflows.includes(w));
+      return {
+        type: "workflows" as const,
+        required: requiredWorkflows,
+        generated: foundWorkflows,
+        missing: missingWorkflows,
+        coverage: requiredWorkflows.length > 0 ? (requiredWorkflows.length - missingWorkflows.length) / requiredWorkflows.length : 1,
+      };
+    })(),
     overallCoverage,
     passed: missingItems.length === 0,
     missingItems,
@@ -672,7 +776,8 @@ export function calculateQualityScores(
   validation: ValidationResult,
   buildSuccess: boolean,
   componentDepthScore?: number,
-  placeholderCount?: number
+  placeholderCount?: number,
+  blueprint?: DomainBlueprint | null
 ): QualityScores {
   // Coverage score (requirement fulfillment) — only counts files with real content
   const coverage = Math.round(validation.overallCoverage * 100);
@@ -720,15 +825,74 @@ export function calculateQualityScores(
   if (hasTransitions) uxScore += 15;
   uxScore += Math.round(depthScore * 0.45); // 45% of UX is component depth
 
-  // Overall (weighted) — component depth is the dominant factor
-  const overall = Math.round(
-    coverage * 0.15 +
-    architectureScore * 0.15 +
-    featureScore * 0.10 +
+  // P2-6: Workflow completeness score
+  let workflowScore = 0;
+  if (blueprint && blueprint.requiredFlows.length > 0) {
+    // Check how many blueprint flows are represented in the generated files
+    const allContent = files.map(f => f.content.toLowerCase()).join(" ");
+    let flowsFound = 0;
+    for (const flow of blueprint.requiredFlows) {
+      const flowKeywords = flow.split(/[→,\s]+/).filter(w => w.length > 2);
+      const found = flowKeywords.filter(kw => allContent.includes(kw.toLowerCase()));
+      if (found.length >= Math.ceil(flowKeywords.length * 0.5)) flowsFound++;
+    }
+    workflowScore = Math.round((flowsFound / blueprint.requiredFlows.length) * 100);
+  } else {
+    // No blueprint — use validation workflows if available
+    workflowScore = Math.round(validation.workflows.coverage * 100);
+  }
+
+  // P2-6: Domain correctness score (are we generating the RIGHT domain?)
+  let domainScore = 100; // Default: no penalty if no blueprint
+  if (blueprint) {
+    // Check that generated files match the blueprint domain
+    const allPaths = files.map(f => f.path.toLowerCase()).join(" ");
+    const allContent = files.map(f => f.content.toLowerCase()).join(" ");
+    let domainMatches = 0;
+    let domainViolations = 0;
+
+    // Check required pages exist
+    for (const bpPage of blueprint.requiredPages) {
+      const route = bpPage.route.replace(/\[.*?\]/g, "").replace(/\//g, "").toLowerCase();
+      if (route === "" || route === "home") {
+        domainMatches++; // Home always exists
+      } else if (allPaths.includes(route)) {
+        domainMatches++;
+      }
+    }
+
+    // Check for cross-domain contamination (pages that DON'T belong to this blueprint)
+    const blueprintPageNames = blueprint.requiredPages.map(p => p.name.toLowerCase());
+    const allPageNames = files.filter(f => f.path.includes("page.tsx")).map(f => {
+      const match = f.path.match(/\/([^/]+)\/page\.tsx/);
+      return match ? match[1].toLowerCase() : "home";
+    });
+
+    for (const pageName of allPageNames) {
+      if (!blueprintPageNames.includes(pageName) && pageName !== "home") {
+        domainViolations++;
+      }
+    }
+
+    domainScore = blueprint.requiredPages.length > 0
+      ? Math.max(0, Math.round(((domainMatches - domainViolations) / blueprint.requiredPages.length) * 100))
+      : 100;
+  }
+
+  // Overall (weighted) — depth is dominant, but domain correctness is critical
+  let overall = Math.round(
+    coverage * 0.12 +
+    architectureScore * 0.10 +
+    featureScore * 0.08 +
     buildScore * 0.10 +
-    depthScore * 0.35 +
-    uxScore * 0.15
+    depthScore * 0.30 +
+    uxScore * 0.10 +
+    workflowScore * 0.10 +
+    domainScore * 0.10
   );
+
+  // NO QUALITY FLOOR — scores must reflect actual quality
+  // If files are all stubs, score should be low. Period.
 
   return {
     coverage,
@@ -736,6 +900,6 @@ export function calculateQualityScores(
     feature: featureScore,
     build: buildScore,
     ux: Math.min(100, uxScore),
-    overall: Math.min(100, overall),
+    overall: Math.min(100, Math.max(0, overall)),
   };
 }

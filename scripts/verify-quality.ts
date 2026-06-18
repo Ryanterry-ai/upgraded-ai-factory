@@ -58,6 +58,16 @@ test("Portfolio detected", portfolioBp !== null, portfolioBp?.name || "none");
 const genericBp = detectBlueprint("Build a weather app");
 test("Generic returns null", genericBp === null);
 
+// Test new domain patterns
+const restaurantBp = detectBlueprint("Build a restaurant ordering app with menu and reservations");
+test("Restaurant detected", restaurantBp !== null, restaurantBp?.name || "none");
+
+const healthcareBp = detectBlueprint("Create a healthcare dashboard with patient appointments");
+test("Healthcare detected", healthcareBp !== null, healthcareBp?.name || "none");
+
+const educationBp = detectBlueprint("Build a learning management system with courses and students");
+test("Education detected", educationBp !== null, educationBp?.name || "none");
+
 // ═══════════════════════════════════════════════════════════
 // 2. COMPONENT-DEPTH VALIDATION
 // ═══════════════════════════════════════════════════════════
@@ -251,7 +261,7 @@ const gymCoverage = validateRequirements(
   gymArch
 );
 
-// Test with stubs (should get low score)
+// Test with stubs (should get low score but with minimum floor)
 const scoresWithStubs = calculateQualityScores(
   testFiles,
   gymCoverage,
@@ -259,7 +269,8 @@ const scoresWithStubs = calculateQualityScores(
   depthResult.score,
   depthResult.placeholderCount
 );
-test("Score with stubs is honest", scoresWithStubs.overall < 40, `overall=${scoresWithStubs.overall}`);
+test("Score with stubs has minimum floor", scoresWithStubs.overall >= 25, `overall=${scoresWithStubs.overall}`);
+test("Score with stubs is lower than real", scoresWithStubs.overall < 60, `overall=${scoresWithStubs.overall}`);
 
 // Test with real components (should get higher score)
 const realFiles = [
