@@ -1,20 +1,23 @@
+
+> upgraded-ai-factory-web@0.11.0 dev
+> next dev
+
   ▲ Next.js 14.2.35
-  - Local:        http://localhost:3001
+  - Local:        http://localhost:3000
   - Environments: .env.local
 
  ✓ Starting...
- ✓ Ready in 2.4s
- ✓ Compiled /middleware in 235ms
- ✓ Compiled (171 modules)
+ ✓ Ready in 1981ms
+ ✓ Compiled /middleware in 370ms (171 modules)
  ○ Compiling / ...
-<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (102kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
-<w> [webpack.cache.PackFileCacheStrategy] Serializing big strings (250kiB) impacts deserialization performance (consider using Buffer instead and decode when needed)
- ✓ Compiled / in 19.5s (1302 modules)
- GET / 200 in 20809ms
+ ✓ Compiled / in 800ms (538 modules)
+ GET / 200 in 2382ms
+ GET / 200 in 89ms
  ○ Compiling /projects/new ...
- ✓ Compiled /projects/new in 10.5s (1633 modules)
+ ✓ Compiled /projects/new in 4.2s (1349 modules)
  ○ Compiling /api/[...route] ...
- ✓ Compiled /api/[...route] in 7.7s (1066 modules)
+ ✓ Compiled /api/[...route] in 4.3s (1208 modules)
+[AIL] Intelligence enhanced in 762ms — 0 similar projects, 0 patterns
 LLM call failed, using fallback: Error: OpenAI API error 429: {
     "error": {
         "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
@@ -27,66 +30,12 @@ LLM call failed, using fallback: Error: OpenAI API error 429: {
     at callLLM (webpack-internal:///(rsc)/./lib/llm-adapter.ts:34:15)
     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
     at async callLLMWithFallback (webpack-internal:///(rsc)/./lib/llm-adapter.ts:51:24)
-    at async runAgent (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:133:24)
-    at async Promise.allSettled (index 2)
-    at async runAgentWorkflow (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:166:26)
-    at async Promise.all (index 1)
-    at async runGeneration (webpack-internal:///(rsc)/./lib/generation-pipeline.ts:992:78)
-    at async Object.start (webpack-internal:///(rsc)/./app/api/[...route]/route.ts:194:36)
-LLM call failed, using fallback: Error: OpenAI API error 429: {
-    "error": {
-        "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
-        "type": "insufficient_quota",
-        "param": null,
-        "code": "insufficient_quota"
-    }
-}
-
-    at callLLM (webpack-internal:///(rsc)/./lib/llm-adapter.ts:34:15)
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    at async callLLMWithFallback (webpack-internal:///(rsc)/./lib/llm-adapter.ts:51:24)
-    at async runAgent (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:133:24)
-    at async Promise.allSettled (index 3)
-    at async runAgentWorkflow (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:166:26)
-    at async Promise.all (index 1)
-    at async runGeneration (webpack-internal:///(rsc)/./lib/generation-pipeline.ts:992:78)
-    at async Object.start (webpack-internal:///(rsc)/./app/api/[...route]/route.ts:194:36)
-LLM call failed, using fallback: Error: OpenAI API error 429: {
-    "error": {
-        "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
-        "type": "insufficient_quota",
-        "param": null,
-        "code": "insufficient_quota"
-    }
-}
-
-    at callLLM (webpack-internal:///(rsc)/./lib/llm-adapter.ts:34:15)
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    at async callLLMWithFallback (webpack-internal:///(rsc)/./lib/llm-adapter.ts:51:24)
-    at async runAgent (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:133:24)
-    at async Promise.allSettled (index 5)
-    at async runAgentWorkflow (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:166:26)
-    at async Promise.all (index 1)
-    at async runGeneration (webpack-internal:///(rsc)/./lib/generation-pipeline.ts:992:78)
-    at async Object.start (webpack-internal:///(rsc)/./app/api/[...route]/route.ts:194:36)
-LLM call failed, using fallback: Error: OpenAI API error 429: {
-    "error": {
-        "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
-        "type": "insufficient_quota",
-        "param": null,
-        "code": "insufficient_quota"
-    }
-}
-
-    at callLLM (webpack-internal:///(rsc)/./lib/llm-adapter.ts:34:15)
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    at async callLLMWithFallback (webpack-internal:///(rsc)/./lib/llm-adapter.ts:51:24)
-    at async runAgent (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:133:24)
+    at async runAgent (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:867:24)
     at async Promise.allSettled (index 1)
-    at async runAgentWorkflow (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:166:26)
+    at async runAgentWorkflow (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:923:26)
     at async Promise.all (index 1)
-    at async runGeneration (webpack-internal:///(rsc)/./lib/generation-pipeline.ts:992:78)
-    at async Object.start (webpack-internal:///(rsc)/./app/api/[...route]/route.ts:194:36)
+    at async runGeneration (webpack-internal:///(rsc)/./lib/generation-pipeline.ts:4368:78)
+    at async Object.start (webpack-internal:///(rsc)/./app/api/[...route]/route.ts:360:36)
 LLM call failed, using fallback: Error: OpenAI API error 429: {
     "error": {
         "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
@@ -99,30 +48,12 @@ LLM call failed, using fallback: Error: OpenAI API error 429: {
     at callLLM (webpack-internal:///(rsc)/./lib/llm-adapter.ts:34:15)
     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
     at async callLLMWithFallback (webpack-internal:///(rsc)/./lib/llm-adapter.ts:51:24)
-    at async runAgent (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:133:24)
-    at async Promise.allSettled (index 0)
-    at async runAgentWorkflow (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:166:26)
-    at async Promise.all (index 1)
-    at async runGeneration (webpack-internal:///(rsc)/./lib/generation-pipeline.ts:992:78)
-    at async Object.start (webpack-internal:///(rsc)/./app/api/[...route]/route.ts:194:36)
-LLM call failed, using fallback: Error: OpenAI API error 429: {
-    "error": {
-        "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
-        "type": "insufficient_quota",
-        "param": null,
-        "code": "insufficient_quota"
-    }
-}
-
-    at callLLM (webpack-internal:///(rsc)/./lib/llm-adapter.ts:34:15)
-    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
-    at async callLLMWithFallback (webpack-internal:///(rsc)/./lib/llm-adapter.ts:51:24)
-    at async runAgent (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:133:24)
+    at async runAgent (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:867:24)
     at async Promise.allSettled (index 4)
-    at async runAgentWorkflow (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:166:26)
+    at async runAgentWorkflow (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:923:26)
     at async Promise.all (index 1)
-    at async runGeneration (webpack-internal:///(rsc)/./lib/generation-pipeline.ts:992:78)
-    at async Object.start (webpack-internal:///(rsc)/./app/api/[...route]/route.ts:194:36)
+    at async runGeneration (webpack-internal:///(rsc)/./lib/generation-pipeline.ts:4368:78)
+    at async Object.start (webpack-internal:///(rsc)/./app/api/[...route]/route.ts:360:36)
 LLM call failed, using fallback: Error: OpenAI API error 429: {
     "error": {
         "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
@@ -135,126 +66,65 @@ LLM call failed, using fallback: Error: OpenAI API error 429: {
     at callLLM (webpack-internal:///(rsc)/./lib/llm-adapter.ts:34:15)
     at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
     at async callLLMWithFallback (webpack-internal:///(rsc)/./lib/llm-adapter.ts:51:24)
-    at async generateLLMContent (webpack-internal:///(rsc)/./lib/generation-pipeline.ts:736:39)
+    at async runAgent (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:867:24)
+    at async Promise.allSettled (index 3)
+    at async runAgentWorkflow (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:923:26)
+    at async Promise.all (index 1)
+    at async runGeneration (webpack-internal:///(rsc)/./lib/generation-pipeline.ts:4368:78)
+    at async Object.start (webpack-internal:///(rsc)/./app/api/[...route]/route.ts:360:36)
+LLM call failed, using fallback: Error: OpenAI API error 429: {
+    "error": {
+        "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
+        "type": "insufficient_quota",
+        "param": null,
+        "code": "insufficient_quota"
+    }
+}
+
+    at callLLM (webpack-internal:///(rsc)/./lib/llm-adapter.ts:34:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async callLLMWithFallback (webpack-internal:///(rsc)/./lib/llm-adapter.ts:51:24)
+    at async generateLLMContent (webpack-internal:///(rsc)/./lib/generation-pipeline.ts:1494:39)
     at async Promise.all (index 0)
-    at async runGeneration (webpack-internal:///(rsc)/./lib/generation-pipeline.ts:992:78)
-    at async Object.start (webpack-internal:///(rsc)/./app/api/[...route]/route.ts:194:36)
- POST /api/generate 200 in 19296ms
- ○ Compiling /projects/[id] ...
- ✓ Compiled /projects/[id] in 1776ms (1888 modules)
- GET /api/projects/8649c802-6cae-41e4-a7dc-36ca2937845b/files 200 in 575ms
- GET /api/projects/8649c802-6cae-41e4-a7dc-36ca2937845b/files 200 in 358ms
- GET /api/projects/8649c802-6cae-41e4-a7dc-36ca2937845b 200 in 1525ms
- GET /api/projects/8649c802-6cae-41e4-a7dc-36ca2937845b 200 in 1331ms
- ○ Compiling /projects ...
- ✓ Compiled /projects in 1053ms (1884 modules)
- GET /api/projects?limit=50 200 in 437ms
- GET /api/projects?limit=50 200 in 332ms
- ○ Compiling /dashboard ...
- ✓ Compiled /dashboard in 1419ms (1896 modules)
- GET /api/stats 200 in 1815ms
- GET /api/stats 200 in 1700ms
- GET /api/projects/8649c802-6cae-41e4-a7dc-36ca2937845b/files 200 in 865ms
- GET /api/projects/8649c802-6cae-41e4-a7dc-36ca2937845b/files 200 in 345ms
- GET /api/projects/8649c802-6cae-41e4-a7dc-36ca2937845b 200 in 1832ms
- GET /api/projects/8649c802-6cae-41e4-a7dc-36ca2937845b 200 in 1282ms
- GET /api/projects/8649c802-6cae-41e4-a7dc-36ca2937845b/download 200 in 584ms
- ✓ Compiled in 537ms (820 modules)
- ✓ Compiled in 201ms (820 modules)
- ✓ Compiled in 498ms (1675 modules)
- ✓ Compiled in 200ms (820 modules)
- ✓ Compiled in 176ms (820 modules)
- ✓ Compiled in 210ms (820 modules)
- ✓ Compiled in 266ms (820 modules)
- ✓ Compiled in 216ms (820 modules)
- ✓ Compiled in 233ms (820 modules)
- ✓ Compiled in 203ms (820 modules)
- ✓ Compiled in 193ms (820 modules)
- ✓ Compiled in 3.4s (1677 modules)
- GET / 200 in 507ms
- GET /dashboard 200 in 314ms
- ○ Compiling /api/[...route] ...
- ✓ Compiled /api/[...route] in 9.1s (1348 modules)
- GET /api/stats 200 in 11343ms
- GET / 200 in 1235ms
- ⨯ ./app/(dashboard)/projects/new/page.tsx:11:1
-Module not found: Can't resolve '@/components/workspace/ChatPanel'
-[0m [90m  9 |[39m   [33mLoader2[39m[33m,[39m [33mCheckCircle2[39m[33m,[39m [33mAlertCircle[39m[33m,[39m [33mClock[39m[33m,[39m [33mZap[39m[33m,[39m [33mBot[39m[0m
-[0m [90m 10 |[39m } [36mfrom[39m [32m"lucide-react"[39m[33m;[39m[0m
-[0m[31m[1m>[22m[39m[90m 11 |[39m [36mimport[39m { [33mChatPanel[39m } [36mfrom[39m [32m"@/components/workspace/ChatPanel"[39m[33m;[39m[0m
-[0m [90m    |[39m [31m[1m^[22m[39m[0m
-[0m [90m 12 |[39m [36mimport[39m { [33mPreviewPanel[39m } [36mfrom[39m [32m"@/components/workspace/PreviewPanel"[39m[33m;[39m[0m
-[0m [90m 13 |[39m [36mimport[39m { [33mFilePanel[39m } [36mfrom[39m [32m"@/components/workspace/FilePanel"[39m[33m;[39m[0m
-[0m [90m 14 |[39m [36mimport[39m { [33mAgentTimeline[39m } [36mfrom[39m [32m"@/components/workspace/AgentTimeline"[39m[33m;[39m[0m
+    at async runGeneration (webpack-internal:///(rsc)/./lib/generation-pipeline.ts:4368:78)
+    at async Object.start (webpack-internal:///(rsc)/./app/api/[...route]/route.ts:360:36)
+LLM call failed, using fallback: Error: OpenAI API error 429: {
+    "error": {
+        "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
+        "type": "insufficient_quota",
+        "param": null,
+        "code": "insufficient_quota"
+    }
+}
 
-https://nextjs.org/docs/messages/module-not-found
- ⨯ ./app/(dashboard)/projects/new/page.tsx:11:1
-Module not found: Can't resolve '@/components/workspace/ChatPanel'
-[0m [90m  9 |[39m   [33mLoader2[39m[33m,[39m [33mCheckCircle2[39m[33m,[39m [33mAlertCircle[39m[33m,[39m [33mClock[39m[33m,[39m [33mZap[39m[33m,[39m [33mBot[39m[0m
-[0m [90m 10 |[39m } [36mfrom[39m [32m"lucide-react"[39m[33m;[39m[0m
-[0m[31m[1m>[22m[39m[90m 11 |[39m [36mimport[39m { [33mChatPanel[39m } [36mfrom[39m [32m"@/components/workspace/ChatPanel"[39m[33m;[39m[0m
-[0m [90m    |[39m [31m[1m^[22m[39m[0m
-[0m [90m 12 |[39m [36mimport[39m { [33mPreviewPanel[39m } [36mfrom[39m [32m"@/components/workspace/PreviewPanel"[39m[33m;[39m[0m
-[0m [90m 13 |[39m [36mimport[39m { [33mFilePanel[39m } [36mfrom[39m [32m"@/components/workspace/FilePanel"[39m[33m;[39m[0m
-[0m [90m 14 |[39m [36mimport[39m { [33mAgentTimeline[39m } [36mfrom[39m [32m"@/components/workspace/AgentTimeline"[39m[33m;[39m[0m
+    at callLLM (webpack-internal:///(rsc)/./lib/llm-adapter.ts:34:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async callLLMWithFallback (webpack-internal:///(rsc)/./lib/llm-adapter.ts:51:24)
+    at async runAgent (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:867:24)
+    at async Promise.allSettled (index 0)
+    at async runAgentWorkflow (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:923:26)
+    at async Promise.all (index 1)
+    at async runGeneration (webpack-internal:///(rsc)/./lib/generation-pipeline.ts:4368:78)
+    at async Object.start (webpack-internal:///(rsc)/./app/api/[...route]/route.ts:360:36)
+LLM call failed, using fallback: Error: OpenAI API error 429: {
+    "error": {
+        "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-errors.",
+        "type": "insufficient_quota",
+        "param": null,
+        "code": "insufficient_quota"
+    }
+}
 
-https://nextjs.org/docs/messages/module-not-found
- ⨯ ./app/(dashboard)/projects/new/page.tsx:12:1
-Module not found: Can't resolve '@/components/workspace/PreviewPanel'
-[0m [90m 10 |[39m } [36mfrom[39m [32m"lucide-react"[39m[33m;[39m[0m
-[0m [90m 11 |[39m [36mimport[39m { [33mChatPanel[39m } [36mfrom[39m [32m"@/components/workspace/ChatPanel"[39m[33m;[39m[0m
-[0m[31m[1m>[22m[39m[90m 12 |[39m [36mimport[39m { [33mPreviewPanel[39m } [36mfrom[39m [32m"@/components/workspace/PreviewPanel"[39m[33m;[39m[0m
-[0m [90m    |[39m [31m[1m^[22m[39m[0m
-[0m [90m 13 |[39m [36mimport[39m { [33mFilePanel[39m } [36mfrom[39m [32m"@/components/workspace/FilePanel"[39m[33m;[39m[0m
-[0m [90m 14 |[39m [36mimport[39m { [33mAgentTimeline[39m } [36mfrom[39m [32m"@/components/workspace/AgentTimeline"[39m[33m;[39m[0m
-[0m [90m 15 |[39m [36mimport[39m { [33mBuildLogs[39m } [36mfrom[39m [32m"@/components/workspace/BuildLogs"[39m[33m;[39m[0m
-
-https://nextjs.org/docs/messages/module-not-found
- ⨯ ./app/(dashboard)/projects/new/page.tsx:13:1
-Module not found: Can't resolve '@/components/workspace/FilePanel'
-[0m [90m 11 |[39m [36mimport[39m { [33mChatPanel[39m } [36mfrom[39m [32m"@/components/workspace/ChatPanel"[39m[33m;[39m[0m
-[0m [90m 12 |[39m [36mimport[39m { [33mPreviewPanel[39m } [36mfrom[39m [32m"@/components/workspace/PreviewPanel"[39m[33m;[39m[0m
-[0m[31m[1m>[22m[39m[90m 13 |[39m [36mimport[39m { [33mFilePanel[39m } [36mfrom[39m [32m"@/components/workspace/FilePanel"[39m[33m;[39m[0m
-[0m [90m    |[39m [31m[1m^[22m[39m[0m
-[0m [90m 14 |[39m [36mimport[39m { [33mAgentTimeline[39m } [36mfrom[39m [32m"@/components/workspace/AgentTimeline"[39m[33m;[39m[0m
-[0m [90m 15 |[39m [36mimport[39m { [33mBuildLogs[39m } [36mfrom[39m [32m"@/components/workspace/BuildLogs"[39m[33m;[39m[0m
-[0m [90m 16 |[39m[0m
-
-https://nextjs.org/docs/messages/module-not-found
- ⨯ ./app/(dashboard)/projects/new/page.tsx:14:1
-Module not found: Can't resolve '@/components/workspace/AgentTimeline'
-[0m [90m 12 |[39m [36mimport[39m { [33mPreviewPanel[39m } [36mfrom[39m [32m"@/components/workspace/PreviewPanel"[39m[33m;[39m[0m
-[0m [90m 13 |[39m [36mimport[39m { [33mFilePanel[39m } [36mfrom[39m [32m"@/components/workspace/FilePanel"[39m[33m;[39m[0m
-[0m[31m[1m>[22m[39m[90m 14 |[39m [36mimport[39m { [33mAgentTimeline[39m } [36mfrom[39m [32m"@/components/workspace/AgentTimeline"[39m[33m;[39m[0m
-[0m [90m    |[39m [31m[1m^[22m[39m[0m
-[0m [90m 15 |[39m [36mimport[39m { [33mBuildLogs[39m } [36mfrom[39m [32m"@/components/workspace/BuildLogs"[39m[33m;[39m[0m
-[0m [90m 16 |[39m[0m
-[0m [90m 17 |[39m [36mexport[39m [36minterface[39m [33mChatMessage[39m {[0m
-
-https://nextjs.org/docs/messages/module-not-found
- ⨯ ./app/(dashboard)/projects/new/page.tsx:15:1
-Module not found: Can't resolve '@/components/workspace/BuildLogs'
-[0m [90m 13 |[39m [36mimport[39m { [33mFilePanel[39m } [36mfrom[39m [32m"@/components/workspace/FilePanel"[39m[33m;[39m[0m
-[0m [90m 14 |[39m [36mimport[39m { [33mAgentTimeline[39m } [36mfrom[39m [32m"@/components/workspace/AgentTimeline"[39m[33m;[39m[0m
-[0m[31m[1m>[22m[39m[90m 15 |[39m [36mimport[39m { [33mBuildLogs[39m } [36mfrom[39m [32m"@/components/workspace/BuildLogs"[39m[33m;[39m[0m
-[0m [90m    |[39m [31m[1m^[22m[39m[0m
-[0m [90m 16 |[39m[0m
-[0m [90m 17 |[39m [36mexport[39m [36minterface[39m [33mChatMessage[39m {[0m
-[0m [90m 18 |[39m   id[33m:[39m string[33m;[39m[0m
-
-https://nextjs.org/docs/messages/module-not-found
- ✓ Compiled in 2s (2205 modules)
- ✓ Compiled in 604ms (839 modules)
- ✓ Compiled in 876ms (839 modules)
- ✓ Compiled in 761ms (839 modules)
- ✓ Compiled in 1946ms (809 modules)
- ✓ Compiled in 2.8s (842 modules)
- ✓ Compiled in 1276ms (809 modules)
- ✓ Compiled in 681ms (809 modules)
- ✓ Compiled in 546ms (809 modules)
- ✓ Compiled in 684ms (809 modules)
- ✓ Compiled in 653ms (809 modules)
- ✓ Compiled in 671ms (809 modules)
- ✓ Compiled in 956ms (809 modules)
- ✓ Compiled in 622ms (809 modules)
- ✓ Compiled in 641ms (809 modules)
+    at callLLM (webpack-internal:///(rsc)/./lib/llm-adapter.ts:34:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async callLLMWithFallback (webpack-internal:///(rsc)/./lib/llm-adapter.ts:51:24)
+    at async runAgent (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:867:24)
+    at async Promise.allSettled (index 2)
+    at async runAgentWorkflow (webpack-internal:///(rsc)/./lib/agent-executor-adapter.ts:923:26)
+    at async Promise.all (index 1)
+    at async runGeneration (webpack-internal:///(rsc)/./lib/generation-pipeline.ts:4368:78)
+    at async Object.start (webpack-internal:///(rsc)/./app/api/[...route]/route.ts:360:36)
+[Preview] Generating React preview from 50 files
+[Clone ZIP] Skipping — scraped: false, pages: 0
+[AIL] Stored 12 memories, 6 knowledge edges. Memory: 12 total. Knowledge: 412 edges.
+ POST /api/generate 200 in 17027ms

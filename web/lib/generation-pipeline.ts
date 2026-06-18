@@ -546,26 +546,33 @@ export function ContactForm() {
 `;
 }
 
-function genPricingTable(): string {
+function genPricingTable(prompt?: string): string {
+  const blueprint = detectBlueprint(prompt || "");
+  const domain = blueprint?.id || "generic";
+  const plans = getPricingForDomain(domain);
   return `export function PricingTable() {
-  const plans = [
-    { name: "Free", price: "$0", features: ["1 project", "Basic support"] },
-    { name: "Pro", price: "$29/mo", features: ["Unlimited projects", "Priority support", "Advanced analytics"] },
-    { name: "Enterprise", price: "Custom", features: ["Custom solutions", "Dedicated support", "SLA"] },
-  ];
+  const plans = ${JSON.stringify(plans, null, 2)};
   return (
     <section className="py-16">
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold text-center mb-12">Pricing</h2>
+        <h2 className="text-3xl font-bold text-center mb-4">Choose Your Plan</h2>
+        <p className="text-center text-gray-500 mb-12 max-w-xl mx-auto">Start free and scale as you grow. All plans include a 14-day trial.</p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-          {plans.map((plan) => (
-            <div key={plan.name} className="rounded-lg border p-6 text-center">
-              <h3 className="text-xl font-semibold">{plan.name}</h3>
-              <p className="text-3xl font-bold my-4">{plan.price}</p>
-              <ul className="space-y-2 mb-6">
-                {plan.features.map((f) => <li key={f} className="text-sm text-gray-600">{f}</li>)}
+          {plans.map((plan: any) => (
+            <div key={plan.name} className={\`rounded-2xl border-2 p-8 text-center transition-all hover:shadow-xl \${plan.popular ? "border-blue-600 relative scale-105" : "border-gray-200 hover:border-blue-300"}\`}>
+              {plan.popular && <span className="absolute -top-4 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-bold px-4 py-1 rounded-full">Most Popular</span>}
+              <h3 className="text-xl font-bold">{plan.name}</h3>
+              <p className="text-gray-500 text-sm mt-1">{plan.tagline}</p>
+              <div className="my-6">
+                <span className="text-4xl font-bold">{plan.price}</span>
+                {plan.period && <span className="text-gray-400 text-sm">{plan.period}</span>}
+              </div>
+              <ul className="space-y-3 mb-8 text-left">
+                {plan.features.map((f: string) => (
+                  <li key={f} className="flex items-center gap-2 text-sm"><span className="text-green-500">✓</span>{f}</li>
+                ))}
               </ul>
-              <button className="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700">Choose Plan</button>
+              <button className={\`w-full py-3 rounded-xl font-semibold transition-colors \${plan.popular ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}\`}>{plan.cta}</button>
             </div>
           ))}
         </div>
@@ -576,24 +583,75 @@ function genPricingTable(): string {
 `;
 }
 
+function getPricingForDomain(domain: string): Array<{ name: string; price: string; period?: string; tagline: string; popular?: boolean; cta: string; features: string[] }> {
+  if (domain === "ecommerce") return [
+    { name: "Starter Pack", price: "$29", period: "/month", tagline: "Perfect for beginners", features: ["5 Supplement Samples", "Basic Nutrition Guide", "Email Support", "Monthly Delivery"], cta: "Get Started" },
+    { name: "Performance", price: "$59", period: "/month", tagline: "Most popular for athletes", popular: true, features: ["10 Premium Supplements", "Custom Workout Plan", "Priority Support", "Free Shipping", "Monthly Coaching Call"], cta: "Go Performance" },
+    { name: "Elite", price: "$99", period: "/month", tagline: "For serious competitors", features: ["All Supplements Included", "Personal Nutritionist", "1-on-1 Coaching", "Lab Testing Access", "VIP Community"], cta: "Go Elite" },
+  ];
+  if (domain === "gym-crm") return [
+    { name: "Starter", price: "$49", period: "/month", tagline: "Up to 100 members", features: ["Member Management", "Attendance Tracking", "Basic Billing", "Email Support"], cta: "Start Free Trial" },
+    { name: "Growth", price: "$149", period: "/month", tagline: "Up to 500 members", popular: true, features: ["Everything in Starter", "Lead Pipeline", "Class Booking", "Staff Scheduling", "Mobile App"], cta: "Start Free Trial" },
+    { name: "Enterprise", price: "$349", period: "/month", tagline: "Unlimited members", features: ["Everything in Growth", "Multi-Location", "Custom Branding", "API Access", "Dedicated Manager", "White-Label App"], cta: "Contact Sales" },
+  ];
+  if (domain === "streaming") return [
+    { name: "Basic", price: "$8", period: "/month", tagline: "Watch on 1 device", features: ["720p Streaming", "1 Device", "Limited Content", "Ads Supported"], cta: "Start Free Trial" },
+    { name: "Standard", price: "$15", period: "/month", tagline: "Watch on 3 devices", popular: true, features: ["1080p HD", "3 Devices", "Full Library", "No Ads", "Download for Offline"], cta: "Start Free Trial" },
+    { name: "Premium", price: "$22", period: "/month", tagline: "Watch on 4 devices", features: ["4K Ultra HD", "4 Devices", "Full Library + Early Access", "No Ads", "Offline Downloads", "Spatial Audio"], cta: "Start Free Trial" },
+  ];
+  if (domain === "saas") return [
+    { name: "Starter", price: "$19", period: "/user/mo", tagline: "For small teams", features: ["5 Projects", "10GB Storage", "Basic Analytics", "Email Support"], cta: "Start Free Trial" },
+    { name: "Professional", price: "$49", period: "/user/mo", tagline: "For growing teams", popular: true, features: ["Unlimited Projects", "100GB Storage", "Advanced Analytics", "Priority Support", "Custom Integrations"], cta: "Start Free Trial" },
+    { name: "Enterprise", price: "Custom", tagline: "For large organizations", features: ["Everything in Pro", "Unlimited Storage", "SSO & SAML", "Dedicated Manager", "SLA 99.9%", "On-Premise Option"], cta: "Talk to Sales" },
+  ];
+  if (domain === "restaurant") return [
+    { name: "Lunch Special", price: "$14", tagline: "Mon-Fri 11:30am-2:30pm", features: ["Choice of Main Course", "Soup or Salad", "Beverage", "Free Refills"], cta: "Reserve Table" },
+    { name: "Chef's Tasting", price: "$65", tagline: "5-course experience", popular: true, features: ["5-Course Tasting Menu", "Wine Pairing Available", "Chef's Table Option", "Seasonal Ingredients"], cta: "Reserve Table" },
+    { name: "Private Dining", price: "$120", tagline: "Per person, min 10", features: ["Private Room", "Custom Menu", "Dedicated Staff", "AV Equipment", "Custom Decor"], cta: "Inquire Now" },
+  ];
+  return [
+    { name: "Basic", price: "$0", tagline: "For personal use", features: ["1 project", "Basic support", "Community access"], cta: "Get Started" },
+    { name: "Pro", price: "$29", period: "/month", tagline: "For professionals", popular: true, features: ["Unlimited projects", "Priority support", "Advanced analytics", "API access"], cta: "Start Free Trial" },
+    { name: "Enterprise", price: "Custom", tagline: "For teams", features: ["Custom solutions", "Dedicated support", "SLA", "SSO"], cta: "Contact Sales" },
+  ];
+}
+
 function genBlogList(): string {
   return `export function BlogList() {
   const posts = [
-    { id: "1", title: "Getting Started", excerpt: "Learn how to get started with our platform." },
-    { id: "2", title: "Best Practices", excerpt: "Tips and tricks for maximum productivity." },
-    { id: "3", title: "Advanced Guide", excerpt: "Deep dive into advanced features." },
+    { id: "1", title: "The Ultimate Guide to Whey Protein: How to Choose the Right One", excerpt: "With so many options on the market, finding the perfect whey protein can be overwhelming. We break down the differences between concentrate, isolate, and hydrolysate.", category: "Nutrition", readTime: "8 min read", date: "Jun 12, 2025", image: "https://images.unsplash.com/photo-1593095948071-474c5cc2c129?w=600&h=400&fit=crop", author: "Dr. Sarah Mitchell" },
+    { id: "2", title: "Creatine Mythbusting: What Science Actually Says", excerpt: "Creatine is the most researched supplement in history, yet myths persist. We separate fact from fiction with peer-reviewed evidence.", category: "Performance", readTime: "6 min read", date: "Jun 8, 2025", image: "https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=600&h=400&fit=crop", author: "James Rodriguez" },
+    { id: "3", title: "Pre-Workout Nutrition: What to Eat Before Training", excerpt: "Your pre-workout meal can make or break your session. Learn the optimal macros and timing for maximum performance.", category: "Training", readTime: "5 min read", date: "Jun 5, 2025", image: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=600&h=400&fit=crop", author: "Emily Chen" },
   ];
   return (
     <section className="py-16">
       <div className="container mx-auto px-4">
-        <h2 className="text-3xl font-bold mb-8">Blog</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="flex items-center justify-between mb-10">
+          <div>
+            <h2 className="text-3xl font-bold">Latest Articles</h2>
+            <p className="text-gray-500 mt-1">Expert insights on nutrition, training, and recovery</p>
+          </div>
+          <a href="/blog" className="text-blue-600 font-medium hover:underline">View All →</a>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {posts.map((post) => (
-            <div key={post.id} className="rounded-lg border p-6 hover:shadow-md transition-shadow">
-              <h3 className="text-lg font-semibold">{post.title}</h3>
-              <p className="mt-2 text-gray-600 text-sm">{post.excerpt}</p>
-              <a href="#" className="mt-4 inline-block text-blue-600 text-sm font-medium">Read more</a>
-            </div>
+            <article key={post.id} className="group rounded-2xl border overflow-hidden hover:shadow-xl transition-all duration-300">
+              <div className="aspect-[16/10] overflow-hidden">
+                <img src={post.image} alt={post.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+              </div>
+              <div className="p-6">
+                <div className="flex items-center gap-2 mb-3">
+                  <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-full">{post.category}</span>
+                  <span className="text-xs text-gray-400">{post.readTime}</span>
+                </div>
+                <h3 className="text-lg font-bold group-hover:text-blue-600 transition-colors">{post.title}</h3>
+                <p className="mt-2 text-gray-600 text-sm line-clamp-2">{post.excerpt}</p>
+                <div className="mt-4 flex items-center justify-between">
+                  <span className="text-sm text-gray-500">{post.author}</span>
+                  <span className="text-xs text-gray-400">{post.date}</span>
+                </div>
+              </div>
+            </article>
           ))}
         </div>
       </div>
@@ -670,16 +728,20 @@ function getTestimonialsForDomain(domain: string): Array<{ name: string; role: s
   ];
 }
 
-function genCTA(): string {
+function genCTA(prompt?: string): string {
+  const blueprint = detectBlueprint(prompt || "");
+  const domain = blueprint?.id || "generic";
+  const content = getCTAForDomain(domain);
   return `export function CTA() {
   return (
-    <section className="py-16 bg-blue-600">
+    <section className="py-16 bg-gradient-to-r from-blue-600 to-indigo-700">
       <div className="container mx-auto px-4 text-center">
-        <h2 className="text-3xl font-bold text-white mb-4">Ready to Get Started?</h2>
-        <p className="text-blue-100 mb-8 max-w-xl mx-auto">Join thousands of users who are already building amazing things.</p>
-        <button className="bg-white text-blue-600 px-8 py-3 rounded-lg font-medium hover:bg-blue-50 transition-colors">
-          Start Free Trial
-        </button>
+        <h2 className="text-3xl font-bold text-white mb-4">${content.title}</h2>
+        <p className="text-blue-100 mb-8 max-w-xl mx-auto">${content.subtitle}</p>
+        <div className="flex justify-center gap-4">
+          <button className="bg-white text-blue-600 px-8 py-3 rounded-xl font-semibold hover:bg-blue-50 transition-colors shadow-lg">${content.cta}</button>
+          <button className="border border-white/30 text-white px-8 py-3 rounded-xl font-medium hover:bg-white/10 transition-colors">${content.secondaryCta}</button>
+        </div>
       </div>
     </section>
   );
@@ -687,27 +749,58 @@ function genCTA(): string {
 `;
 }
 
+function getCTAForDomain(domain: string): { title: string; subtitle: string; cta: string; secondaryCta: string } {
+  if (domain === "ecommerce") return { title: "Fuel Your Fitness Goals Today", subtitle: "Join 50,000+ athletes who trust our science-backed supplements. Free shipping on orders over $50.", cta: "Shop Now", secondaryCta: "View All Products" };
+  if (domain === "gym-crm") return { title: "Transform Your Gym Management", subtitle: "Start managing members, billing, and attendance in one powerful platform. Free for 14 days.", cta: "Start Free Trial", secondaryCta: "Book a Demo" };
+  if (domain === "streaming") return { title: "Start Watching Today", subtitle: "Stream thousands of movies, shows, and originals. No ads, cancel anytime.", cta: "Start Free Trial", secondaryCta: "Browse Plans" };
+  if (domain === "saas") return { title: "Ready to Scale Your Business?", subtitle: "Join 2,500+ companies using our platform to automate workflows and boost productivity.", cta: "Start Free Trial", secondaryCta: "Talk to Sales" };
+  if (domain === "restaurant") return { title: "Reserve Your Table Tonight", subtitle: "Experience authentic cuisine crafted by our award-winning chef. Book online for instant confirmation.", cta: "Reserve Now", secondaryCta: "View Menu" };
+  if (domain === "admin-dashboard") return { title: "Take Control of Your Business", subtitle: "Real-time analytics, order management, and inventory tracking all in one dashboard.", cta: "View Dashboard", secondaryCta: "Generate Report" };
+  if (domain === "blog") return { title: "Stay in the Loop", subtitle: "Get the latest articles, guides, and insights delivered to your inbox every week.", cta: "Subscribe Now", secondaryCta: "Read Latest" };
+  return { title: "Ready to Get Started?", subtitle: "Join thousands of users who are already building amazing things with our platform.", cta: "Get Started Free", secondaryCta: "Learn More" };
+}
+
 function genProductGrid(): string {
-  return `export function ProductGrid() {
+  return `"use client";
+export function ProductGrid() {
   const products = [
-    { id: "1", name: "Product A", price: 29.99 },
-    { id: "2", name: "Product B", price: 49.99 },
-    { id: "3", name: "Product C", price: 19.99 },
-    { id: "4", name: "Product D", price: 39.99 },
+    { id: "1", name: "Whey Protein Isolate", price: 49.99, originalPrice: 64.99, rating: 4.8, reviews: 2847, badge: "Best Seller", image: "https://images.unsplash.com/photo-1593095948071-474c5cc2c129?w=400&h=400&fit=crop", category: "Protein" },
+    { id: "2", name: "Creatine Monohydrate", price: 29.99, originalPrice: 34.99, rating: 4.7, reviews: 1923, badge: "Top Rated", image: "https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=400&h=400&fit=crop", category: "Performance" },
+    { id: "3", name: "BCAA Recovery Complex", price: 39.99, rating: 4.6, reviews: 1456, image: "https://images.unsplash.com/photo-1597811163973-0acb52e4fe39?w=400&h=400&fit=crop", category: "Recovery" },
+    { id: "4", name: "Pre-Workout Surge", price: 44.99, originalPrice: 54.99, rating: 4.5, reviews: 1203, badge: "New", image: "https://images.unsplash.com/photo-1622485831930-3485a4889d94?w=400&h=400&fit=crop", category: "Performance" },
+    { id: "5", name: "Omega-3 Fish Oil", price: 24.99, rating: 4.8, reviews: 3201, image: "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?w=400&h=400&fit=crop", category: "Health" },
+    { id: "6", name: "Mass Gainer Pro", price: 54.99, originalPrice: 69.99, rating: 4.4, reviews: 987, badge: "Popular", image: "https://images.unsplash.com/photo-1517838277536-f5f99be501cd?w=400&h=400&fit=crop", category: "Mass" },
   ];
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
-      {products.map((p) => (
-        <div key={p.id} className="group rounded-lg border overflow-hidden">
-          <div className="aspect-square bg-gray-100 flex items-center justify-center text-gray-400">Image</div>
-          <div className="p-4">
-            <h3 className="font-medium">{p.name}</h3>
-            <p className="text-lg font-bold mt-1">\${p.price}</p>
-            <button className="mt-3 w-full bg-blue-600 text-white py-2 rounded-lg text-sm hover:bg-blue-700">Add to Cart</button>
-          </div>
+    <section className="py-16">
+      <div className="container mx-auto px-4">
+        <h2 className="text-3xl font-bold text-center mb-12">Featured Products</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {products.map((product) => (
+            <div key={product.id} className="group rounded-2xl border overflow-hidden hover:shadow-xl transition-all duration-300">
+              <div className="relative aspect-square bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+                <img src={product.image} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                {product.badge && <span className="absolute top-3 left-3 bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full">{product.badge}</span>}
+                {product.originalPrice && <span className="absolute top-3 right-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full">-{Math.round((1 - product.price / product.originalPrice) * 100)}%</span>}
+              </div>
+              <div className="p-5">
+                <p className="text-xs text-blue-600 font-medium uppercase tracking-wide">{product.category}</p>
+                <h3 className="mt-1 font-semibold text-lg">{product.name}</h3>
+                <div className="mt-2 flex items-center gap-2">
+                  <div className="flex text-yellow-400 text-sm">{"★".repeat(Math.floor(product.rating))}</div>
+                  <span className="text-sm text-gray-500">{product.rating} ({product.reviews.toLocaleString()})</span>
+                </div>
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="text-2xl font-bold text-blue-600">${product.price}</span>
+                  {product.originalPrice && <span className="text-sm text-gray-400 line-through">${product.originalPrice}</span>}
+                </div>
+                <button className="mt-4 w-full bg-blue-600 text-white py-3 rounded-xl font-medium hover:bg-blue-700 transition-colors">Add to Cart</button>
+              </div>
+            </div>
+          ))}
         </div>
-      ))}
-    </div>
+      </div>
+    </section>
   );
 }
 `;
@@ -715,13 +808,34 @@ function genProductGrid(): string {
 
 function genCartItems(): string {
   return `"use client";
+import { useState } from "react";
 export function CartItems() {
+  const [items, setItems] = useState([
+    { id: "1", name: "Whey Protein Isolate", price: 49.99, qty: 2, image: "https://images.unsplash.com/photo-1593095948071-474c5cc2c129?w=100&h=100&fit=crop", flavor: "Chocolate" },
+    { id: "2", name: "Creatine Monohydrate", price: 29.99, qty: 1, image: "https://images.unsplash.com/photo-1579722821273-0f6c7d44362f?w=100&h=100&fit=crop", flavor: "Unflavored" },
+  ]);
+  const updateQty = (id: string, delta: number) => setItems(items.map(i => i.id === id ? { ...i, qty: Math.max(1, i.qty + delta) } : i));
+  const removeItem = (id: string) => setItems(items.filter(i => i.id !== id));
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between border-b pb-4">
-        <div><h3 className="font-medium">Sample Item</h3><p className="text-sm text-gray-500">Qty: 1</p></div>
-        <p className="font-semibold">$29.99</p>
-      </div>
+      {items.map((item) => (
+        <div key={item.id} className="flex items-center gap-4 border-b pb-4">
+          <img src={item.image} alt={item.name} className="w-20 h-20 rounded-lg object-cover" />
+          <div className="flex-1">
+            <h3 className="font-semibold">{item.name}</h3>
+            <p className="text-sm text-gray-500">{item.flavor}</p>
+            <p className="text-blue-600 font-bold mt-1">${item.price}</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={() => updateQty(item.id, -1)} className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100">-</button>
+            <span className="w-8 text-center font-medium">{item.qty}</span>
+            <button onClick={() => updateQty(item.id, 1)} className="w-8 h-8 rounded-full border flex items-center justify-center hover:bg-gray-100">+</button>
+          </div>
+          <p className="font-bold w-20 text-right">${(item.price * item.qty).toFixed(2)}</p>
+          <button onClick={() => removeItem(item.id)} className="text-red-500 hover:text-red-700 text-sm">Remove</button>
+        </div>
+      ))}
+      {items.length === 0 && <p className="text-center text-gray-500 py-8">Your cart is empty</p>}
     </div>
   );
 }
@@ -730,15 +844,27 @@ export function CartItems() {
 
 function genCartSummary(): string {
   return `export function CartSummary() {
+  const subtotal = 129.97;
+  const shipping = 0;
+  const discount = 15.00;
+  const total = subtotal - discount + shipping;
   return (
-    <div className="rounded-lg bg-gray-50 p-6">
-      <h2 className="text-lg font-semibold">Order Summary</h2>
-      <div className="mt-4 space-y-2">
-        <div className="flex justify-between"><span>Subtotal</span><span>$29.99</span></div>
-        <div className="flex justify-between"><span>Shipping</span><span>Free</span></div>
-        <div className="border-t pt-2 flex justify-between font-semibold"><span>Total</span><span>$29.99</span></div>
+    <div className="rounded-2xl bg-gradient-to-br from-gray-50 to-gray-100 p-6 border">
+      <h2 className="text-xl font-bold mb-4">Order Summary</h2>
+      <div className="space-y-3">
+        <div className="flex justify-between text-sm"><span className="text-gray-600">Subtotal (3 items)</span><span className="font-medium">${subtotal.toFixed(2)}</span></div>
+        <div className="flex justify-between text-sm"><span className="text-gray-600">Shipping</span><span className="text-green-600 font-medium">Free</span></div>
+        <div className="flex justify-between text-sm"><span className="text-gray-600">Discount (WELCOME15)</span><span className="text-green-600 font-medium">-${discount.toFixed(2)}</span></div>
+        <div className="border-t pt-3 flex justify-between"><span className="font-semibold">Total</span><span className="text-xl font-bold text-blue-600">${total.toFixed(2)}</span></div>
       </div>
-      <button className="mt-6 w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700">Checkout</button>
+      <div className="mt-4">
+        <input type="text" placeholder="Enter coupon code" className="w-full border rounded-xl px-4 py-2.5 text-sm" />
+      </div>
+      <button className="mt-4 w-full bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors">Proceed to Checkout</button>
+      <div className="mt-4 flex items-center justify-center gap-4 text-xs text-gray-400">
+        <span className="flex items-center gap-1">🔒 Secure Checkout</span>
+        <span className="flex items-center gap-1">🚚 Free Shipping 50+</span>
+      </div>
     </div>
   );
 }
@@ -768,14 +894,56 @@ export function Sidebar() {
 }
 
 function genDashboardContent(): string {
-  return `export function DashboardContent() {
+  return `"use client";
+export function DashboardContent() {
+  const stats = [
+    { label: "Total Revenue", value: "$124,563", change: "+12.5%", up: true, icon: "💰" },
+    { label: "Total Orders", value: "3,456", change: "+8.2%", up: true, icon: "📦" },
+    { label: "Active Users", value: "12,345", change: "+23.1%", up: true, icon: "👥" },
+    { label: "Conversion Rate", value: "3.24%", change: "-0.4%", up: false, icon: "📈" },
+  ];
+  const recentOrders = [
+    { id: "#ORD-7823", customer: "Sarah Mitchell", product: "Whey Protein Isolate", amount: "$49.99", status: "Delivered", date: "2 min ago" },
+    { id: "#ORD-7822", customer: "James Rodriguez", product: "Creatine Monohydrate", amount: "$29.99", status: "Processing", date: "15 min ago" },
+    { id: "#ORD-7821", customer: "Emily Chen", product: "BCAA Recovery", amount: "$39.99", status: "Shipped", date: "1 hr ago" },
+    { id: "#ORD-7820", customer: "Michael Thompson", product: "Pre-Workout Surge", amount: "$44.99", status: "Delivered", date: "2 hrs ago" },
+    { id: "#ORD-7819", customer: "Priya Sharma", product: "Omega-3 Fish Oil", amount: "$24.99", status: "Processing", date: "3 hrs ago" },
+  ];
+  const statusColors: Record<string, string> = { Delivered: "bg-green-100 text-green-700", Processing: "bg-yellow-100 text-yellow-700", Shipped: "bg-blue-100 text-blue-700" };
   return (
     <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Dashboard</h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="p-4 border rounded-lg"><p className="text-sm text-gray-500">Users</p><p className="text-2xl font-bold">1,234</p></div>
-        <div className="p-4 border rounded-lg"><p className="text-sm text-gray-500">Revenue</p><p className="text-2xl font-bold">$12,345</p></div>
-        <div className="p-4 border rounded-lg"><p className="text-sm text-gray-500">Growth</p><p className="text-2xl font-bold">+23%</p></div>
+      <h1 className="text-2xl font-bold mb-6">Dashboard Overview</h1>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {stats.map((s) => (
+          <div key={s.label} className="p-5 rounded-2xl bg-white border hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-gray-500">{s.label}</p>
+              <span className="text-2xl">{s.icon}</span>
+            </div>
+            <p className="text-3xl font-bold mt-2">{s.value}</p>
+            <p className={`text-sm mt-1 font-medium ${s.up ? "text-green-600" : "text-red-500"}`}>{s.change} vs last month</p>
+          </div>
+        ))}
+      </div>
+      <div className="bg-white rounded-2xl border p-6">
+        <h2 className="text-lg font-semibold mb-4">Recent Orders</h2>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead><tr className="border-b text-left text-gray-500">
+              <th className="pb-3 font-medium">Order</th><th className="pb-3 font-medium">Customer</th><th className="pb-3 font-medium">Product</th><th className="pb-3 font-medium">Amount</th><th className="pb-3 font-medium">Status</th><th className="pb-3 font-medium">Time</th>
+            </tr></thead>
+            <tbody>{recentOrders.map((o) => (
+              <tr key={o.id} className="border-b last:border-0 hover:bg-gray-50">
+                <td className="py-3 font-mono text-xs">{o.id}</td>
+                <td className="py-3 font-medium">{o.customer}</td>
+                <td className="py-3 text-gray-600">{o.product}</td>
+                <td className="py-3 font-semibold">{o.amount}</td>
+                <td className="py-3"><span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusColors[o.status] || "bg-gray-100"}`}>{o.status}</span></td>
+                <td className="py-3 text-gray-400">{o.date}</td>
+              </tr>
+            ))}</tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -975,24 +1143,25 @@ function getStatsForDomain(domain: string): Array<{ label: string; value: string
   ];
 }
 
-function genFAQ(): string {
+function genFAQ(prompt?: string): string {
+  const blueprint = detectBlueprint(prompt || "");
+  const domain = blueprint?.id || "generic";
+  const faqs = getFAQForDomain(domain);
   return `export function FAQ() {
-  const faqs = [
-    { q: "What services do you offer?", a: "We offer web development, mobile apps, UI/UX design, and cloud solutions." },
-    { q: "How long does a project take?", a: "Project timelines vary based on scope, typically 4-12 weeks." },
-    { q: "Do you offer ongoing support?", a: "Yes, we provide maintenance and support packages." },
-    { q: "What is your pricing model?", a: "We offer flexible pricing based on project requirements." },
-  ];
+  const faqs = ${JSON.stringify(faqs, null, 2)};
   return (
     <section className="py-16">
       <div className="container mx-auto px-4 max-w-3xl">
         <h2 className="text-3xl font-bold text-center mb-12">Frequently Asked Questions</h2>
-        <div className="space-y-6">
-          {faqs.map((faq, i) => (
-            <div key={i} className="border rounded-lg p-6">
-              <h3 className="text-lg font-semibold mb-2">{faq.q}</h3>
-              <p className="text-gray-600">{faq.a}</p>
-            </div>
+        <div className="space-y-4">
+          {faqs.map((faq: { q: string; a: string }, i: number) => (
+            <details key={i} className="group border rounded-xl overflow-hidden">
+              <summary className="flex items-center justify-between p-5 cursor-pointer font-medium hover:bg-gray-50 transition-colors">
+                <span>{faq.q}</span>
+                <span className="text-gray-400 group-open:rotate-180 transition-transform">▼</span>
+              </summary>
+              <div className="px-5 pb-5 text-gray-600">{faq.a}</div>
+            </details>
           ))}
         </div>
       </div>
@@ -1000,6 +1169,46 @@ function genFAQ(): string {
   );
 }
 `;
+}
+
+function getFAQForDomain(domain: string): Array<{ q: string; a: string }> {
+  if (domain === "ecommerce") return [
+    { q: "Are your supplements third-party tested?", a: "Yes, every batch is independently tested by NSF International and Informed Sport for purity, potency, and banned substances." },
+    { q: "How long does shipping take?", a: "Domestic orders ship within 24 hours and arrive in 2-5 business days. International shipping takes 7-14 business days." },
+    { q: "What is your return policy?", a: "We offer a 30-day money-back guarantee on all unopened products. If you're not satisfied, contact us for a full refund." },
+    { q: "Do you offer subscription discounts?", a: "Yes! Subscribe & Save gives you 15% off every order plus free shipping. Cancel or pause anytime." },
+    { q: "Are your products vegetarian/vegan?", a: "Many of our products are plant-based. Look for the vegan badge on product pages. Our Whey Protein has a vegetarian-friendly option." },
+  ];
+  if (domain === "gym-crm") return [
+    { q: "Is there a free trial?", a: "Yes, we offer a 14-day free trial with full access to all features. No credit card required." },
+    { q: "Can I import my existing member data?", a: "Absolutely! We support CSV imports and can help migrate data from Mindbody, Zen Planner, Virtuagym, and other platforms." },
+    { q: "Does it support multiple locations?", a: "Yes, our Pro and Enterprise plans support unlimited locations with centralized management and reporting." },
+    { q: "Is there a mobile app?", a: "Yes, our branded mobile app is available for iOS and Android. Members can check in, book classes, and manage their accounts." },
+  ];
+  if (domain === "streaming") return [
+    { q: "How many devices can I stream on?", a: "Stream on up to 3 devices simultaneously with Standard, or 4 with Premium. Download up to 10 titles for offline viewing." },
+    { q: "Is there a free trial?", a: "Start with a 7-day free trial. No commitment — cancel anytime before the trial ends and you won't be charged." },
+    { q: "What content is available?", a: "Access 10,000+ movies, TV shows, documentaries, and originals. New titles added every week." },
+    { q: "Can I change my plan anytime?", a: "Yes, upgrade or downgrade your plan at any time. Changes take effect at the start of your next billing cycle." },
+  ];
+  if (domain === "saas") return [
+    { q: "How does the free trial work?", a: "Get full access to all features for 14 days. No credit card required. Upgrade anytime to keep your data and workspace." },
+    { q: "Can I integrate with existing tools?", a: "Yes, we integrate with 200+ tools including Slack, Notion, Jira, GitHub, Google Workspace, and Microsoft 365." },
+    { q: "Is my data secure?", a: "SOC 2 Type II certified, GDPR compliant, with end-to-end encryption. Data centers in US, EU, and APAC." },
+    { q: "What happens when I exceed my plan limits?", a: "We'll notify you before you hit limits. Upgrade seamlessly without data loss. No surprise overages." },
+  ];
+  if (domain === "restaurant") return [
+    { q: "How do I make a reservation?", a: "Book online through our website or call us directly. You'll receive instant confirmation via email or SMS." },
+    { q: "Do you cater for dietary restrictions?", a: "Yes, our menu clearly marks vegetarian, vegan, gluten-free, and allergen options. Please inform us of any allergies when booking." },
+    { q: "Is there private dining available?", a: "Yes, our private dining room seats up to 20 guests. Perfect for celebrations and corporate events." },
+    { q: "What are your opening hours?", a: "Lunch: Mon-Fri 11:30am-2:30pm. Dinner: Mon-Sat 5:30pm-10:30pm. Brunch: Sat-Sun 10am-2pm." },
+  ];
+  return [
+    { q: "What services do you offer?", a: "We offer web development, mobile apps, UI/UX design, cloud solutions, and ongoing maintenance and support." },
+    { q: "How long does a typical project take?", a: "Project timelines vary based on scope. A standard website takes 4-6 weeks, while complex web apps take 8-16 weeks." },
+    { q: "Do you offer ongoing support?", a: "Yes, we provide monthly maintenance packages starting at $500/mo including updates, monitoring, and support." },
+    { q: "What is your pricing model?", a: "We offer fixed-price projects for defined scope, and monthly retainer plans for ongoing work. All plans include a dedicated project manager." },
+  ];
 }
 
 function genPortfolio(): string {
@@ -2580,15 +2789,15 @@ const COMPONENT_GENERATORS: Record<string, (prompt?: string) => string> = {
   Features: (p) => genFeatures(p),
   AboutContent: genAbout,
   ContactForm: genContactForm,
-  PricingTable: genPricingTable,
+  PricingTable: (p) => genPricingTable(p),
   BlogList: genBlogList,
   Testimonials: genTestimonials,
-  CTA: genCTA,
+  CTA: (p) => genCTA(p),
   Newsletter: genNewsletter,
   Services: genServices,
   Team: genTeam,
   Stats: genStats,
-  FAQ: genFAQ,
+  FAQ: (p) => genFAQ(p),
   Portfolio: genPortfolio,
   ProductGrid: genProductGrid,
   CartItems: genCartItems,
