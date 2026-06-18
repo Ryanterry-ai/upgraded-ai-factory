@@ -53,6 +53,13 @@ import {
   generateFoundation,
   type DesignTokens,
 } from "./ui-renderer";
+import {
+  enhanceGeneration,
+  storeGenerationResults,
+  getComponentSelectionScore,
+  getIntelligenceReport,
+  type IntelligenceContext,
+} from "./intelligence/intelligence-orchestrator";
 
 export interface GenerationRequest {
   prompt: string;
@@ -81,6 +88,8 @@ export interface GenerationResult {
   optimizedBlueprint?: OptimizedBlueprint;
   scraped?: ScrapedSite;
   systemState?: SystemState;
+  intelligence?: IntelligenceContext;
+  intelligenceStored?: { memoriesStored: number; knowledgeEdges: number };
 }
 
 function sanitizeName(input: string): string {
@@ -3637,9 +3646,18 @@ export async function runGeneration(
     onProgress?.(event, data);
   };
 
+  // ═══ INTELLIGENCE LAYER (AIL v2) ═══
+  // Query memory, load patterns, enhance blueprint before generation
+  emit("thinking", { message: `AIL v2: Enhancing generation for "${request.prompt.slice(0, 60)}..."` });
+  const intelligenceContext = await enhanceGeneration({
+    projectId: "", // Will be set after project creation
+    prompt: request.prompt,
+  });
+  emit("thinking", { message: `AIL v2: ${intelligenceContext.similarProjects.length} similar projects found, ${intelligenceContext.bestPatterns.length} patterns loaded` });
+
   // ═══ SYSTEM STATE ENGINE INITIALIZATION ═══
   // Initialize the SSE as the central runtime layer
-  const detectedBlueprint = detectBlueprint(request.prompt);
+  const detectedBlueprint = intelligenceContext.enhancedBlueprint || detectBlueprint(request.prompt);
   const rpseContext = detectRPSEContext(request.prompt);
 
   initializeSystemState({
@@ -3746,6 +3764,7 @@ export async function runGeneration(
 
   if (createError) throw new Error(`Failed to create project: ${createError.message}`);
   const projectId = project.id;
+  intelligenceContext.projectId = projectId;
 
   try {
     const [llmContent, agentResults, memoryContext, qualityPrediction] = await Promise.all([
@@ -4155,6 +4174,23 @@ export async function runGeneration(
       () => 0
     );
 
+    // ═══ AIL v2: STORE GENERATION RESULTS ═══
+    // Store in memory, update knowledge graph, learn from output
+    const intelligenceStored = await storeGenerationResults({
+      projectId,
+      prompt: request.prompt,
+      domain: rpseDomain,
+      files: files.map(f => ({ path: f.path, content: f.content, type: f.type })),
+      qualityScore,
+      buildSuccess: buildValidation.buildSuccess,
+      agentCount: agentResults.successCount,
+      blueprintId: pipelineBlueprint?.name,
+      graphId: intelligenceContext.graphId || undefined,
+    }).catch((err) => {
+      console.error("[AIL] Failed to store generation results:", err);
+      return { memoriesStored: 0, knowledgeEdges: 0 };
+    });
+
     // Store scraped pages + assets for clone preview/download
     if (scraped && scraped.pages.length > 0) {
       storeSite(
@@ -4188,6 +4224,8 @@ export async function runGeneration(
       optimizedBlueprint: undefined,
       scraped,
       systemState: getState(),
+      intelligence: intelligenceContext,
+      intelligenceStored,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
