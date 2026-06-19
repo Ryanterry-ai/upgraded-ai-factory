@@ -12,7 +12,7 @@ import {
   Customer, Product, Order, InventoryMovement,
   computeMetrics,
 } from "./business-data-provider";
-import { detectDomain, DomainBlueprint, Entity } from "./domain-registry";
+import { detectDomain, getDomainById, DomainBlueprint, Entity } from "./domain-registry";
 
 // ═══════════════════════════════════════════════════════════
 // DOMAIN PRODUCT TEMPLATES
@@ -711,8 +711,8 @@ export function generateFromRegistry(domainId: string): BusinessState {
     return generateFromConfig(domainId, config);
   }
 
-  // Fallback: use registry blueprint to generate generic data
-  const blueprint = detectDomain(domainId);
+  // Fallback: try direct ID lookup first, then keyword detection
+  const blueprint = getDomainById(domainId) || detectDomain(domainId);
   if (blueprint) {
     return generateFromBlueprint(domainId, blueprint);
   }
@@ -803,10 +803,21 @@ function generateFromConfig(domainId: string, config: DomainProductConfig): Busi
   const entities: BusinessEntities = { customers, products, orders, inventoryMovements };
   const metrics = computeMetrics(entities);
 
-  const workflows: BusinessWorkflow[] = [
-    { id: "wf-order", name: "Order Fulfillment", trigger: "ORDER_PLACED", steps: ["Received", "Payment verified", "Packing", "Shipped", "Delivered"], currentStep: 0, status: "idle" },
-    { id: "wf-inventory", name: "Inventory Reorder", trigger: "INVENTORY_LOW", steps: ["Low stock detected", "PO created", "Supplier confirmed", "Received", "Stock updated"], currentStep: 0, status: "idle" },
-  ];
+  // Use domain-specific workflows from registry when available
+  const blueprint = getDomainById(domainId) || detectDomain(domainId);
+  const workflows: BusinessWorkflow[] = blueprint
+    ? blueprint.workflows.map(wf => ({
+        id: wf.id,
+        name: wf.name,
+        trigger: wf.trigger,
+        steps: wf.steps.map(s => s.name),
+        currentStep: 0,
+        status: "idle" as const,
+      }))
+    : [
+        { id: "wf-order", name: "Order Fulfillment", trigger: "ORDER_PLACED", steps: ["Received", "Payment verified", "Packing", "Shipped", "Delivered"], currentStep: 0, status: "idle" },
+        { id: "wf-inventory", name: "Inventory Reorder", trigger: "INVENTORY_LOW", steps: ["Low stock detected", "PO created", "Supplier confirmed", "Received", "Stock updated"], currentStep: 0, status: "idle" },
+      ];
 
   const events: BusinessEvent[] = orders.map(o => ({
     id: `EVT-${o.id}`,

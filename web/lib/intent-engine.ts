@@ -196,6 +196,18 @@ function fallbackFromSolutionModel(prompt: string, solutionModel: SolutionModel)
       goal: "Enable easy class booking and schedule management",
       systems: ["Staff Management", "Member Management"],
       confidence: 0.5 },
+    // Supplement-specific: authenticity / trust
+    { pattern: /authentic|trust|lab.?test|fssai|certif|genuin|quality|clean.?label|transparent/i,
+      problem: "Customers don't trust supplement authenticity — lab reports and certifications matter",
+      goal: "Build trust through transparent lab testing, FSSAI compliance, and ingredient traceability",
+      systems: ["Brand Store", "Goal Based Shopping"],
+      confidence: 0.8 },
+    // Supplement-specific: repeat / loyalty / retention
+    { pattern: /repeat|loyal|retention|subscri|reorder|coming.?back|lifetime.?value|subscription/i,
+      problem: "Repeat purchase rate is low — customers buy once and never return",
+      goal: "Increase repeat purchases with subscription plans, loyalty rewards, and reorder reminders",
+      systems: ["Goal Based Shopping", "Brand Store"],
+      confidence: 0.8 },
     // Ecommerce-specific
     { pattern: /order|fulfillment|shipping|delivery/i,
       problem: "Order fulfillment is slow — customers complain about delivery times",
