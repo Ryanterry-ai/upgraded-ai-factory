@@ -3,6 +3,8 @@ import { callLLMWithFallback, isLLMAvailable, type LLMMessage } from "./llm-adap
 import { runAgentWorkflow, type WorkflowResult } from "./agent-executor-adapter";
 import { retrieveMemory, formatMemoryContext, recordGeneration, type MemoryContext } from "./memory-adapter";
 import { validateBuild, type ValidationResult } from "./build-validator";
+import * as fs from "fs";
+import * as path from "path";
 import { predictQuality, extractPatterns, recordPatterns, type QualityPrediction } from "./pattern-adapter";
 import { getOptimizedBlueprintForFactory, type OptimizedBlueprint } from "./blueprint-optimizer";
 import { isUrl, scrapeSite, formatScrapedForLLM, type ScrapedSite } from "./url-scraper";
@@ -793,63 +795,17 @@ function getCTAForDomain(domain: string): { title: string; subtitle: string; cta
 function genProductGrid(): string {
   return `"use client";
 import { useState } from "react";
-
-const CATEGORIES = [
-  { id: "all", label: "All Products", icon: "🔥" },
-  { id: "protein", label: "Muscle & Strength", icon: "💪" },
-  { id: "weight", label: "Weight Management", icon: "⚖️" },
-  { id: "vitality", label: "Vitality & Wellness", icon: "⚡" },
-  { id: "brain", label: "Brain & Focus", icon: "🧠" },
-  { id: "recovery", label: "Joints & Recovery", icon: "🦴" },
-];
-
-const products = [
-  { id: "1", name: "Whey Protein Isolate", brand: "FuelCore", price: 2499, originalPrice: 3299, rating: 4.8, reviews: 2847, badge: "Best Seller", category: "protein", type: "powder", weight: "1 kg", flavor: "Chocolate Dream", fssai: "10019062000", labTested: true, veg: false, benefits: ["27g protein per serving", "Low carb, low fat", "Fast absorbing isolate"] },
-  { id: "2", name: "Creatine Monohydrate", brand: "FuelCore", price: 1499, originalPrice: 1899, rating: 4.7, reviews: 1923, badge: "Top Rated", category: "protein", type: "powder", weight: "500 g", flavor: "Unflavored", fssai: "10019062000", labTested: true, veg: true, benefits: ["5g micronized creatine", "Enhances strength & power", "Micronized for better mixability"] },
-  { id: "3", name: "BCAA Recovery Complex", brand: "ActiveEdge", price: 1999, originalPrice: 2499, rating: 4.6, reviews: 1456, category: "recovery", type: "powder", weight: "300 g", flavor: "Tropical Mango", fssai: "10019062000", labTested: true, veg: true, benefits: ["2:1:1 BCAA ratio", "Enhanced recovery", "Electrolyte blend included"] },
-  { id: "4", name: "Pre-Workout Surge", brand: "FuelCore", price: 2299, originalPrice: 2999, rating: 4.5, reviews: 1203, badge: "New", category: "vitality", type: "powder", weight: "300 g", flavor: "Blue Raspberry", fssai: "10019062000", labTested: true, veg: true, benefits: ["200mg caffeine", "Beta-alanine + citrulline", "No crash formula"] },
-  { id: "5", name: "Omega-3 Fish Oil", brand: "PureNutri", price: 999, originalPrice: 1499, rating: 4.8, reviews: 3201, category: "vitality", type: "capsule", weight: "90 softgels", flavor: "", fssai: "10019062000", labTested: true, veg: false, benefits: ["EPA + DHA formula", "Heart & brain health", "Enteric coated, no fishy aftertaste"] },
-  { id: "6", name: "Mass Gainer Pro", brand: "FuelCore", price: 2999, originalPrice: 3799, rating: 4.4, reviews: 987, badge: "Popular", category: "protein", type: "powder", weight: "2 kg", flavor: "Double Chocolate", fssai: "10019062000", labTested: true, veg: false, benefits: ["50g protein + 250g carbs", "1250 calories per serving", "Added digestive enzymes"] },
-  { id: "7", name: "Ashwagandha KSM-66", brand: "PureNutri", price: 799, originalPrice: 1199, rating: 4.7, reviews: 2156, badge: "Trending", category: "brain", type: "capsule", weight: "60 capsules", flavor: "", fssai: "10019062000", labTested: true, veg: true, benefits: ["600mg KSM-66 extract", "Reduces cortisol & stress", "Boosts focus & vitality"] },
-  { id: "8", name: "Glucosamine Chondroitin", brand: "ActiveEdge", price: 1299, originalPrice: 1699, rating: 4.5, reviews: 876, category: "recovery", type: "capsule", weight: "120 tablets", flavor: "", fssai: "10019062000", labTested: true, veg: true, benefits: ["Joint support formula", "MSM + turmeric added", "Reduces joint stiffness"] },
-  { id: "9", name: "Green Tea Fat Burner", brand: "PureNutri", price: 699, originalPrice: 999, rating: 4.3, reviews: 1543, category: "weight", type: "capsule", weight: "90 capsules", flavor: "", fssai: "10019062000", labTested: true, veg: true, benefits: ["500mg green tea extract", "EGCG for metabolism", "Appetite support"] },
-];
-
-function ProductIllustration({ type, flavor }: { type: string; flavor: string }) {
-  const isPowder = type === "powder";
-  return (
-    <div className="relative w-full h-full flex items-center justify-center" style={{ perspective: "600px" }}>
-      <div className={\`relative \${isPowder ? "w-28 h-40" : "w-20 h-28"}\`} style={{ transformStyle: "preserve-3d", transform: "rotateY(-15deg) rotateX(5deg)" }}>
-        {/* Bottle/Tub body */}
-        <div className={\`absolute inset-0 rounded-xl \${isPowder ? "bg-gradient-to-b from-amber-600 via-amber-700 to-amber-900" : "bg-gradient-to-b from-emerald-400 via-emerald-500 to-emerald-700"}\`} style={{ boxShadow: "inset -8px 0 20px rgba(0,0,0,0.3), inset 4px 0 10px rgba(255,255,255,0.1), 8px 8px 24px rgba(0,0,0,0.3)" }}>
-          {/* Label */}
-          <div className="absolute inset-x-2 top-6 bottom-4 bg-white/90 rounded-lg flex flex-col items-center justify-center p-1">
-            <span className="text-[6px] font-bold text-amber-800 uppercase tracking-widest">FuelCore</span>
-            <span className="text-[8px] font-black text-gray-900 text-center leading-tight mt-0.5">{isPowder ? "WHEY\\nISOLATE" : "OMEGA-3"}</span>
-            {flavor && <span className="text-[5px] text-gray-500 mt-0.5">{flavor}</span>}
-          </div>
-          {/* Cap */}
-          <div className={\`absolute -top-2 left-1/2 -translate-x-1/2 \${isPowder ? "w-16 h-4 rounded-t-lg bg-gradient-to-b from-gray-700 to-gray-900" : "w-10 h-3 rounded-full bg-gradient-to-b from-gray-600 to-gray-800"}\`} />
-          {/* Shine */}
-          <div className="absolute left-2 top-0 bottom-0 w-1 bg-white/20 rounded-full" />
-        </div>
-      </div>
-    </div>
-  );
-}
+import { PRODUCTS, CATEGORIES, useCart, useWishlist, Product } from "@/lib/data-provider";
 
 export function ProductGrid() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [wishlist, setWishlist] = useState<string[]>([]);
-  const [selectedProduct, setSelectedProduct] = useState<typeof products[0] | null>(null);
   const [sortBy, setSortBy] = useState("popular");
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const { addItem } = useCart();
+  const { toggleWishlist, isInWishlist } = useWishlist();
 
-  const toggleWishlist = (id: string) => {
-    setWishlist(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
-  };
-
-  const filtered = products
+  const filtered = PRODUCTS
     .filter(p => activeCategory === "all" || p.category === activeCategory)
     .filter(p => searchQuery === "" || p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.brand.toLowerCase().includes(searchQuery.toLowerCase()))
     .sort((a, b) => {
@@ -919,8 +875,8 @@ export function ProductGrid() {
                   )}
                 </div>
                 {/* Wishlist */}
-                <button onClick={(e) => { e.stopPropagation(); toggleWishlist(product.id); }} className="absolute top-3 right-3 w-9 h-9 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow-sm hover:scale-110 transition-transform">
-                  <span className={\`text-lg \${wishlist.includes(product.id) ? "text-red-500" : "text-gray-400"}\`}>{wishlist.includes(product.id) ? "♥" : "♡"}</span>
+                <button onClick={(e) => { e.stopPropagation(); toggleWishlist(product); }} className="absolute top-3 right-3 w-9 h-9 bg-white/90 backdrop-blur rounded-full flex items-center justify-center shadow-sm hover:scale-110 transition-transform">
+                  <span className={\`text-lg \${isInWishlist(product.id) ? "text-red-500" : "text-gray-400"}\`}>{isInWishlist(product.id) ? "♥" : "♡"}</span>
                 </button>
                 {/* Discount */}
                 {product.originalPrice && (
@@ -958,7 +914,7 @@ export function ProductGrid() {
                   <span className="flex items-center gap-1"><span className="text-amber-600">🚚</span> Free shipping ₹999+</span>
                 </div>
 
-                <button className="mt-4 w-full bg-amber-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-amber-700 active:scale-[0.98] transition-all">
+                <button onClick={(e) => { e.stopPropagation(); addItem(product); }} className="mt-4 w-full bg-amber-600 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-amber-700 active:scale-[0.98] transition-all">
                   Add to Cart — ₹{product.price.toLocaleString("en-IN")}
                 </button>
               </div>
@@ -1041,31 +997,20 @@ export function ProductGrid() {
 function genCartItems(): string {
   return `"use client";
 import { useState } from "react";
-
-const PROMO_CODES: Record<string, { discount: number; type: "percent" | "flat"; minOrder: number; label: string }> = {
-  PRISTINE10: { discount: 10, type: "percent", minOrder: 0, label: "10% off everything" },
-  FITINDIA: { discount: 500, type: "flat", minOrder: 4000, label: "₹500 off above ₹4,000" },
-  FREESHIP: { discount: 0, type: "flat", minOrder: 0, label: "Free express shipping" },
-};
+import { useCart, PROMO_CODES, Product } from "@/lib/data-provider";
 
 export function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
-  const [items, setItems] = useState([
-    { id: "1", name: "Whey Protein Isolate", brand: "FuelCore", price: 2499, qty: 2, flavor: "Chocolate Dream", weight: "1 kg", veg: false },
-    { id: "2", name: "Creatine Monohydrate", brand: "FuelCore", price: 1499, qty: 1, flavor: "Unflavored", weight: "500 g", veg: true },
-  ]);
+  const { items, updateQuantity, removeItem, total, itemCount } = useCart();
   const [promoCode, setPromoCode] = useState("");
   const [appliedPromo, setAppliedPromo] = useState<string | null>(null);
   const [pincode, setPincode] = useState("");
   const [pincodeResult, setPincodeResult] = useState<string | null>(null);
 
-  const updateQty = (id: string, delta: number) => setItems(items.map(i => i.id === id ? { ...i, qty: Math.max(1, i.qty + delta) } : i));
-  const removeItem = (id: string) => setItems(items.filter(i => i.id !== id));
-
-  const subtotal = items.reduce((sum, i) => sum + i.price * i.qty, 0);
+  const subtotal = total;
   const shipping = subtotal >= 999 ? 0 : 99;
   const promo = appliedPromo ? PROMO_CODES[appliedPromo] : null;
   const discount = promo ? (promo.type === "percent" ? Math.round(subtotal * promo.discount / 100) : promo.discount) : 0;
-  const total = subtotal - discount + shipping;
+  const finalTotal = subtotal - discount + shipping;
 
   const applyPromo = () => {
     const code = promoCode.toUpperCase().trim();
@@ -1094,7 +1039,7 @@ export function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () =
       <div className="relative w-full max-w-md bg-white h-full overflow-y-auto shadow-2xl animate-slide-in">
         {/* Header */}
         <div className="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">
-          <h2 className="text-lg font-bold" style={{ fontFamily: "'Outfit', sans-serif" }}>Your Cart ({items.length})</h2>
+          <h2 className="text-lg font-bold" style={{ fontFamily: "'Outfit', sans-serif" }}>Your Cart ({itemCount})</h2>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200">✕</button>
         </div>
 
@@ -1115,26 +1060,26 @@ export function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () =
         {/* Items */}
         <div className="px-6 py-4 space-y-4">
           {items.map((item) => (
-            <div key={item.id} className="flex gap-4 py-4 border-b">
+            <div key={item.product.id} className="flex gap-4 py-4 border-b">
               <div className="w-16 h-16 bg-gradient-to-br from-amber-50 to-amber-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                <span className="text-2xl">{item.veg ? "🟥" : "🟧"}</span>
+                <span className="text-2xl">{item.product.veg ? "🟥" : "🟧"}</span>
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-[10px] text-amber-700 font-semibold uppercase">{item.brand}</p>
-                    <h3 className="font-semibold text-sm truncate">{item.name}</h3>
-                    <p className="text-xs text-gray-500">{item.flavor} · {item.weight}</p>
+                    <p className="text-[10px] text-amber-700 font-semibold uppercase">{item.product.brand}</p>
+                    <h3 className="font-semibold text-sm truncate">{item.product.name}</h3>
+                    <p className="text-xs text-gray-500">{item.product.flavor} · {item.product.weight}</p>
                   </div>
-                  <button onClick={() => removeItem(item.id)} className="text-gray-400 hover:text-red-500 text-sm flex-shrink-0">✕</button>
+                  <button onClick={() => removeItem(item.product.id)} className="text-gray-400 hover:text-red-500 text-sm flex-shrink-0">✕</button>
                 </div>
                 <div className="flex items-center justify-between mt-2">
                   <div className="flex items-center gap-2 bg-gray-100 rounded-full">
-                    <button onClick={() => updateQty(item.id, -1)} className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-gray-200 text-sm">−</button>
-                    <span className="w-6 text-center text-sm font-medium">{item.qty}</span>
-                    <button onClick={() => updateQty(item.id, 1)} className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-gray-200 text-sm">+</button>
+                    <button onClick={() => updateQuantity(item.product.id, item.quantity - 1)} className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-gray-200 text-sm">−</button>
+                    <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
+                    <button onClick={() => updateQuantity(item.product.id, item.quantity + 1)} className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-gray-200 text-sm">+</button>
                   </div>
-                  <p className="font-bold text-sm">₹{(item.price * item.qty).toLocaleString("en-IN")}</p>
+                  <p className="font-bold text-sm">₹{(item.product.price * item.quantity).toLocaleString("en-IN")}</p>
                 </div>
               </div>
             </div>
@@ -1359,106 +1304,49 @@ export function Sidebar() {
 function genDashboardContent(): string {
   return `"use client";
 import { useState } from "react";
+import { useMetrics, useOrders, useProducts, useCustomers } from "@/lib/business-hooks";
+import { ORDER_STATUS_FLOW } from "@/lib/data-provider";
 
-const monthlyData = [
-  { month: "Jan", revenue: 84500, members: 892 },
-  { month: "Feb", revenue: 91200, members: 934 },
-  { month: "Mar", revenue: 87800, members: 908 },
-  { month: "Apr", revenue: 95600, members: 978 },
-  { month: "May", revenue: 102300, members: 1045 },
-  { month: "Jun", revenue: 108900, members: 1112 },
-  { month: "Jul", revenue: 98700, members: 1023 },
-  { month: "Aug", revenue: 112400, members: 1156 },
-  { month: "Sep", revenue: 118900, members: 1201 },
-  { month: "Oct", revenue: 124563, members: 1247 },
-];
-
-const activityDistribution = [
-  { label: "Gym Floor", value: 45, color: "#f59e0b" },
-  { label: "Group Classes", value: 30, color: "#3b82f6" },
-  { label: "Personal Training", value: 25, color: "#10b981" },
-];
-
-const recentCheckins = [
-  { name: "Rahul Sharma", time: "2 min ago", type: "Gym Floor", avatar: "RS" },
-  { name: "Priya Patel", time: "8 min ago", type: "Yoga Class", avatar: "PP" },
-  { name: "Amit Singh", time: "15 min ago", type: "Personal Training", avatar: "AS" },
-  { name: "Neha Gupta", time: "22 min ago", type: "Gym Floor", avatar: "NG" },
-  { name: "Vikram Rao", time: "31 min ago", type: "HIIT Class", avatar: "VR" },
-];
-
-const alerts = [
-  { type: "warning", title: "Overdue Invoice", desc: "Raj Fitness Center — ₹24,999 overdue by 12 days", time: "1h ago" },
-  { type: "danger", title: "Membership Expiring", desc: "15 memberships expire this week — ₹1,87,500 at risk", time: "3h ago" },
-  { type: "info", title: "High-Priority Lead", desc: "Corporate inquiry from TechCorp India — 200 employees", time: "5h ago" },
-];
-
-function MiniLineChart({ data, color }: { data: number[]; color: string }) {
-  const max = Math.max(...data);
-  const min = Math.min(...data);
-  const range = max - min || 1;
-  const points = data.map((v, i) => \`\${(i / (data.length - 1)) * 100},\${100 - ((v - min) / range) * 80}\`).join(" ");
+function MiniBarChart({ data, color }: { data: { label: string; value: number }[]; color: string }) {
+  const max = Math.max(...data.map(d => d.value));
   return (
-    <svg viewBox="0 0 100 100" className="w-full h-full" preserveAspectRatio="none">
-      <defs>
-        <linearGradient id={\`grad-\${color.replace("#", "")}\`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={color} stopOpacity="0.3" />
-          <stop offset="100%" stopColor={color} stopOpacity="0" />
-        </linearGradient>
-      </defs>
-      <polygon points={\`0,100 \${points} 100,100\`} fill={\`url(#grad-\${color.replace("#", "")})\`} />
-      <polyline points={points} fill="none" stroke={color} strokeWidth="2" vectorEffect="non-scaling-stroke" />
-    </svg>
-  );
-}
-
-function DonutChart({ data }: { data: typeof activityDistribution }) {
-  const total = data.reduce((s, d) => s + d.value, 0);
-  let cumulative = 0;
-  const segments = data.map((d) => {
-    const start = (cumulative / total) * 100;
-    cumulative += d.value;
-    const end = (cumulative / total) * 100;
-    return { ...d, start, end };
-  });
-  return (
-    <div className="relative w-40 h-40">
-      <svg viewBox="0 0 36 36" className="w-full h-full -rotate-90">
-        {segments.map((s, i) => (
-          <circle key={i} cx="18" cy="18" r="15.9" fill="none" stroke={s.color} strokeWidth="3.5"
-            strokeDasharray={\`\${s.end - s.start} \${100 - (s.end - s.start)}\`}
-            strokeDashoffset={-\${s.start}} className="transition-all duration-700" />
-        ))}
-      </svg>
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-2xl font-bold">1,247</p>
-          <p className="text-[10px] text-gray-400">Active</p>
+    <div className="flex items-end gap-1 h-32">
+      {data.map((d, i) => (
+        <div key={i} className="flex-1 flex flex-col items-center gap-1">
+          <div className="w-full rounded-t transition-all" style={{ height: \`\${(d.value / max) * 100}%\`, backgroundColor: color, minHeight: 4 }} />
+          <span className="text-[9px] text-gray-400">{d.label}</span>
         </div>
-      </div>
+      ))}
     </div>
   );
 }
 
 export function DashboardContent() {
-  const [activeTab, setActiveTab] = useState<"overview" | "leads" | "billing" | "members">("overview");
+  const metrics = useMetrics();
+  const allOrders = useOrders();
+  const allProducts = useProducts();
+  const statusCounts = {
+    pending: allOrders.filter(o => o.status === "pending").length,
+    processing: allOrders.filter(o => o.status === "processing").length,
+    shipped: allOrders.filter(o => o.status === "shipped").length,
+    delivered: allOrders.filter(o => o.status === "delivered").length,
+  };
 
   const stats = [
-    { label: "Total Members", value: "1,247", change: "+34 this month", up: true, icon: "👥", color: "blue" },
-    { label: "Monthly Revenue", value: "₹12,45,630", change: "+12.5% vs last", up: true, icon: "💰", color: "green" },
-    { label: "Hot Leads", value: "23", change: "8 require follow-up", up: true, icon: "🔥", color: "amber" },
-    { label: "Today's Check-ins", value: "89", change: "62% of members", up: true, icon: "✅", color: "emerald" },
+    { label: "Total Revenue", value: \`₹\${metrics.totalRevenue.toLocaleString("en-IN")}\`, change: \`\${metrics.totalOrders} orders\`, up: true, icon: "💰", color: "green" },
+    { label: "Active Orders", value: String(metrics.activeOrders), change: \`\${metrics.deliveredOrders} delivered\`, up: true, icon: "📦", color: "blue" },
+    { label: "Customers", value: String(metrics.totalCustomers), change: \`\${metrics.repeatCustomers} repeat\`, up: true, icon: "👥", color: "amber" },
+    { label: "Stock Alerts", value: String(metrics.lowStockItems + metrics.outOfStockItems), change: \`\${metrics.outOfStockItems} out of stock\`, up: false, icon: "⚠️", color: "red" },
   ];
 
-  const colorMap: Record<string, string> = { blue: "bg-blue-50 text-blue-600", green: "bg-green-50 text-green-600", amber: "bg-amber-50 text-amber-600", emerald: "bg-emerald-50 text-emerald-600" };
+  const colorMap: Record<string, string> = { green: "bg-green-50 text-green-600", blue: "bg-blue-50 text-blue-600", amber: "bg-amber-50 text-amber-600", red: "bg-red-50 text-red-600" };
 
   return (
     <div className="p-6 space-y-6" style={{ fontFamily: "'Inter', sans-serif" }}>
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Welcome back — here's your gym overview</p>
+          <p className="text-sm text-gray-500 mt-0.5">Your business at a glance</p>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-400">Last updated: Just now</span>
@@ -1466,13 +1354,12 @@ export function DashboardContent() {
         </div>
       </div>
 
-      {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map((s) => (
           <div key={s.label} className="bg-white rounded-2xl border p-5 hover:shadow-md transition-shadow">
             <div className="flex items-center justify-between mb-3">
               <div className={\`w-10 h-10 rounded-xl flex items-center justify-center text-lg \${colorMap[s.color]}\`}>{s.icon}</div>
-              <span className="text-[10px] font-medium text-green-600 bg-green-50 px-2 py-0.5 rounded-full">↑ {s.change}</span>
+              <span className={\`text-[10px] font-medium px-2 py-0.5 rounded-full \${s.up ? "text-green-600 bg-green-50" : "text-red-600 bg-red-50"}\`}>{s.change}</span>
             </div>
             <p className="text-2xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{s.value}</p>
             <p className="text-xs text-gray-500 mt-1">{s.label}</p>
@@ -1480,90 +1367,90 @@ export function DashboardContent() {
         ))}
       </div>
 
-      {/* Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Revenue Chart */}
         <div className="lg:col-span-2 bg-white rounded-2xl border p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">Revenue Trend</h3>
-            <span className="text-xs text-gray-400">Last 10 months</span>
+            <h3 className="font-semibold">Order Pipeline</h3>
           </div>
-          <div className="h-48">
-            <MiniLineChart data={monthlyData.map(d => d.revenue)} color="#f59e0b" />
+          <div className="grid grid-cols-4 gap-3 mb-4">
+            {(["pending", "processing", "shipped", "delivered"] as const).map(status => (
+              <div key={status} className={\`p-3 rounded-xl text-center \${ORDER_STATUS_FLOW[status].color}\`}>
+                <p className="text-2xl font-bold">{statusCounts[status]}</p>
+                <p className="text-xs mt-1">{ORDER_STATUS_FLOW[status].label}</p>
+              </div>
+            ))}
           </div>
-          <div className="flex justify-between mt-2 text-[10px] text-gray-400">
-            {monthlyData.map(d => <span key={d.month}>{d.month}</span>)}
+          <div className="h-32">
+            <MiniBarChart
+              data={Object.entries(statusCounts).map(([k, v]) => ({ label: ORDER_STATUS_FLOW[k as keyof typeof ORDER_STATUS_FLOW].label, value: v }))}
+              color="#f59e0b"
+            />
           </div>
         </div>
 
-        {/* Activity Distribution */}
         <div className="bg-white rounded-2xl border p-5">
-          <h3 className="font-semibold mb-4">Activity Distribution</h3>
-          <div className="flex justify-center mb-4">
-            <DonutChart data={activityDistribution} />
-          </div>
-          <div className="space-y-2">
-            {activityDistribution.map((a) => (
-              <div key={a.label} className="flex items-center justify-between text-sm">
+          <h3 className="font-semibold mb-4">Membership Tiers</h3>
+          <div className="space-y-3">
+            {Object.entries(metrics.membershipBreakdown).map(([tier, count]) => (
+              <div key={tier} className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: a.color }} />
-                  <span className="text-gray-600">{a.label}</span>
+                  <span className="text-lg">{tier === "platinum" ? "💎" : tier === "gold" ? "🥇" : tier === "silver" ? "🥈" : "🥉"}</span>
+                  <span className="text-sm capitalize">{tier}</span>
                 </div>
-                <span className="font-medium">{a.value}%</span>
+                <span className="font-semibold">{count}</span>
               </div>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Bottom Row: Check-ins + Alerts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Recent Check-ins */}
         <div className="bg-white rounded-2xl border p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">Recent Check-ins</h3>
+            <h3 className="font-semibold">Recent Orders</h3>
             <button className="text-xs text-amber-600 font-medium hover:underline">View All</button>
           </div>
           <div className="space-y-3">
-            {recentCheckins.map((c, i) => (
-              <div key={i} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors">
-                <div className="w-9 h-9 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center text-xs font-bold">{c.avatar}</div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{c.name}</p>
-                  <p className="text-[10px] text-gray-400">{c.type}</p>
+            {allOrders.slice(0, 5).map(order => (
+              <div key={order.id} className="flex items-center gap-3 p-2 rounded-xl hover:bg-gray-50 transition-colors">
+                <div className={\`w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold \${ORDER_STATUS_FLOW[order.status].color}\`}>
+                  {order.status === "delivered" ? "✓" : order.status === "shipped" ? "🚚" : order.status === "processing" ? "⚙️" : "⏳"}
                 </div>
-                <span className="text-[10px] text-gray-400">{c.time}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{order.customerName}</p>
+                  <p className="text-[10px] text-gray-400">{order.id} · {order.items.length} item{order.items.length > 1 ? "s" : ""}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold">₹{order.total.toLocaleString("en-IN")}</p>
+                  <p className={\`text-[10px] px-1.5 py-0.5 rounded-full \${ORDER_STATUS_FLOW[order.status].color}\`}>{ORDER_STATUS_FLOW[order.status].label}</p>
+                </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Live Alerts */}
         <div className="bg-white rounded-2xl border p-5">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold">Live Alerts</h3>
+            <h3 className="font-semibold">Inventory Alerts</h3>
             <div className="flex items-center gap-1.5">
               <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
-              <span className="text-xs text-gray-400">{alerts.length} active</span>
+              <span className="text-xs text-gray-400">{metrics.lowStockItems + metrics.outOfStockItems} alerts</span>
             </div>
           </div>
           <div className="space-y-3">
-            {alerts.map((a, i) => {
-              const styles: Record<string, string> = { warning: "bg-amber-50 border-amber-200 text-amber-800", danger: "bg-red-50 border-red-200 text-red-800", info: "bg-blue-50 border-blue-200 text-blue-800" };
-              const icons: Record<string, string> = { warning: "⚠️", danger: "🚨", info: "ℹ️" };
-              return (
-                <div key={i} className={\`p-3 rounded-xl border \${styles[a.type]}\`}>
-                  <div className="flex items-start gap-2">
-                    <span className="text-sm mt-0.5">{icons[a.type]}</span>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold">{a.title}</p>
-                      <p className="text-xs mt-0.5 opacity-80">{a.desc}</p>
-                    </div>
-                    <span className="text-[10px] opacity-60 whitespace-nowrap">{a.time}</span>
-                  </div>
+            {allProducts.filter(p => p.stock <= p.reorderPoint).map(item => (
+              <div key={item.id} className={\`p-3 rounded-xl border \${item.stock === 0 ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200"}\`}>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium">{item.name}</p>
+                  <span className={\`text-xs font-semibold px-2 py-0.5 rounded-full \${item.stock === 0 ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}\`}>
+                    {item.stock === 0 ? "Out of Stock" : item.stock + " left"}
+                  </span>
                 </div>
-              );
-            })}
+              </div>
+            ))}
+            {allProducts.filter(p => p.stock <= p.reorderPoint).length === 0 && (
+              <p className="text-sm text-gray-400 text-center py-4">All products in stock</p>
+            )}
           </div>
         </div>
       </div>
@@ -1909,6 +1796,7 @@ img {
 function genLayout(name: string): string {
   return `import './globals.css';
 import type { Metadata } from 'next';
+import { Providers } from './providers';
 
 export const metadata: Metadata = {
   title: '${name}',
@@ -1918,7 +1806,9 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }
@@ -3417,6 +3307,198 @@ export function DashboardStats() {
 `;
 }
 
+function genReviewList(): string {
+  return `"use client";
+import { useState } from "react";
+import { REVIEWS } from "@/lib/data-provider";
+
+export function ReviewList() {
+  const [sortBy, setSortBy] = useState<"recent" | "helpful" | "rating">("helpful");
+  const [filterRating, setFilterRating] = useState<number | null>(null);
+
+  const sorted = [...REVIEWS]
+    .filter(r => filterRating ? r.rating === filterRating : true)
+    .sort((a, b) => {
+      if (sortBy === "helpful") return b.helpful - a.helpful;
+      if (sortBy === "rating") return b.rating - a.rating;
+      return 0;
+    });
+
+  const avgRating = (REVIEWS.reduce((sum, r) => sum + r.rating, 0) / REVIEWS.length).toFixed(1);
+  const ratingCounts = [5, 4, 3, 2, 1].map(r => ({
+    rating: r,
+    count: REVIEWS.filter(rev => rev.rating === r).length,
+    pct: Math.round((REVIEWS.filter(rev => rev.rating === r).length / REVIEWS.length) * 100),
+  }));
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-8 flex-wrap">
+        <div className="text-center">
+          <p className="text-4xl font-bold">{avgRating}</p>
+          <div className="flex gap-0.5 my-1 justify-center">
+            {[1,2,3,4,5].map(s => <span key={s} className={\`text-lg \${s <= Math.round(Number(avgRating)) ? "text-amber-400" : "text-gray-300"}\`}>★</span>)}
+          </div>
+          <p className="text-sm text-gray-500">{MOCK_REVIEWS.length} reviews</p>
+        </div>
+        <div className="flex-1 min-w-[200px] space-y-1">
+          {ratingCounts.map(({ rating, count, pct }) => (
+            <button key={rating} onClick={() => setFilterRating(filterRating === rating ? null : rating)}
+              className="flex items-center gap-2 w-full text-sm hover:bg-gray-50 rounded px-2 py-0.5">
+              <span className="w-8">{rating}★</span>
+              <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-full bg-amber-400 rounded-full" style={{ width: \`\${pct}%\` }} />
+              </div>
+              <span className="w-8 text-gray-500">{count}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex gap-2">
+        {(["helpful", "recent", "rating"] as const).map(s => (
+          <button key={s} onClick={() => setSortBy(s)}
+            className={\`px-3 py-1.5 rounded-full text-sm font-medium transition-colors \${sortBy === s ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}\`}>
+            {s === "helpful" ? "Most Helpful" : s === "recent" ? "Most Recent" : "Highest Rated"}
+          </button>
+        ))}
+      </div>
+
+      <div className="divide-y">
+        {sorted.map(review => (
+          <div key={review.id} className="py-5">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">{review.avatar}</div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-semibold">{review.author}</span>
+                  {review.verified && <span className="text-xs bg-green-50 text-green-700 px-2 py-0.5 rounded-full font-medium">✓ Verified Purchase</span>}
+                  <span className="text-sm text-gray-400">{review.date}</span>
+                </div>
+                <div className="flex gap-0.5 my-1">
+                  {[1,2,3,4,5].map(s => <span key={s} className={\`text-sm \${s <= review.rating ? "text-amber-400" : "text-gray-300"}\`}>★</span>)}
+                </div>
+                <p className="font-medium mt-1">{review.title}</p>
+                <p className="text-gray-600 mt-1 text-sm leading-relaxed">{review.body}</p>
+                <button className="text-sm text-gray-400 hover:text-gray-600 mt-2 flex items-center gap-1">
+                  👍 Helpful ({review.helpful})
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+`;
+}
+
+function genWishlistGrid(): string {
+  return `"use client";
+import { useWishlist, useCart } from "@/lib/data-provider";
+
+export function WishlistGrid() {
+  const { items, toggleWishlist } = useWishlist();
+  const { addItem } = useCart();
+
+  const moveToCart = (product: typeof items[0]) => {
+    addItem(product);
+    toggleWishlist(product);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">My Wishlist <span className="text-gray-400 text-lg font-normal">({items.length})</span></h2>
+      </div>
+
+      {items.length === 0 ? (
+        <div className="text-center py-16">
+          <p className="text-6xl mb-4">💝</p>
+          <p className="text-xl font-semibold mb-2">Your wishlist is empty</p>
+          <p className="text-gray-500">Save products you love for later</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {items.map(item => (
+            <div key={item.id} className="border rounded-xl p-4 hover:shadow-md transition-shadow group">
+              <div className="aspect-square bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg mb-3 flex items-center justify-center">
+                <div className="w-20 h-28 bg-gradient-to-b from-amber-600 to-amber-700 rounded-lg" />
+              </div>
+              {item.badge && <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-medium">{item.badge}</span>}
+              <p className="text-xs text-gray-400 mt-2">{item.brand}</p>
+              <p className="font-semibold mt-1">{item.name}</p>
+              <div className="flex items-center gap-1 mt-1">
+                <span className="text-amber-400 text-sm">★</span>
+                <span className="text-sm">{item.rating}</span>
+                <span className="text-xs text-gray-400">({item.reviews.toLocaleString()})</span>
+              </div>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="font-bold text-lg">₹{item.price.toLocaleString("en-IN")}</span>
+                {item.originalPrice > item.price && <span className="text-sm text-gray-400 line-through">₹{item.originalPrice.toLocaleString("en-IN")}</span>}
+              </div>
+              <div className="flex gap-2 mt-3">
+                <button onClick={() => moveToCart(item)}
+                  className="flex-1 py-2 rounded-lg text-sm font-semibold transition-colors bg-amber-500 text-white hover:bg-amber-600">
+                  Move to Cart
+                </button>
+                <button onClick={() => toggleWishlist(item)}
+                  className="px-3 py-2 rounded-lg border border-red-200 text-red-500 hover:bg-red-50 text-sm transition-colors">
+                  ✕
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+`;
+}
+
+function genBrandGrid(): string {
+  return `"use client";
+import { useState } from "react";
+import { BRANDS } from "@/lib/data-provider";
+
+export function BrandGrid() {
+  const [selected, setSelected] = useState<string | null>(null);
+
+  return (
+    <div className="space-y-8">
+      <div className="text-center">
+        <h2 className="text-3xl font-bold">Our Brands</h2>
+        <p className="text-gray-500 mt-2">Trusted by athletes and fitness enthusiasts across India</p>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {BRANDS.map(brand => (
+          <div key={brand.id} onClick={() => setSelected(selected === brand.id ? null : brand.id)}
+            className={\`border-2 rounded-2xl p-6 cursor-pointer transition-all hover:shadow-lg \${selected === brand.id ? "border-amber-400 shadow-amber-100" : "border-transparent hover:border-gray-200"}\`}>
+            <div className={\`w-14 h-14 rounded-xl bg-gradient-to-br \${brand.color} flex items-center justify-center text-2xl mb-4\`}>{brand.emoji}</div>
+            <h3 className="text-xl font-bold">{brand.name}</h3>
+            <p className="text-sm text-gray-500 mb-2">{brand.tagline}</p>
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-amber-400">★</span>
+              <span className="font-medium">{brand.rating}</span>
+              <span className="text-gray-400">·</span>
+              <span className="text-gray-500">{brand.products} products</span>
+            </div>
+            <p className="text-sm text-gray-600 mt-3 leading-relaxed">{brand.description}</p>
+            <button className="mt-4 w-full bg-gray-900 text-white py-2.5 rounded-xl text-sm font-semibold hover:bg-gray-800 transition-colors">
+              View All {brand.name} Products →
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+`;
+}
+
 function genFilterSidebar(): string {
   return `"use client";
 import { useState } from "react";
@@ -3764,6 +3846,22 @@ const COMPONENT_GENERATORS: Record<string, (prompt?: string) => string> = {
   DashboardStats: genDashboardStats,
   FilterSidebar: genFilterSidebar,
   ProductGallery: genProductGallery,
+  ReviewList: genReviewList,
+  WishlistGrid: genWishlistGrid,
+  BrandGrid: genBrandGrid,
+  // Aliases for blueprint component names
+  ProductInfo: genProductGallery,
+  RelatedProducts: genReviewList,
+  CartActions: genCartSummary,
+  OrderSummary: genCartSummary,
+  PaymentMethods: genCartSummary,
+  ProfileForm: genLoginForm,
+  OrderHistory: genWishlistGrid,
+  BrandFilter: genFilterSidebar,
+  SortDropdown: genFilterSidebar,
+  SearchBar: genFilterSidebar,
+  FeaturedProducts: genProductGrid,
+  CategoryGrid: genFilterSidebar,
 };
 
 async function generateFiles(
@@ -3980,12 +4078,42 @@ ${usage}
 
   // ─── CONFIG FILES ───
   files.push({ path: "src/app/layout.tsx", content: genLayout(projectName), type: "config" });
+
+  // ─── RPSE CONTEXT (needed by providers and data provider) ───
+  const rpseContext = detectRPSEContext(prompt);
+
+  files.push({ path: "src/app/providers.tsx", content: `"use client";
+import { CartProvider, WishlistProvider } from "@/lib/data-provider";
+import { BusinessProvider } from "@/lib/business-hooks";
+import { generateBusinessForDomain } from "@/lib/business-domains";
+
+const businessState = generateBusinessForDomain("${rpseContext.domain}");
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <BusinessProvider initialState={businessState}>
+      <CartProvider>
+        <WishlistProvider>{children}</WishlistProvider>
+      </CartProvider>
+    </BusinessProvider>
+  );
+}
+`, type: "config" });
   files.push({ path: "src/app/globals.css", content: genStyles(llmContent?.colors), type: "config" });
 
   // ─── RPSE DATA PROVIDER ───
-  const rpseContext = detectRPSEContext(prompt);
   const dataProviderContent = generateDataProvider(rpseContext.domain);
   files.push({ path: "src/lib/data-provider.ts", content: dataProviderContent, type: "config" });
+
+  // ─── BUSINESS ENTITY LAYER ───
+  const belDir = path.dirname(require.resolve("./business-data-provider"));
+  const belFiles = ["business-data-provider.ts", "business-domains.ts", "business-hooks.tsx"];
+  for (const f of belFiles) {
+    const filePath = path.join(belDir, f);
+    if (fs.existsSync(filePath)) {
+      files.push({ path: "src/lib/" + f, content: fs.readFileSync(filePath, "utf-8"), type: "config" });
+    }
+  }
 
   // ─── UI RENDERING ENGINE (Foundation-First) ───
   // Generate design tokens and foundation files based on domain

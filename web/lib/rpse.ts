@@ -826,5 +826,356 @@ export const STATUS_COLORS: Record<string, string> = {
   popular: "bg-orange-100 text-orange-800",
   "low stock": "bg-yellow-100 text-yellow-800",
 };
+
+// ═══════════════════════════════════════════════════════════
+// PRODUCTS CATALOG (shared across all components)
+// ═══════════════════════════════════════════════════════════
+
+export interface Product {
+  id: string;
+  name: string;
+  brand: string;
+  price: number;
+  originalPrice: number;
+  rating: number;
+  reviews: number;
+  category: string;
+  badge?: string;
+  veg: boolean;
+  fssai: string;
+  labTested: boolean;
+  weight: string;
+  flavor?: string;
+  benefits: string[];
+}
+
+export const PRODUCTS: Product[] = [
+  { id: "1", name: "Whey Protein Isolate", brand: "FuelCore", price: 2499, originalPrice: 3299, rating: 4.8, reviews: 2847, category: "protein", badge: "Best Seller", veg: false, fssai: "10019062000", labTested: true, weight: "1 kg", flavor: "Chocolate Dream", benefits: ["27g protein per serving", "Low carb, low fat", "Fast absorbing isolate"] },
+  { id: "2", name: "Creatine Monohydrate", brand: "FuelCore", price: 1499, originalPrice: 1899, rating: 4.7, reviews: 1923, category: "protein", badge: "Top Rated", veg: true, fssai: "10019062000", labTested: true, weight: "500 g", flavor: "Unflavored", benefits: ["5g micronized creatine", "Enhances strength & power", "Micronized for better mixability"] },
+  { id: "3", name: "BCAA Recovery Complex", brand: "ActiveEdge", price: 1999, originalPrice: 2499, rating: 4.6, reviews: 1456, category: "recovery", veg: true, fssai: "10019062000", labTested: true, weight: "300 g", flavor: "Tropical Mango", benefits: ["2:1:1 BCAA ratio", "Enhanced recovery", "Electrolyte blend included"] },
+  { id: "4", name: "Pre-Workout Surge", brand: "FuelCore", price: 2299, originalPrice: 2999, rating: 4.5, reviews: 1203, category: "vitality", badge: "New", veg: true, fssai: "10019062000", labTested: true, weight: "300 g", flavor: "Blue Raspberry", benefits: ["200mg caffeine", "Beta-alanine + citrulline", "No crash formula"] },
+  { id: "5", name: "Omega-3 Fish Oil", brand: "PureNutri", price: 999, originalPrice: 1499, rating: 4.8, reviews: 3201, category: "vitality", veg: false, fssai: "10019062000", labTested: true, weight: "90 softgels", benefits: ["EPA + DHA formula", "Heart & brain health", "Enteric coated, no fishy aftertaste"] },
+  { id: "6", name: "Mass Gainer Pro", brand: "FuelCore", price: 2999, originalPrice: 3799, rating: 4.4, reviews: 987, category: "protein", badge: "Popular", veg: false, fssai: "10019062000", labTested: true, weight: "2 kg", flavor: "Double Chocolate", benefits: ["50g protein + 250g carbs", "1250 calories per serving", "Added digestive enzymes"] },
+  { id: "7", name: "Ashwagandha KSM-66", brand: "PureNutri", price: 799, originalPrice: 1199, rating: 4.7, reviews: 2156, category: "brain", badge: "Trending", veg: true, fssai: "10019062000", labTested: true, weight: "60 capsules", benefits: ["600mg KSM-66 extract", "Reduces cortisol & stress", "Boosts focus & vitality"] },
+  { id: "8", name: "Glucosamine Chondroitin", brand: "ActiveEdge", price: 1299, originalPrice: 1699, rating: 4.5, reviews: 876, category: "recovery", veg: true, fssai: "10019062000", labTested: true, weight: "120 tablets", benefits: ["Joint support formula", "MSM + turmeric added", "Reduces joint stiffness"] },
+  { id: "9", name: "Green Tea Fat Burner", brand: "PureNutri", price: 699, originalPrice: 999, rating: 4.3, reviews: 1543, category: "weight", veg: true, fssai: "10019062000", labTested: true, weight: "90 capsules", benefits: ["500mg green tea extract", "EGCG for metabolism", "Appetite support"] },
+];
+
+// ═══════════════════════════════════════════════════════════
+// BRANDS
+// ═══════════════════════════════════════════════════════════
+
+export const BRANDS = [
+  { id: "fuelcore", name: "FuelCore", tagline: "Performance Nutrition", description: "Lab-tested, FSSAI certified sports supplements. Trusted by 50,000+ Indian athletes.", products: 24, rating: 4.8, color: "from-amber-500 to-orange-600", emoji: "🔥" },
+  { id: "activeedge", name: "ActiveEdge", tagline: "Science-Backed Formulas", description: "Clinically dosed formulations with transparent labeling. No proprietary blends.", products: 18, rating: 4.7, color: "from-blue-500 to-indigo-600", emoji: "⚡" },
+  { id: "purenutri", name: "PureNutri", tagline: "Wellness Essentials", description: "Ayurvedic wisdom meets modern science. 100% vegetarian supplements.", products: 31, rating: 4.6, color: "from-green-500 to-emerald-600", emoji: "🌿" },
+];
+
+// ═══════════════════════════════════════════════════════════
+// REVIEWS (linked to product IDs)
+// ═══════════════════════════════════════════════════════════
+
+export const REVIEWS = [
+  { id: "r1", productId: "1", author: "Rajesh K.", rating: 5, date: "2 days ago", verified: true, title: "Best whey protein I've used", body: "Mixes smoothly, no bloating. Chocolate flavor tastes real, not artificial.", helpful: 47, avatar: "RK" },
+  { id: "r2", productId: "1", author: "Priya M.", rating: 4, date: "1 week ago", verified: true, title: "Good product, slightly expensive", body: "Quality is excellent and FSSAI certified. Only reason for 4 stars is the price.", helpful: 23, avatar: "PM" },
+  { id: "r3", productId: "2", author: "Vikram S.", rating: 5, date: "2 weeks ago", verified: true, title: "Clean ingredients, no junk", body: "Finally a supplement without proprietary blends. Every ingredient listed with exact amounts.", helpful: 31, avatar: "VS" },
+  { id: "r4", productId: "3", author: "Ananya R.", rating: 5, date: "3 weeks ago", verified: false, title: "Great for recovery", body: "BCAA ratio is perfect. Recovery time cut in half. Tropical mango flavor is amazing.", helpful: 15, avatar: "AR" },
+  { id: "r5", productId: "5", author: "Karthik I.", rating: 5, date: "1 month ago", verified: true, title: "No fishy aftertaste", body: "Enteric coated omega-3 that actually works. No burps, no fishy taste.", helpful: 38, avatar: "KI" },
+];
+
+// ═══════════════════════════════════════════════════════════
+// CATEGORIES (for goal-based filtering)
+// ═══════════════════════════════════════════════════════════
+
+export const CATEGORIES = [
+  { id: "all", label: "All Products", icon: "🔥" },
+  { id: "protein", label: "Muscle & Strength", icon: "💪" },
+  { id: "weight", label: "Weight Management", icon: "⚖️" },
+  { id: "vitality", label: "Vitality & Wellness", icon: "⚡" },
+  { id: "brain", label: "Brain & Focus", icon: "🧠" },
+  { id: "recovery", label: "Joints & Recovery", icon: "🦴" },
+];
+
+// ═══════════════════════════════════════════════════════════
+// CART CONTEXT (shared state across all components)
+// ═══════════════════════════════════════════════════════════
+
+export const PROMO_CODES: Record<string, { discount: number; type: "percent" | "flat"; minOrder: number; label: string }> = {
+  PRISTINE10: { discount: 10, type: "percent", minOrder: 0, label: "10% off everything" },
+  FITINDIA: { discount: 500, type: "flat", minOrder: 4000, label: "₹500 off above ₹4,000" },
+  FREESHIP: { discount: 0, type: "flat", minOrder: 0, label: "Free express shipping" },
+};
+
+export const SHIPPING_THRESHOLD = 999;
+
+// ═══════════════════════════════════════════════════════════
+// BUSINESS DATA — Orders, Customers, Inventory
+// ═══════════════════════════════════════════════════════════
+
+export type OrderStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled";
+
+export interface Order {
+  id: string;
+  customerName: string;
+  customerPhone: string;
+  items: { productId: string; name: string; qty: number; price: number }[];
+  total: number;
+  status: OrderStatus;
+  paymentMethod: "upi" | "cod" | "card" | "netbanking";
+  shippingAddress: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const ORDERS: Order[] = [
+  { id: "ORD-2847", customerName: "Rajesh Kumar", customerPhone: "+91 98765 43210", items: [{ productId: "1", name: "Whey Protein Isolate", qty: 2, price: 2499 }, { productId: "5", name: "Omega-3 Fish Oil", qty: 1, price: 999 }], total: 5997, status: "delivered", paymentMethod: "upi", shippingAddress: "Andheri West, Mumbai 400058", createdAt: "2026-06-10", updatedAt: "2026-06-14" },
+  { id: "ORD-2848", customerName: "Priya Sharma", customerPhone: "+91 87654 32109", items: [{ productId: "2", name: "Creatine Monohydrate", qty: 1, price: 1499 }, { productId: "4", name: "Pre-Workout Surge", qty: 1, price: 2299 }], total: 3798, status: "shipped", paymentMethod: "card", shippingAddress: "Koramangala, Bangalore 560034", createdAt: "2026-06-15", updatedAt: "2026-06-17" },
+  { id: "ORD-2849", customerName: "Vikram Singh", customerPhone: "+91 76543 21098", items: [{ productId: "7", name: "Ashwagandha KSM-66", qty: 3, price: 799 }], total: 2397, status: "processing", paymentMethod: "upi", shippingAddress: "Sector 62, Noida 201301", createdAt: "2026-06-17", updatedAt: "2026-06-17" },
+  { id: "ORD-2850", customerName: "Ananya Reddy", customerPhone: "+91 65432 10987", items: [{ productId: "1", name: "Whey Protein Isolate", qty: 1, price: 2499 }, { productId: "3", name: "BCAA Recovery Complex", qty: 2, price: 1999 }], total: 6497, status: "pending", paymentMethod: "cod", shippingAddress: "Jubilee Hills, Hyderabad 500033", createdAt: "2026-06-18", updatedAt: "2026-06-18" },
+  { id: "ORD-2851", customerName: "Karthik Menon", customerPhone: "+91 54321 09876", items: [{ productId: "6", name: "Mass Gainer Pro", qty: 1, price: 2999 }], total: 2999, status: "delivered", paymentMethod: "netbanking", shippingAddress: "HSR Layout, Bangalore 560102", createdAt: "2026-06-08", updatedAt: "2026-06-12" },
+  { id: "ORD-2852", customerName: "Neha Gupta", customerPhone: "+91 43210 98765", items: [{ productId: "9", name: "Green Tea Fat Burner", qty: 2, price: 699 }, { productId: "5", name: "Omega-3 Fish Oil", qty: 1, price: 999 }], total: 2397, status: "shipped", paymentMethod: "upi", shippingAddress: "Salt Lake, Kolkata 700091", createdAt: "2026-06-16", updatedAt: "2026-06-18" },
+  { id: "ORD-2853", customerName: "Arjun Patel", customerPhone: "+91 32109 87654", items: [{ productId: "8", name: "Glucosamine Chondroitin", qty: 1, price: 1299 }], total: 1299, status: "cancelled", paymentMethod: "cod", shippingAddress: "Vastrapur, Ahmedabad 380015", createdAt: "2026-06-14", updatedAt: "2026-06-15" },
+];
+
+export interface Customer {
+  id: string;
+  name: string;
+  phone: string;
+  email: string;
+  city: string;
+  totalOrders: number;
+  totalSpent: number;
+  lastOrder: string;
+  membership: "bronze" | "silver" | "gold" | "platinum";
+}
+
+export const CUSTOMERS: Customer[] = [
+  { id: "C-101", name: "Rajesh Kumar", phone: "+91 98765 43210", email: "rajesh.k@gmail.com", city: "Mumbai", totalOrders: 12, totalSpent: 34590, lastOrder: "2026-06-10", membership: "gold" },
+  { id: "C-102", name: "Priya Sharma", phone: "+91 87654 32109", email: "priya.s@outlook.com", city: "Bangalore", totalOrders: 8, totalSpent: 22400, lastOrder: "2026-06-15", membership: "silver" },
+  { id: "C-103", name: "Vikram Singh", phone: "+91 76543 21098", email: "vikram.singh@yahoo.com", city: "Noida", totalOrders: 15, totalSpent: 48200, lastOrder: "2026-06-17", membership: "platinum" },
+  { id: "C-104", name: "Ananya Reddy", phone: "+91 65432 10987", email: "ananya.r@gmail.com", city: "Hyderabad", totalOrders: 3, totalSpent: 8900, lastOrder: "2026-06-18", membership: "bronze" },
+  { id: "C-105", name: "Karthik Menon", phone: "+91 54321 09876", email: "karthik.m@gmail.com", city: "Bangalore", totalOrders: 21, totalSpent: 67800, lastOrder: "2026-06-08", membership: "platinum" },
+];
+
+export const INVENTORY = [
+  { productId: "1", name: "Whey Protein Isolate", stock: 142, lowStock: 20, status: "in_stock" as const },
+  { productId: "2", name: "Creatine Monohydrate", stock: 89, lowStock: 15, status: "in_stock" as const },
+  { productId: "3", name: "BCAA Recovery Complex", stock: 8, lowStock: 15, status: "low_stock" as const },
+  { productId: "4", name: "Pre-Workout Surge", stock: 67, lowStock: 15, status: "in_stock" as const },
+  { productId: "5", name: "Omega-3 Fish Oil", stock: 203, lowStock: 30, status: "in_stock" as const },
+  { productId: "6", name: "Mass Gainer Pro", stock: 0, lowStock: 10, status: "out_of_stock" as const },
+  { productId: "7", name: "Ashwagandha KSM-66", stock: 156, lowStock: 20, status: "in_stock" as const },
+  { productId: "8", name: "Glucosamine Chondroitin", stock: 5, lowStock: 10, status: "low_stock" as const },
+  { productId: "9", name: "Green Tea Fat Burner", stock: 78, lowStock: 15, status: "in_stock" as const },
+];
+
+// ═══════════════════════════════════════════════════════════
+// ORDER STATUS WORKFLOW
+// ═══════════════════════════════════════════════════════════
+
+export const ORDER_STATUS_FLOW: Record<OrderStatus, { label: string; color: string; next: OrderStatus[] }> = {
+  pending: { label: "Pending", color: "bg-yellow-100 text-yellow-800", next: ["processing", "cancelled"] },
+  processing: { label: "Processing", color: "bg-blue-100 text-blue-800", next: ["shipped", "cancelled"] },
+  shipped: { label: "Shipped", color: "bg-purple-100 text-purple-800", next: ["delivered"] },
+  delivered: { label: "Delivered", color: "bg-green-100 text-green-800", next: [] },
+  cancelled: { label: "Cancelled", color: "bg-red-100 text-red-800", next: [] },
+};
+
+// ═══════════════════════════════════════════════════════════
+// BUSINESS METRICS (computed from real data)
+// ═══════════════════════════════════════════════════════════
+
+export const BUSINESS_METRICS = {
+  totalRevenue: ORDERS.reduce((sum, o) => o.status !== "cancelled" ? sum + o.total : sum, 0),
+  totalOrders: ORDERS.length,
+  activeOrders: ORDERS.filter(o => ["pending", "processing", "shipped"].includes(o.status)).length,
+  deliveredOrders: ORDERS.filter(o => o.status === "delivered").length,
+  cancelledOrders: ORDERS.filter(o => o.status === "cancelled").length,
+  averageOrderValue: Math.round(ORDERS.filter(o => o.status !== "cancelled").reduce((sum, o) => sum + o.total, 0) / ORDERS.filter(o => o.status !== "cancelled").length),
+  totalCustomers: CUSTOMERS.length,
+  repeatCustomers: CUSTOMERS.filter(c => c.totalOrders > 1).length,
+  lowStockItems: INVENTORY.filter(i => i.status === "low_stock").length,
+  outOfStockItems: INVENTORY.filter(i => i.status === "out_of_stock").length,
+  membershipBreakdown: {
+    platinum: CUSTOMERS.filter(c => c.membership === "platinum").length,
+    gold: CUSTOMERS.filter(c => c.membership === "gold").length,
+    silver: CUSTOMERS.filter(c => c.membership === "silver").length,
+    bronze: CUSTOMERS.filter(c => c.membership === "bronze").length,
+  },
+};
+
+// ═══════════════════════════════════════════════════════════
+// CART PROVIDER (shared cart state)
+// ═══════════════════════════════════════════════════════════
+
+export interface CartItem {
+  product: Product;
+  quantity: number;
+}
+
+interface CartContextType {
+  items: CartItem[];
+  addItem: (product: Product) => void;
+  removeItem: (productId: string) => void;
+  updateQuantity: (productId: string, quantity: number) => void;
+  clearCart: () => void;
+  total: number;
+  itemCount: number;
+}
+
+const CartContext = React.createContext<CartContextType | undefined>(undefined);
+
+export function CartProvider({ children }: { children: React.ReactNode }) {
+  const [items, setItems] = React.useState<CartItem[]>([]);
+
+  const addItem = (product: Product) => {
+    setItems(prev => {
+      const existing = prev.find(i => i.product.id === product.id);
+      if (existing) {
+        return prev.map(i => i.product.id === product.id ? { ...i, quantity: i.quantity + 1 } : i);
+      }
+      return [...prev, { product, quantity: 1 }];
+    });
+  };
+
+  const removeItem = (productId: string) => {
+    setItems(prev => prev.filter(i => i.product.id !== productId));
+  };
+
+  const updateQuantity = (productId: string, quantity: number) => {
+    if (quantity <= 0) {
+      removeItem(productId);
+      return;
+    }
+    setItems(prev => prev.map(i => i.product.id === productId ? { ...i, quantity } : i));
+  };
+
+  const clearCart = () => setItems([]);
+
+  const total = items.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+  const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
+
+  return (
+    <CartContext.Provider value={{ items, addItem, removeItem, updateQuantity, clearCart, total, itemCount }}>
+      {children}
+    </CartContext.Provider>
+  );
+}
+
+export function useCart() {
+  const ctx = React.useContext(CartContext);
+  if (!ctx) throw new Error("useCart must be used within CartProvider");
+  return ctx;
+}
+
+// ═══════════════════════════════════════════════════════════
+// WISHLIST PROVIDER (shared wishlist state)
+// ═══════════════════════════════════════════════════════════
+
+interface WishlistContextType {
+  items: Product[];
+  toggleWishlist: (product: Product) => void;
+  isInWishlist: (productId: string) => boolean;
+  count: number;
+}
+
+const WishlistContext = React.createContext<WishlistContextType | undefined>(undefined);
+
+export function WishlistProvider({ children }: { children: React.ReactNode }) {
+  const [items, setItems] = React.useState<Product[]>([]);
+
+  const toggleWishlist = (product: Product) => {
+    setItems(prev => {
+      const exists = prev.some(p => p.id === product.id);
+      if (exists) return prev.filter(p => p.id !== product.id);
+      return [...prev, product];
+    });
+  };
+
+  const isInWishlist = (productId: string) => items.some(p => p.id === productId);
+  const count = items.length;
+
+  return (
+    <WishlistContext.Provider value={{ items, toggleWishlist, isInWishlist, count }}>
+      {children}
+    </WishlistContext.Provider>
+  );
+}
+
+export function useWishlist() {
+  const ctx = React.useContext(WishlistContext);
+  if (!ctx) throw new Error("useWishlist must be used within WishlistProvider");
+  return ctx;
+}
+
+// ═══════════════════════════════════════════════════════════
+// REUSABLE COMPONENT: CSS-Only Product Image
+// ═══════════════════════════════════════════════════════════
+
+export function ProductImage({ product, size = "md" }: { product: Product; size?: "sm" | "md" | "lg" }) {
+  const sizes: Record<string, string> = { sm: "w-12 h-12", md: "w-full h-48", lg: "w-full h-64" };
+  const productColors: Record<string, string> = {
+    protein: "from-emerald-400 to-green-600",
+    recovery: "from-blue-400 to-indigo-600",
+    vitality: "from-orange-400 to-red-600",
+    brain: "from-purple-400 to-violet-600",
+    weight: "from-teal-400 to-cyan-600",
+  };
+  const color = productColors[product.category] || "from-amber-400 to-orange-600";
+  const sizeClass = sizes[size] || sizes.md;
+
+  return (
+    <div className={"relative " + sizeClass + " rounded-lg overflow-hidden"}>
+      <div className={"absolute inset-0 bg-gradient-to-br " + color + " flex items-center justify-center"}>
+        <div className="w-16 h-24 bg-white/20 rounded-lg backdrop-blur-sm border border-white/30 flex items-center justify-center">
+          <span className="text-2xl">💪</span>
+        </div>
+      </div>
+      {product.badge && (
+        <span className="absolute top-2 left-2 bg-orange-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold">
+          {product.badge}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// REUSABLE COMPONENT: Star Rating
+// ═══════════════════════════════════════════════════════════
+
+export function StarRating({ rating, size = "sm" }: { rating: number; size?: "sm" | "md" }) {
+  const sizeClass = size === "sm" ? "w-3.5 h-3.5" : "w-5 h-5";
+  return (
+    <div className="flex items-center gap-0.5">
+      {[1, 2, 3, 4, 5].map(i => (
+        <svg key={i} className={sizeClass + (i <= Math.round(rating) ? " text-amber-400" : " text-gray-200")} fill="currentColor" viewBox="0 0 20 20">
+          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+        </svg>
+      ))}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════
+// REUSABLE COMPONENT: Price Display (Indian Rupees)
+// ═══════════════════════════════════════════════════════════
+
+export function PriceDisplay({ price, originalPrice, size = "md" }: { price: number; originalPrice: number; size?: "sm" | "md" | "lg" }) {
+  const savePercent = Math.round(((originalPrice - price) / originalPrice) * 100);
+  const textSizes: Record<string, string> = { sm: "text-sm", md: "text-lg", lg: "text-2xl" };
+  const textClass = textSizes[size] || textSizes.md;
+  return (
+    <div className="flex items-center gap-2">
+      <span className={textClass + " font-bold text-gray-900"}>{"₹" + price.toLocaleString("en-IN")}</span>
+      {originalPrice > price && (
+        <>
+          <span className="text-sm text-gray-400 line-through">{"₹" + originalPrice.toLocaleString("en-IN")}</span>
+          <span className="text-xs font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded">{"Save " + savePercent + "%"}</span>
+        </>
+      )}
+    </div>
+  );
+}
 `;
 }

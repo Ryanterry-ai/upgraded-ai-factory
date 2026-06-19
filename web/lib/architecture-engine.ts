@@ -17,6 +17,7 @@ export interface Requirement {
   keywords: string[];
   required: boolean;
   route?: string;
+  components?: string[]; // Page-specific components from blueprint
 }
 
 export interface RequirementMatrix {
@@ -205,6 +206,7 @@ export function analyzeRequirements(prompt: string, blueprint?: DomainBlueprint 
         required: true,
         route: bpPage.route,
         keywords,
+        components: bpPage.components, // Pass blueprint components through
       });
     }
   } else {
@@ -402,8 +404,10 @@ export function planArchitecture(matrix: RequirementMatrix, projectName: string,
       description: page.description,
     };
 
-    // Map pages to their components (project-type-aware)
-    if (page.name === "Home") {
+    // Use blueprint components if available, otherwise fall back to hardcoded mapping
+    if (page.components && page.components.length > 0) {
+      route.components = page.components;
+    } else if (page.name === "Home") {
       // Project-type-aware home page components
       if (matrix.projectType === "ecommerce") {
         route.components = ["Hero", "FeaturedProducts", "CategoryGrid", "Testimonials", "CTA"];
