@@ -57,6 +57,10 @@ import { GymCRMPack } from "./solution-packs/gym-crm";
 import { SupplementStorePack } from "./solution-packs/supplement-store";
 import { StreamingPlatformPack } from "./solution-packs/streaming-platform";
 import { EcommerceAdminPack } from "./solution-packs/ecommerce-admin";
+import { RestaurantPack } from "./solution-packs/restaurant";
+import { HealthcarePack } from "./solution-packs/healthcare";
+import { RealEstatePack } from "./solution-packs/real-estate";
+import { HotelPack } from "./solution-packs/hotel";
 import { extractIntent, type IntentProfile } from "./intent-engine";
 import {
   getDesignTokens,
@@ -5101,7 +5105,7 @@ export async function runGeneration(
     }
 
     // Step 0b: SolutionEngine — match to domain solution pack
-    const solutionEngine = new SolutionEngine([GymCRMPack, SupplementStorePack, StreamingPlatformPack, EcommerceAdminPack]);
+    const solutionEngine = new SolutionEngine([GymCRMPack, SupplementStorePack, StreamingPlatformPack, EcommerceAdminPack, RestaurantPack, HealthcarePack, RealEstatePack, HotelPack]);
     solutionModelResult = solutionEngine.detect(request.prompt);
 
     // Step 0c: Intent Engine — extract WHY the user needs this app

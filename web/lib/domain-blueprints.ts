@@ -569,6 +569,120 @@ const ADMIN_DASHBOARD_BLUEPRINT: DomainBlueprint = {
 };
 
 // ═══════════════════════════════════════════════════════════
+// HEALTHCARE CLINIC BLUEPRINT
+// ═══════════════════════════════════════════════════════════
+
+const HEALTHCARE_BLUEPRINT: DomainBlueprint = {
+  id: "healthcare",
+  name: "Healthcare Clinic",
+  keywords: ["healthcare", "clinic", "hospital", "patient", "doctor", "appointment", "medical", "prescription", "health", "physician", "diagnosis", "treatment"],
+  complexity: "medium-high",
+  requiredPages: [
+    { name: "Patients", route: "/patients", components: ["PatientTable", "PatientForm"] },
+    { name: "Appointments", route: "/appointments", components: ["AppointmentCalendar", "AppointmentScheduler"] },
+    { name: "Doctors", route: "/doctors", components: ["DoctorTable", "DoctorSchedule"] },
+    { name: "Prescriptions", route: "/prescriptions", components: ["PrescriptionForm", "PrescriptionList"] },
+    { name: "Billing", route: "/billing", components: ["BillingTable", "InvoiceGenerator"] },
+    { name: "Dashboard", route: "/dashboard", components: ["PatientStats", "RevenueChart"] },
+  ],
+  requiredComponents: [
+    { name: "PatientTable", minLines: 30, requiredElements: ["table", "patient", "search", "filter"], requiredLogic: ["useState", "filter"], description: "Patient list with search and filter" },
+    { name: "AppointmentCalendar", minLines: 35, requiredElements: ["calendar", "appointment", "slot", "book"], requiredLogic: ["useState", "date"], description: "Calendar view for appointment scheduling" },
+    { name: "DoctorSchedule", minLines: 30, requiredElements: ["schedule", "doctor", "availability", "slot"], requiredLogic: ["useState"], description: "Doctor availability and schedule management" },
+    { name: "PrescriptionForm", minLines: 25, requiredElements: ["form", "prescription", "medicine", "dosage"], requiredLogic: ["useState", "onChange"], description: "Prescription creation form" },
+    { name: "BillingTable", minLines: 30, requiredElements: ["table", "invoice", "amount", "status"], requiredLogic: ["useState", "filter"], description: "Billing and invoice management" },
+    { name: "PatientStats", minLines: 35, requiredElements: ["chart", "patient", "revenue", "stats"], requiredLogic: ["useState", "useEffect"], description: "Patient and revenue statistics dashboard" },
+  ],
+  requiredState: ["patients", "appointments", "doctors", "prescriptions", "billing"],
+  requiredFlows: ["book appointment → check-in → consult → prescribe → bill", "register patient → schedule → treat → follow-up"],
+  dataModels: ["Patient", "Doctor", "Appointment", "Prescription", "Invoice"],
+};
+
+// ═══════════════════════════════════════════════════════════
+// REAL ESTATE CRM BLUEPRINT
+// ═══════════════════════════════════════════════════════════
+
+const REAL_ESTATE_BLUEPRINT: DomainBlueprint = {
+  id: "real-estate",
+  name: "Real Estate CRM",
+  keywords: ["real estate", "property", "properties", "listing", "agent", "realty", "home", "house", "apartment", "villa", "commercial property", "real estate crm"],
+  complexity: "medium-high",
+  requiredPages: [
+    { name: "Properties", route: "/properties", components: ["PropertyGrid", "PropertyForm"] },
+    { name: "Leads", route: "/leads", components: ["LeadTable", "LeadPipeline"] },
+    { name: "Deals", route: "/deals", components: ["DealPipeline", "DealCard"] },
+    { name: "Visits", route: "/visits", components: ["VisitScheduler", "VisitLog"] },
+    { name: "Documents", route: "/documents", components: ["DocumentManager"] },
+    { name: "Dashboard", route: "/dashboard", components: ["PipelineValue", "AgentPerformance"] },
+  ],
+  requiredComponents: [
+    { name: "PropertyGrid", minLines: 35, requiredElements: ["grid", "property", "image", "price", "location"], requiredLogic: ["useState", "filter"], description: "Property listing grid with filters" },
+    { name: "LeadPipeline", minLines: 35, requiredElements: ["pipeline", "lead", "stage", "drag"], requiredLogic: ["useState"], description: "Lead pipeline with stages" },
+    { name: "DealPipeline", minLines: 35, requiredElements: ["pipeline", "deal", "value", "stage"], requiredLogic: ["useState"], description: "Deal pipeline with value tracking" },
+    { name: "VisitScheduler", minLines: 30, requiredElements: ["calendar", "visit", "schedule", "property"], requiredLogic: ["useState", "date"], description: "Site visit scheduling" },
+    { name: "AgentPerformance", minLines: 30, requiredElements: ["chart", "agent", "deals", "performance"], requiredLogic: ["useState"], description: "Agent performance metrics" },
+  ],
+  requiredState: ["properties", "leads", "deals", "visits", "documents"],
+  requiredFlows: ["capture lead → match property → schedule visit → negotiate → book → register", "list property → get inquiry → schedule visit → close deal"],
+  dataModels: ["Property", "Lead", "Visit", "Deal", "Document"],
+};
+
+// ═══════════════════════════════════════════════════════════
+// HOTEL BOOKING BLUEPRINT
+// ═══════════════════════════════════════════════════════════
+
+const HOTEL_BLUEPRINT: DomainBlueprint = {
+  id: "hotel",
+  name: "Hotel Booking",
+  keywords: ["hotel", "booking", "room", "reservation", "guest", "hospitality", "resort", "lodging", "accommodation", "check-in", "check-out"],
+  complexity: "medium",
+  requiredPages: [
+    { name: "Rooms", route: "/rooms", components: ["RoomGrid", "RoomStatus"] },
+    { name: "Reservations", route: "/reservations", components: ["ReservationTable", "BookingForm"] },
+    { name: "Guests", route: "/guests", components: ["GuestTable", "GuestProfile"] },
+    { name: "Billing", route: "/billing", components: ["HotelBilling", "FolioTable"] },
+    { name: "Dashboard", route: "/dashboard", components: ["OccupancyChart", "RevenueStats"] },
+  ],
+  requiredComponents: [
+    { name: "RoomGrid", minLines: 30, requiredElements: ["grid", "room", "status", "price"], requiredLogic: ["useState", "filter"], description: "Room listing with availability status" },
+    { name: "BookingForm", minLines: 30, requiredElements: ["form", "check-in", "check-out", "guest"], requiredLogic: ["useState", "date"], description: "Room booking form" },
+    { name: "OccupancyChart", minLines: 30, requiredElements: ["chart", "occupancy", "rate"], requiredLogic: ["useState"], description: "Occupancy rate visualization" },
+    { name: "HotelBilling", minLines: 30, requiredElements: ["table", "folio", "charge", "payment"], requiredLogic: ["useState"], description: "Guest folio and billing" },
+  ],
+  requiredState: ["rooms", "reservations", "guests", "billing"],
+  requiredFlows: ["reserve room → confirm → check-in → stay → check-out → bill", "search rooms → select → book → pay → confirm"],
+  dataModels: ["Room", "Guest", "Reservation", "Payment"],
+};
+
+// ═══════════════════════════════════════════════════════════
+// EDUCATION PLATFORM BLUEPRINT
+// ═══════════════════════════════════════════════════════════
+
+const EDUCATION_BLUEPRINT: DomainBlueprint = {
+  id: "education",
+  name: "Education Platform",
+  keywords: ["education", "student", "course", "learning", "school", "university", "class", "enrollment", "academic", "teacher", "instructor", "curriculum", "training"],
+  complexity: "medium",
+  requiredPages: [
+    { name: "Courses", route: "/courses", components: ["CourseGrid", "CourseCard"] },
+    { name: "Students", route: "/students", components: ["StudentTable", "StudentProfile"] },
+    { name: "Enrollments", route: "/enrollments", components: ["EnrollmentTable", "EnrollmentForm"] },
+    { name: "Attendance", route: "/attendance", components: ["AttendanceTracker", "AttendanceReport"] },
+    { name: "Grades", route: "/grades", components: ["GradeBook", "GradeChart"] },
+    { name: "Dashboard", route: "/dashboard", components: ["StudentStats", "CourseAnalytics"] },
+  ],
+  requiredComponents: [
+    { name: "CourseGrid", minLines: 30, requiredElements: ["grid", "course", "enroll", "price"], requiredLogic: ["useState", "filter"], description: "Course listing with enrollment" },
+    { name: "AttendanceTracker", minLines: 30, requiredElements: ["table", "attendance", "present", "absent"], requiredLogic: ["useState"], description: "Daily attendance tracking" },
+    { name: "GradeBook", minLines: 30, requiredElements: ["table", "grade", "score", "student"], requiredLogic: ["useState"], description: "Grade management" },
+    { name: "StudentStats", minLines: 30, requiredElements: ["chart", "student", "enrollment", "stats"], requiredLogic: ["useState"], description: "Student analytics dashboard" },
+  ],
+  requiredState: ["courses", "students", "enrollments", "attendance", "grades"],
+  requiredFlows: ["browse courses → enroll → pay → attend → grade → complete", "register student → enroll → track → assess → graduate"],
+  dataModels: ["Student", "Course", "Enrollment", "Attendance", "Grade"],
+};
+
+// ═══════════════════════════════════════════════════════════
 // BLUEPRINT REGISTRY
 // ═══════════════════════════════════════════════════════════
 
@@ -583,6 +697,10 @@ const ALL_BLUEPRINTS: DomainBlueprint[] = [
   STREAMING_MEDIA_BLUEPRINT,
   RESTAURANT_BLUEPRINT,
   ADMIN_DASHBOARD_BLUEPRINT,
+  HEALTHCARE_BLUEPRINT,
+  REAL_ESTATE_BLUEPRINT,
+  HOTEL_BLUEPRINT,
+  EDUCATION_BLUEPRINT,
 ];
 
 /**
@@ -593,18 +711,33 @@ export function detectBlueprint(prompt: string): DomainBlueprint | null {
   let bestMatch: DomainBlueprint | null = null;
   let bestScore = 0;
 
+  // Generic keywords that appear across many domains (lower weight)
+  const genericKeywords = new Set(["billing", "dashboard", "analytics", "management", "staff", "leads", "revenue", "stats", "reports"]);
+
   for (const bp of ALL_BLUEPRINTS) {
     let score = 0;
+    let domainSpecificMatches = 0;
     for (const kw of bp.keywords) {
-      if (lower.includes(kw)) score += kw.length; // longer matches = higher score
+      if (lower.includes(kw)) {
+        if (genericKeywords.has(kw)) {
+          score += 1; // Generic keywords get minimal weight
+        } else {
+          score += kw.length; // Domain-specific keywords get full weight
+          domainSpecificMatches++;
+        }
+      }
     }
+    // Bonus for having multiple domain-specific matches
+    if (domainSpecificMatches >= 3) score += 10;
+    else if (domainSpecificMatches >= 2) score += 5;
+
     if (score > bestScore) {
       bestScore = score;
       bestMatch = bp;
     }
   }
 
-  return bestScore >= 3 ? bestMatch : null; // minimum threshold
+  return bestScore >= 3 ? bestMatch : null;
 }
 
 /**

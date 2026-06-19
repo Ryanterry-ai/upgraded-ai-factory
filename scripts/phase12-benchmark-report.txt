@@ -1,0 +1,202 @@
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║          PHASE 12 — GENERATED APPLICATION EVALUATION BENCHMARK                 ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                     COMPETITIVE COMPARISON TABLE                                │
+├──────────────────┬────────────┬────────────┬────────────┬────────────┬──────────┤
+│ Metric           │ Build.same │ Same.new   │ Google AI  │ v0 (Vercel)│ Bolt.new │
+│                  │ (auto)     │ (manual)   │ Studio     │ (manual)   │ (manual) │
+├──────────────────┼────────────┼────────────┼────────────┼────────────┼──────────┤
+│ Domain Realism   │  66/100 ██████ │ TBD        │ TBD        │ TBD        │ TBD      │
+│ Workflow Realism │  65/100 ██████ │ TBD        │ TBD        │ TBD        │ TBD      │
+│ Business Data    │  73/100 ██████ │ TBD        │ TBD        │ TBD        │ TBD      │
+│ Intent Alignment │  67/100 ██████ │ TBD        │ TBD        │ TBD        │ TBD      │
+│ Prod. Readiness  │  48/100 █████░ │ TBD        │ TBD        │ TBD        │ TBD      │
+├──────────────────┼────────────┼────────────┼────────────┼────────────┼──────────┤
+│ COMPOSITE SCORE  │  64/100 ██████ │ TBD        │ TBD        │ TBD        │ TBD      │
+└──────────────────┴────────────┴────────────┴────────────┴────────────┴──────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                     PER-PROMPT BREAKDOWN (Build.same)                           │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+  ┌── Gym CRM SaaS ──
+  │ Prompt: "Build a CRM SaaS platform for gym owners. We're losing too many member..."
+  │
+  │ Domain Realism:       65/100  █████████████
+  │ Workflow Realism:     86/100  █████████████████
+  │ Business Data:        100/100  ████████████████████
+  │ Intent Alignment:     70/100  ██████████████
+  │ Prod. Readiness:      48/100  ██████████
+  │ COMPOSITE:            74/100  ███████████████
+  │
+  │ Details:
+  │   Blueprint: ✅ | Domain: ✅ (gym-crm)
+  │   Pages: 9 | Components: 0 | Workflows: 3
+  │   Products: 3 | Customers: 6 | Orders: 5
+  │   Revenue: ₹92,480
+  │   Quality: 24/100 | RRS: 95/100
+  │   Component Depth: 0/100 | Placeholders: 0
+  │   Intent: "Member retention is declining — members leave before their c..."
+  └────────────────────────────────────
+
+  ┌── Supplement Ecommerce Store ──
+  │ Prompt: "Build an ecommerce store for a supplement brand. We sell whey protein,..."
+  │
+  │ Domain Realism:       65/100  █████████████
+  │ Workflow Realism:     42/100  ████████
+  │ Business Data:        85/100  █████████████████
+  │ Intent Alignment:     65/100  █████████████
+  │ Prod. Readiness:      45/100  █████████
+  │ COMPOSITE:            60/100  ████████████
+  │
+  │ Details:
+  │   Blueprint: ✅ | Domain: ❌ (mismatch)
+  │   Pages: 7 | Components: 0 | Workflows: 1
+  │   Products: 5 | Customers: 6 | Orders: 5
+  │   Revenue: ₹2,80,693
+  │   Quality: 25/100 | RRS: 83/100
+  │   Component Depth: 0/100 | Placeholders: 0
+  │   Intent: "Class scheduling is disorganized — members can't find or boo..."
+  └────────────────────────────────────
+
+  ┌── Restaurant Management ──
+  │ Prompt: "Build a restaurant management system. We need online ordering, table r..."
+  │
+  │ Domain Realism:       65/100  █████████████
+  │ Workflow Realism:     84/100  █████████████████
+  │ Business Data:        100/100  ████████████████████
+  │ Intent Alignment:     65/100  █████████████
+  │ Prod. Readiness:      49/100  ██████████
+  │ COMPOSITE:            73/100  ███████████████
+  │
+  │ Details:
+  │   Blueprint: ✅ | Domain: ✅ (restaurant)
+  │   Pages: 6 | Components: 0 | Workflows: 2
+  │   Products: 4 | Customers: 5 | Orders: 3
+  │   Revenue: ₹830
+  │   Quality: 26/100 | RRS: 95/100
+  │   Component Depth: 0/100 | Placeholders: 0
+  │   Intent: "Staff scheduling is manual — double-bookings and no-shows ha..."
+  └────────────────────────────────────
+
+  ┌── Healthcare Clinic Platform ──
+  │ Prompt: "Build a healthcare clinic management platform. We need patient registr..."
+  │
+  │ Domain Realism:       65/100  █████████████
+  │ Workflow Realism:     42/100  ████████
+  │ Business Data:        25/100  █████
+  │ Intent Alignment:     65/100  █████████████
+  │ Prod. Readiness:      42/100  ████████
+  │ COMPOSITE:            48/100  ██████████
+  │
+  │ Details:
+  │   Blueprint: ✅ | Domain: ❌ (mismatch)
+  │   Pages: 7 | Components: 0 | Workflows: 1
+  │   Products: 3 | Customers: 2 | Orders: 0
+  │   Revenue: ₹0
+  │   Quality: 24/100 | RRS: 72/100
+  │   Component Depth: 0/100 | Placeholders: 0
+  │   Intent: "Payment collection is unreliable — manual follow-ups miss ov..."
+  └────────────────────────────────────
+
+  ┌── SaaS Analytics Dashboard ──
+  │ Prompt: "Build a SaaS analytics dashboard for a subscription product. I need us..."
+  │
+  │ Domain Realism:       70/100  ██████████████
+  │ Workflow Realism:     74/100  ███████████████
+  │ Business Data:        25/100  █████
+  │ Intent Alignment:     69/100  ██████████████
+  │ Prod. Readiness:      55/100  ███████████
+  │ COMPOSITE:            59/100  ████████████
+  │
+  │ Details:
+  │   Blueprint: ✅ | Domain: ❌ (mismatch)
+  │   Pages: 6 | Components: 1 | Workflows: 2
+  │   Products: 3 | Customers: 2 | Orders: 0
+  │   Revenue: ₹0
+  │   Quality: 38/100 | RRS: 84/100
+  │   Component Depth: 40/100 | Placeholders: 0
+  │   Intent: "Repeat purchase rate is low — customers buy once and never r..."
+  └────────────────────────────────────
+
+  ┌── Real Estate CRM ──
+  │ Prompt: "Build a real estate CRM for property agents. I need property listings,..."
+  │
+  │ Domain Realism:       65/100  █████████████
+  │ Workflow Realism:     59/100  ████████████
+  │ Business Data:        100/100  ████████████████████
+  │ Intent Alignment:     65/100  █████████████
+  │ Prod. Readiness:      48/100  ██████████
+  │ COMPOSITE:            67/100  █████████████
+  │
+  │ Details:
+  │   Blueprint: ✅ | Domain: ❌ (mismatch)
+  │   Pages: 7 | Components: 0 | Workflows: 2
+  │   Products: 5 | Customers: 6 | Orders: 5
+  │   Revenue: ₹24,986
+  │   Quality: 24/100 | RRS: 95/100
+  │   Component Depth: 0/100 | Placeholders: 0
+  │   Intent: "Lead follow-up is inconsistent — prospects slip through the ..."
+  └────────────────────────────────────
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                     COMPETITOR TESTING INSTRUCTIONS                             │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+  For each competitor, paste the SAME prompts and score manually:
+
+  1. Same.new (https://same.new)
+     - Paste each prompt, wait for generation
+     - Score: Domain Realism, Workflow Realism, Business Data, Intent, Production
+
+  2. Google AI Studio (https://aistudio.google.com)
+     - Use Gemini to generate a full app from each prompt
+     - Score: Domain Realism, Workflow Realism, Business Data, Intent, Production
+
+  3. v0 by Vercel (https://v0.dev)
+     - Paste each prompt, generate UI components
+     - Score: Domain Realism, Workflow Realism, Business Data, Intent, Production
+
+  4. Lovable (https://lovable.dev)
+     - Paste each prompt, generate full-stack app
+     - Score: Domain Realism, Workflow Realism, Business Data, Intent, Production
+
+  5. Bolt.new (https://bolt.new)
+     - Paste each prompt, generate full-stack app
+     - Score: Domain Realism, Workflow Realism, Business Data, Intent, Production
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                     SCORING RUBRIC (for manual competitor scoring)               │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+  Domain Realism (0-100):
+    90-100: Recognizable as a real domain app (gym, ecommerce, restaurant)
+    70-89:  Has domain elements but some generic parts
+    50-69:  Partially domain-aware, mostly generic templates
+    0-49:   Generic app with no domain intelligence
+
+  Workflow Realism (0-100):
+    90-100: Complete multi-step workflows with domain-specific states
+    70-89:  Has workflows but some steps missing or generic
+    50-69:  Basic CRUD operations, no workflow orchestration
+    0-49:   No workflows, just static pages
+
+  Business Data Consistency (0-100):
+    90-100: All entities connected, revenue derived from orders, no placeholders
+    70-89:  Most data connected, minor inconsistencies
+    50-69:  Some connected data, some placeholder/fake data
+    0-49:   All placeholder data, no entity relationships
+
+  Intent Alignment (0-100):
+    90-100: Output directly addresses the user's stated problem
+    70-89:  Mostly aligned, some generic sections
+    50-69:  Partially aligned, significant generic content
+    0-49:   Ignores user intent, generates template app
+
+  Production Readiness (0-100):
+    90-100: Could ship to real users today
+    70-89:  Needs minor fixes before shipping
+    50-69:  Needs significant work before shipping
+    0-49:   Prototype/demo quality only

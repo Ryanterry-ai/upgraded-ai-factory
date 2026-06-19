@@ -1,0 +1,469 @@
+[
+  {
+    "prompt": {
+      "id": "gym-crm",
+      "name": "Gym CRM SaaS",
+      "prompt": "Build a CRM SaaS platform for gym owners. We're losing too many members after their first 3 months. I need lead management, member management, attendance tracking, billing, staff management, and dashboard analytics.",
+      "expectedDomain": "gym-crm",
+      "expectedPages": [
+        "dashboard",
+        "members",
+        "attendance",
+        "billing",
+        "leads"
+      ],
+      "expectedWorkflows": [
+        "member check-in",
+        "lead conversion",
+        "billing"
+      ],
+      "competitorNotes": "Test each competitor with the same prompt verbatim"
+    },
+    "metrics": {
+      "domainRealism": 65,
+      "workflowRealism": 86,
+      "businessDataConsistency": 100,
+      "intentAlignment": 70,
+      "productionReadiness": 48
+    },
+    "compositeScore": 74,
+    "details": {
+      "blueprintDetected": true,
+      "domainMatch": true,
+      "pageCount": 9,
+      "componentCount": 0,
+      "workflowCount": 3,
+      "entityCount": 14,
+      "orderCount": 5,
+      "revenueDerived": 92480,
+      "qualityScores": {
+        "coverage": 70,
+        "architecture": 0,
+        "feature": 60,
+        "build": 100,
+        "ux": 0,
+        "intentAlignment": 100,
+        "overall": 24
+      },
+      "rrsScore": 95,
+      "intentProfile": {
+        "primaryProblem": "Member retention is declining — members leave before their commitment period ends",
+        "primaryGoal": "Reduce member churn and increase retention rates",
+        "secondaryGoals": [
+          "reduce churn",
+          "improve collections"
+        ],
+        "personas": [
+          {
+            "role": "Gym Owner",
+            "needs": [
+              "see retention metrics",
+              "track revenue",
+              "manage staff"
+            ],
+            "accessLevel": "admin"
+          },
+          {
+            "role": "Front Desk Staff",
+            "needs": [
+              "quick check-in flow",
+              "member lookup",
+              "payment processing"
+            ],
+            "accessLevel": "staff"
+          }
+        ],
+        "successMetrics": [
+          {
+            "metric": "Reduce member churn",
+            "direction": "increase"
+          }
+        ],
+        "constraints": [],
+        "prioritizedSystems": [
+          "Member Management",
+          "Attendance Tracking"
+        ],
+        "source": "fallback-default",
+        "confidence": 0.6
+      },
+      "componentDepthAvg": 0,
+      "placeholderCount": 0
+    }
+  },
+  {
+    "prompt": {
+      "id": "supplement-ecommerce",
+      "name": "Supplement Ecommerce Store",
+      "prompt": "Build an ecommerce store for a supplement brand. We sell whey protein, creatine, multivitamins, and pre-workout. Need product listings, cart, checkout, brand page, customer reviews, and an admin dashboard.",
+      "expectedDomain": "ecommerce-store",
+      "expectedPages": [
+        "products",
+        "cart",
+        "checkout",
+        "brands"
+      ],
+      "expectedWorkflows": [
+        "customer purchase",
+        "order fulfillment"
+      ],
+      "competitorNotes": "Compare product realism and Indian market adaptation"
+    },
+    "metrics": {
+      "domainRealism": 65,
+      "workflowRealism": 42,
+      "businessDataConsistency": 85,
+      "intentAlignment": 65,
+      "productionReadiness": 45
+    },
+    "compositeScore": 60,
+    "details": {
+      "blueprintDetected": true,
+      "domainMatch": false,
+      "pageCount": 7,
+      "componentCount": 0,
+      "workflowCount": 1,
+      "entityCount": 16,
+      "orderCount": 5,
+      "revenueDerived": 280693,
+      "qualityScores": {
+        "coverage": 70,
+        "architecture": 0,
+        "feature": 60,
+        "build": 100,
+        "ux": 0,
+        "intentAlignment": 100,
+        "overall": 25
+      },
+      "rrsScore": 83,
+      "intentProfile": {
+        "primaryProblem": "Class scheduling is disorganized — members can't find or book sessions",
+        "primaryGoal": "Enable easy class booking and schedule management",
+        "secondaryGoals": [
+          "increase AOV",
+          "increase retention"
+        ],
+        "personas": [
+          {
+            "role": "Gym Owner",
+            "needs": [
+              "see retention metrics",
+              "track revenue",
+              "manage staff"
+            ],
+            "accessLevel": "admin"
+          }
+        ],
+        "successMetrics": [
+          {
+            "metric": "Enable easy class",
+            "direction": "increase"
+          }
+        ],
+        "constraints": [],
+        "prioritizedSystems": [
+          "Staff Management",
+          "Member Management"
+        ],
+        "source": "fallback-default",
+        "confidence": 0.6
+      },
+      "componentDepthAvg": 0,
+      "placeholderCount": 0
+    }
+  },
+  {
+    "prompt": {
+      "id": "restaurant",
+      "name": "Restaurant Management",
+      "prompt": "Build a restaurant management system. We need online ordering, table reservations, menu management, kitchen order queue, staff scheduling, and a dashboard showing daily revenue and popular dishes.",
+      "expectedDomain": "restaurant",
+      "expectedPages": [
+        "menu",
+        "orders",
+        "reservations",
+        "dashboard"
+      ],
+      "expectedWorkflows": [
+        "reservation flow",
+        "kitchen queue"
+      ],
+      "competitorNotes": "Compare domain-specific UI (menu cards, kitchen display)"
+    },
+    "metrics": {
+      "domainRealism": 65,
+      "workflowRealism": 84,
+      "businessDataConsistency": 100,
+      "intentAlignment": 65,
+      "productionReadiness": 49
+    },
+    "compositeScore": 73,
+    "details": {
+      "blueprintDetected": true,
+      "domainMatch": true,
+      "pageCount": 6,
+      "componentCount": 0,
+      "workflowCount": 2,
+      "entityCount": 12,
+      "orderCount": 3,
+      "revenueDerived": 830,
+      "qualityScores": {
+        "coverage": 70,
+        "architecture": 0,
+        "feature": 60,
+        "build": 100,
+        "ux": 0,
+        "intentAlignment": 100,
+        "overall": 26
+      },
+      "rrsScore": 95,
+      "intentProfile": {
+        "primaryProblem": "Staff scheduling is manual — double-bookings and no-shows happen regularly",
+        "primaryGoal": "Streamline staff scheduling and trainer assignments",
+        "secondaryGoals": [
+          "reduce wait times",
+          "improve order accuracy"
+        ],
+        "personas": [
+          {
+            "role": "Front Desk Staff",
+            "needs": [
+              "quick check-in flow",
+              "member lookup",
+              "payment processing"
+            ],
+            "accessLevel": "staff"
+          }
+        ],
+        "successMetrics": [
+          {
+            "metric": "Streamline staff scheduling",
+            "direction": "increase"
+          }
+        ],
+        "constraints": [],
+        "prioritizedSystems": [
+          "Staff Management",
+          "Member Management"
+        ],
+        "source": "fallback-default",
+        "confidence": 0.6
+      },
+      "componentDepthAvg": 0,
+      "placeholderCount": 0
+    }
+  },
+  {
+    "prompt": {
+      "id": "healthcare-clinic",
+      "name": "Healthcare Clinic Platform",
+      "prompt": "Build a healthcare clinic management platform. We need patient registration, appointment booking, doctor schedules, prescription management, billing, and a dashboard showing patient statistics and revenue.",
+      "expectedDomain": "healthcare-clinic",
+      "expectedPages": [
+        "patients",
+        "appointments",
+        "doctors",
+        "prescriptions"
+      ],
+      "expectedWorkflows": [
+        "patient visit",
+        "appointment booking"
+      ],
+      "competitorNotes": "Compare HIPAA-aware patterns and medical domain realism"
+    },
+    "metrics": {
+      "domainRealism": 65,
+      "workflowRealism": 42,
+      "businessDataConsistency": 25,
+      "intentAlignment": 65,
+      "productionReadiness": 42
+    },
+    "compositeScore": 48,
+    "details": {
+      "blueprintDetected": true,
+      "domainMatch": false,
+      "pageCount": 7,
+      "componentCount": 0,
+      "workflowCount": 1,
+      "entityCount": 5,
+      "orderCount": 0,
+      "revenueDerived": 0,
+      "qualityScores": {
+        "coverage": 70,
+        "architecture": 0,
+        "feature": 60,
+        "build": 100,
+        "ux": 0,
+        "intentAlignment": 100,
+        "overall": 24
+      },
+      "rrsScore": 72,
+      "intentProfile": {
+        "primaryProblem": "Payment collection is unreliable — manual follow-ups miss overdue invoices",
+        "primaryGoal": "Automate billing and achieve 95%+ invoice collection rate",
+        "secondaryGoals": [
+          "improve appointment utilization",
+          "streamline billing"
+        ],
+        "personas": [],
+        "successMetrics": [
+          {
+            "metric": "Automate billing and",
+            "direction": "increase"
+          }
+        ],
+        "constraints": [],
+        "prioritizedSystems": [
+          "Billing & Payments",
+          "Member Management"
+        ],
+        "source": "fallback-default",
+        "confidence": 0.6
+      },
+      "componentDepthAvg": 0,
+      "placeholderCount": 0
+    }
+  },
+  {
+    "prompt": {
+      "id": "saas-dashboard",
+      "name": "SaaS Analytics Dashboard",
+      "prompt": "Build a SaaS analytics dashboard for a subscription product. I need user management, subscription billing, feature usage analytics, churn tracking, revenue metrics, and a customer health score system.",
+      "expectedDomain": "saas-platform",
+      "expectedPages": [
+        "dashboard",
+        "users",
+        "subscriptions",
+        "analytics"
+      ],
+      "expectedWorkflows": [
+        "trial conversion",
+        "churn prevention"
+      ],
+      "competitorNotes": "Compare data visualization and SaaS metric realism"
+    },
+    "metrics": {
+      "domainRealism": 70,
+      "workflowRealism": 74,
+      "businessDataConsistency": 25,
+      "intentAlignment": 69,
+      "productionReadiness": 55
+    },
+    "compositeScore": 59,
+    "details": {
+      "blueprintDetected": true,
+      "domainMatch": false,
+      "pageCount": 6,
+      "componentCount": 1,
+      "workflowCount": 2,
+      "entityCount": 5,
+      "orderCount": 0,
+      "revenueDerived": 0,
+      "qualityScores": {
+        "coverage": 70,
+        "architecture": 0,
+        "feature": 60,
+        "build": 100,
+        "ux": 18,
+        "intentAlignment": 100,
+        "overall": 38
+      },
+      "rrsScore": 84,
+      "intentProfile": {
+        "primaryProblem": "Repeat purchase rate is low — customers buy once and never return",
+        "primaryGoal": "Increase repeat purchases with subscription plans, loyalty rewards, and reorder reminders",
+        "secondaryGoals": [
+          "reduce stockouts",
+          "increase customer value"
+        ],
+        "personas": [],
+        "successMetrics": [
+          {
+            "metric": "Increase repeat purchases",
+            "direction": "increase"
+          }
+        ],
+        "constraints": [],
+        "prioritizedSystems": [
+          "Goal Based Shopping",
+          "Brand Store"
+        ],
+        "source": "fallback-default",
+        "confidence": 0.6
+      },
+      "componentDepthAvg": 40,
+      "placeholderCount": 0
+    }
+  },
+  {
+    "prompt": {
+      "id": "real-estate",
+      "name": "Real Estate CRM",
+      "prompt": "Build a real estate CRM for property agents. I need property listings, lead capture, site visit scheduling, deal pipeline, document management, and a dashboard showing pipeline value and agent performance.",
+      "expectedDomain": "real-estate-crm",
+      "expectedPages": [
+        "properties",
+        "leads",
+        "deals",
+        "dashboard"
+      ],
+      "expectedWorkflows": [
+        "property sale",
+        "lead capture"
+      ],
+      "competitorNotes": "Compare property card design and pipeline visualization"
+    },
+    "metrics": {
+      "domainRealism": 65,
+      "workflowRealism": 59,
+      "businessDataConsistency": 100,
+      "intentAlignment": 65,
+      "productionReadiness": 48
+    },
+    "compositeScore": 67,
+    "details": {
+      "blueprintDetected": true,
+      "domainMatch": false,
+      "pageCount": 7,
+      "componentCount": 0,
+      "workflowCount": 2,
+      "entityCount": 16,
+      "orderCount": 5,
+      "revenueDerived": 24986,
+      "qualityScores": {
+        "coverage": 70,
+        "architecture": 0,
+        "feature": 60,
+        "build": 100,
+        "ux": 0,
+        "intentAlignment": 100,
+        "overall": 24
+      },
+      "rrsScore": 95,
+      "intentProfile": {
+        "primaryProblem": "Lead follow-up is inconsistent — prospects slip through the cracks",
+        "primaryGoal": "Convert more leads into active members with automated follow-up",
+        "secondaryGoals": [
+          "reduce lead response time",
+          "improve agent productivity"
+        ],
+        "personas": [],
+        "successMetrics": [
+          {
+            "metric": "Convert more leads",
+            "direction": "increase"
+          }
+        ],
+        "constraints": [],
+        "prioritizedSystems": [
+          "Lead Pipeline",
+          "Member Management"
+        ],
+        "source": "fallback-default",
+        "confidence": 0.6
+      },
+      "componentDepthAvg": 0,
+      "placeholderCount": 0
+    }
+  }
+]
