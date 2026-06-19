@@ -11,6 +11,7 @@ import { isUrl, scrapeSite, formatScrapedForLLM, type ScrapedSite } from "./url-
 import { storeSite } from "./clone-store";
 import { generatePreviewHtml } from "./preview-renderer";
 import { detectBlueprint, type DomainBlueprint } from "./domain-blueprints";
+import { detectDomain as detectRegistryDomain, getDomainById, type DomainBlueprint as RegistryBlueprint } from "./domain-registry";
 import { calculateComponentDepthScore } from "./component-depth-validator";
 import { generatePrismaSchema, generateSeedFile, generatePrismaClient } from "./generators/schema-generator";
 import { generateAPIRoutes } from "./generators/api-generator";
@@ -140,6 +141,13 @@ function detectFactory(prompt: string, explicit?: string): string {
   if (/gym|fitness|member|attendance|workout|trainer|class/i.test(lower)) return "saas";
   if (/real.?estate|property|listing|agent|broker/i.test(lower)) return "ecommerce";
   return "website";
+}
+
+// Combined domain detection: registry (with full entity definitions) + existing blueprint
+function detectDomainFull(prompt: string): { blueprint: DomainBlueprint | null; registry: RegistryBlueprint | null } {
+  const registry = detectRegistryDomain(prompt);
+  const blueprint = detectBlueprint(prompt);
+  return { blueprint, registry };
 }
 
 function extractProjectName(prompt: string, explicitName?: string): string {
@@ -5034,6 +5042,12 @@ export async function runGeneration(
   // Initialize the SSE as the central runtime layer
   const detectedBlueprint = intelligenceContext.enhancedBlueprint || detectBlueprint(request.prompt);
   const rpseContext = detectRPSEContext(request.prompt);
+
+  // Domain Registry detection — provides full entity/workflow definitions
+  const registryDomain = detectRegistryDomain(request.prompt);
+  if (registryDomain) {
+    emit("thinking", { message: `Domain Registry matched: ${registryDomain.name} (Tier ${registryDomain.tier}) — ${registryDomain.entities.length} entities, ${registryDomain.workflows.length} workflows` });
+  }
 
   initializeSystemState({
     domain: rpseContext.domain,

@@ -1281,16 +1281,19 @@ const TIER4_STUBS: DomainBlueprint[] = [
 // REGISTRY
 // ═══════════════════════════════════════════════════════════
 
+// Import expanded domain definitions
+import { TIER2_EXPANDED, TIER3_EXPANDED, TIER4_EXPANDED } from "./domain-registry-expanded";
+
 export const ALL_DOMAINS: DomainBlueprint[] = [
-  // Tier 1 — Launch Critical
+  // Tier 1 — Launch Critical (10)
   SUPPLEMENT_STORE, ECOMMERCE_STORE, GYM_CRM, SAAS_PLATFORM, AGENCY_CRM,
   RESTAURANT, HEALTHCARE_CLINIC, EDUCATION_PLATFORM, REAL_ESTATE_CRM, HOTEL_BOOKING,
-  // Tier 2 — High Demand
-  ...TIER2_DOMAINS,
-  // Tier 3 — Industry Specific
-  ...TIER3_STUBS,
-  // Tier 4 — Enterprise
-  ...TIER4_STUBS,
+  // Tier 2 — High Demand (15: 5 original + 10 expanded)
+  ...TIER2_DOMAINS, ...TIER2_EXPANDED,
+  // Tier 3 — Industry Specific (10: fully defined)
+  ...TIER3_EXPANDED,
+  // Tier 4 — Enterprise (9: fully defined)
+  ...TIER4_EXPANDED,
 ];
 
 export const TIER1_DOMAINS = ALL_DOMAINS.filter(d => d.tier === 1);
