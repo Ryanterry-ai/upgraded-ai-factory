@@ -4094,8 +4094,9 @@ ${usage}
 import { CartProvider, WishlistProvider } from "@/lib/data-provider";
 import { BusinessProvider } from "@/lib/business-hooks";
 import { generateBusinessForDomain } from "@/lib/business-domains";
+import { generateFromRegistry } from "@/lib/registry-data-generator";
 
-const businessState = generateBusinessForDomain("${rpseContext.domain}");
+const businessState = generateFromRegistry("${rpseContext.domain}");
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
