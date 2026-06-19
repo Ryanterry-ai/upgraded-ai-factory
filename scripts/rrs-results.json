@@ -1,0 +1,108 @@
+{
+  "timestamp": "2026-06-19T07:56:45.104Z",
+  "threshold": 85,
+  "overallRRS": 95,
+  "ready": true,
+  "domains": [
+    {
+      "domain": "supplement-store",
+      "evs": 1,
+      "wvs": 1,
+      "as": 1,
+      "dcs": 0.9473684210526315,
+      "dds": 0.75,
+      "rrs": 95,
+      "pass": true
+    },
+    {
+      "domain": "ecommerce-store",
+      "evs": 1,
+      "wvs": 1,
+      "as": 1,
+      "dcs": 0.9473684210526315,
+      "dds": 0.75,
+      "rrs": 95,
+      "pass": true
+    },
+    {
+      "domain": "gym-crm",
+      "evs": 1,
+      "wvs": 1,
+      "as": 1,
+      "dcs": 0.9523809523809523,
+      "dds": 0.75,
+      "rrs": 96,
+      "pass": true
+    },
+    {
+      "domain": "saas-platform",
+      "evs": 1,
+      "wvs": 1,
+      "as": 1,
+      "dcs": 0.9473684210526315,
+      "dds": 0.75,
+      "rrs": 95,
+      "pass": true
+    },
+    {
+      "domain": "agency-crm",
+      "evs": 1,
+      "wvs": 1,
+      "as": 1,
+      "dcs": 0.9473684210526315,
+      "dds": 0.75,
+      "rrs": 95,
+      "pass": true
+    },
+    {
+      "domain": "restaurant",
+      "evs": 1,
+      "wvs": 1,
+      "as": 1,
+      "dcs": 0.9166666666666666,
+      "dds": 0.75,
+      "rrs": 95,
+      "pass": true
+    },
+    {
+      "domain": "healthcare-clinic",
+      "evs": 1,
+      "wvs": 1,
+      "as": 1,
+      "dcs": 0.9545454545454546,
+      "dds": 0.75,
+      "rrs": 96,
+      "pass": true
+    },
+    {
+      "domain": "education-platform",
+      "evs": 1,
+      "wvs": 1,
+      "as": 1,
+      "dcs": 0.9473684210526315,
+      "dds": 0.75,
+      "rrs": 95,
+      "pass": true
+    },
+    {
+      "domain": "real-estate-crm",
+      "evs": 1,
+      "wvs": 1,
+      "as": 1,
+      "dcs": 0.9523809523809523,
+      "dds": 0.75,
+      "rrs": 96,
+      "pass": true
+    },
+    {
+      "domain": "hotel-booking",
+      "evs": 1,
+      "wvs": 1,
+      "as": 1,
+      "dcs": 0.9230769230769231,
+      "dds": 0.75,
+      "rrs": 95,
+      "pass": true
+    }
+  ]
+}
