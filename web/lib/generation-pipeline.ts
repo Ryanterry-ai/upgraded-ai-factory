@@ -10,6 +10,9 @@ import { storeSite } from "./clone-store";
 import { generatePreviewHtml } from "./preview-renderer";
 import { detectBlueprint, type DomainBlueprint } from "./domain-blueprints";
 import { calculateComponentDepthScore } from "./component-depth-validator";
+import { generatePrismaSchema, generateSeedFile, generatePrismaClient } from "./generators/schema-generator";
+import { generateAPIRoutes } from "./generators/api-generator";
+import { generateServices } from "./generators/service-generator";
 import {
   detectRPSEContext,
   getRPSEData,
@@ -46,6 +49,12 @@ import {
   getActiveWorkflows,
   type SystemState,
 } from "./system-state-engine";
+import { SolutionEngine } from "./solution-engine";
+import { GymCRMPack } from "./solution-packs/gym-crm";
+import { SupplementStorePack } from "./solution-packs/supplement-store";
+import { StreamingPlatformPack } from "./solution-packs/streaming-platform";
+import { EcommerceAdminPack } from "./solution-packs/ecommerce-admin";
+import { extractIntent, type IntentProfile } from "./intent-engine";
 import {
   getDesignTokens,
   generateGlobalCSS,
@@ -100,6 +109,8 @@ export interface GenerationResult {
   intelligence?: IntelligenceContext;
   intelligenceStored?: { memoriesStored: number; knowledgeEdges: number };
   behaviorProfile?: { domain: string; machines: number; mutations: number; chains: number; journeys: number };
+  intentProfile?: IntentProfile;
+  solutionModel?: unknown;
 }
 
 function sanitizeName(input: string): string {
@@ -318,6 +329,9 @@ function getHeroContent(prompt: string): { title: string; subtitle: string; cta:
   return { title: `Welcome to ${name}`, subtitle: "A modern solution built with care and precision.", cta: "Learn More" };
 }
 
+// Module-level intent profile for copy generation
+let _activeIntentProfile: { primaryProblem: string; primaryGoal: string } | null = null;
+
 function genHero(prompt: string): string {
   const h = getHeroContent(prompt);
   const blueprint = detectBlueprint(prompt);
@@ -325,6 +339,14 @@ function genHero(prompt: string): string {
 
   // Get domain-specific hero content
   const heroContent = getHeroContentForDomain(domain, h);
+
+  // Intent-driven override: if we have a specific primaryGoal, use it as the hero title
+  if (_activeIntentProfile?.primaryGoal && _activeIntentProfile.primaryGoal !== "Unspecified") {
+    heroContent.title = _activeIntentProfile.primaryGoal.charAt(0).toUpperCase() + _activeIntentProfile.primaryGoal.slice(1);
+  }
+  if (_activeIntentProfile?.primaryProblem && _activeIntentProfile.primaryProblem !== "Unspecified") {
+    heroContent.subtitle = _activeIntentProfile.primaryProblem.charAt(0).toUpperCase() + _activeIntentProfile.primaryProblem.slice(1);
+  }
   return `export function Hero() {
   return (
     <section className="relative py-20 md:py-32 overflow-hidden">
@@ -732,6 +754,14 @@ function genCTA(prompt?: string): string {
   const blueprint = detectBlueprint(prompt || "");
   const domain = blueprint?.id || "generic";
   const content = getCTAForDomain(domain);
+
+  // Intent-driven override: customize CTA with the actual problem/goal
+  if (_activeIntentProfile?.primaryGoal && _activeIntentProfile.primaryGoal !== "Unspecified") {
+    content.title = _activeIntentProfile.primaryGoal.charAt(0).toUpperCase() + _activeIntentProfile.primaryGoal.slice(1);
+  }
+  if (_activeIntentProfile?.primaryProblem && _activeIntentProfile.primaryProblem !== "Unspecified") {
+    content.subtitle = _activeIntentProfile.primaryProblem.charAt(0).toUpperCase() + _activeIntentProfile.primaryProblem.slice(1);
+  }
   return `export function CTA() {
   return (
     <section className="py-16 bg-gradient-to-r from-blue-600 to-indigo-700">
@@ -1144,7 +1174,7 @@ export function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () =
           <div className="space-y-2 text-sm">
             <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>₹{subtotal.toLocaleString("en-IN")}</span></div>
             {discount > 0 && <div className="flex justify-between text-green-600"><span>Discount ({appliedPromo})</span><span>-₹{discount.toLocaleString("en-IN")}</span></div>}
-            <div className="flex justify-between"><span className="text-gray-500">Shipping</span><span>{shipping === 0 ? <span className="text-green-600">FREE</span> : `₹${shipping}`}</span></div>
+            <div className="flex justify-between"><span className="text-gray-500">Shipping</span><span>{shipping === 0 ? <span className="text-green-600">FREE</span> : "\u20B9" + shipping}</span></div>
             <div className="flex justify-between font-bold text-lg border-t pt-2"><span>Total</span><span>₹{total.toLocaleString("en-IN")}</span></div>
           </div>
           <button className="mt-4 w-full bg-amber-600 text-white py-3 rounded-xl font-semibold hover:bg-amber-700 active:scale-[0.98] transition-all">
@@ -1192,7 +1222,7 @@ export function CheckoutModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
           <p className="text-gray-500 mb-4">Thank you for your purchase</p>
           <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left">
             <div className="flex justify-between text-sm mb-1"><span className="text-gray-500">Order ID</span><span className="font-mono font-bold">FC-{Math.random().toString(36).slice(2,8).toUpperCase()}</span></div>
-            <div className="flex justify-between text-sm mb-1"><span className="text-gray-500">Payment</span><span className="font-medium">{paymentMethod === "upi" ? `UPI: ${upiId}` : paymentMethod === "cod" ? "Cash on Delivery" : paymentMethod}</span></div>
+            <div className="flex justify-between text-sm mb-1"><span className="text-gray-500">Payment</span><span className="font-medium">{paymentMethod === "upi" ? "UPI: " + upiId : paymentMethod === "cod" ? "Cash on Delivery" : paymentMethod}</span></div>
             <div className="flex justify-between text-sm mb-1"><span className="text-gray-500">Estimated Delivery</span><span className="font-medium">{new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span></div>
             <div className="flex justify-between text-sm font-bold mt-2 pt-2 border-t"><span>Total Paid</span><span>₹{total.toLocaleString("en-IN")}</span></div>
           </div>
@@ -2537,9 +2567,9 @@ export function MemberTable() {
   const handleCheckin = () => {
     const member = MOCK_MEMBERS.find(m => m.phone === checkinInput || m.id === checkinInput);
     if (member && member.status === "active") {
-      setCheckinResult({ success: true, message: `✓ ${member.name} checked in — ${member.plan} member, ${member.totalCheckins + 1} total visits` });
+      setCheckinResult({ success: true, message: "✓ " + member.name + " checked in — " + member.plan + " member, " + (member.totalCheckins + 1) + " total visits" });
     } else if (member) {
-      setCheckinResult({ success: false, message: `✕ ${member.name}'s membership is ${member.status}` });
+      setCheckinResult({ success: false, message: "✕ " + member.name + "'s membership is " + member.status });
     } else {
       setCheckinResult({ success: false, message: "✕ Member not found — check phone number or ID" });
     }
@@ -3889,6 +3919,65 @@ ${usage}
     });
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // BACKEND FOUNDATION GENERATION (Phase B.1)
+  // ═══════════════════════════════════════════════════════════
+  if (architecture && architecture.dataModels.length > 0) {
+    // Generate Prisma Schema
+    const prismaSchema = generatePrismaSchema({
+      dataModels: architecture.dataModels,
+      databaseProvider: "postgresql",
+      projectName,
+    });
+    files.push({
+      path: "prisma/schema.prisma",
+      content: prismaSchema,
+      type: "schema",
+    });
+
+    // Generate Seed File
+    const seedFile = generateSeedFile({
+      dataModels: architecture.dataModels,
+      projectName,
+    });
+    files.push({
+      path: "prisma/seed.ts",
+      content: seedFile,
+      type: "seed",
+    });
+
+    // Generate Prisma Client
+    files.push({
+      path: "src/lib/prisma.ts",
+      content: generatePrismaClient(),
+      type: "lib",
+    });
+
+    // Generate API Routes
+    const apiRoutes = generateAPIRoutes({
+      dataModels: architecture.dataModels,
+    });
+    apiRoutes.forEach(route => {
+      files.push({
+        path: route.path,
+        content: route.content,
+        type: "api-route",
+      });
+    });
+
+    // Generate Services
+    const services = generateServices({
+      dataModels: architecture.dataModels,
+    });
+    services.forEach(service => {
+      files.push({
+        path: service.path,
+        content: service.content,
+        type: "service",
+      });
+    });
+  }
+
   // ─── CONFIG FILES ───
   files.push({ path: "src/app/layout.tsx", content: genLayout(projectName), type: "config" });
   files.push({ path: "src/app/globals.css", content: genStyles(llmContent?.colors), type: "config" });
@@ -3933,9 +4022,32 @@ ${usage}
       name: projectName.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
       version: "0.1.0",
       private: true,
-      scripts: { dev: "next dev", build: "next build", start: "next start", lint: "next lint" },
-      dependencies: { next: "14.2.0", react: "^18", "react-dom": "^18" },
-      devDependencies: { "@types/node": "^20", "@types/react": "^18", "@types/react-dom": "^18", autoprefixer: "^10", postcss: "^8", tailwindcss: "^3.4", typescript: "^5" },
+      scripts: { 
+        dev: "next dev", 
+        build: "next build", 
+        start: "next start", 
+        lint: "next lint",
+        "db:generate": "prisma generate",
+        "db:push": "prisma db push",
+        "db:seed": "tsx prisma/seed.ts"
+      },
+      dependencies: { 
+        next: "14.2.0", 
+        react: "^18", 
+        "react-dom": "^18",
+        "@prisma/client": "^5.22.0"
+      },
+      devDependencies: { 
+        "@types/node": "^20", 
+        "@types/react": "^18", 
+        "@types/react-dom": "^18", 
+        autoprefixer: "^10", 
+        postcss: "^8", 
+        tailwindcss: "^3.4", 
+        typescript: "^5",
+        prisma: "^5.22.0",
+        tsx: "^4.7.0"
+      },
     }, null, 2),
     type: "config",
   });
@@ -4813,6 +4925,8 @@ export async function runGeneration(
   // ═══ ARCHITECTURE-DRIVEN GENERATION ═══
   let requirements: RequirementMatrix | undefined;
   let architecture: ArchitecturePlan | undefined;
+  let intentProfile: IntentProfile | undefined;
+  let solutionModelResult: unknown = undefined;
   
   // Enhanced URL detection - handles http://, https://, www., and domain.com formats
   let urlMatch = request.prompt.trim().match(/(https?:\/\/[^\s]+)/i);
@@ -4837,13 +4951,22 @@ export async function runGeneration(
   }
 
   if (!isUrl) {
-    // Step 0: Detect domain blueprint FIRST for scope isolation
+    // Step 0a: Detect domain blueprint for scope isolation
     const detectedBlueprint = detectBlueprint(request.prompt);
     if (detectedBlueprint) {
       emit("thinking", { message: `Domain detected: ${detectedBlueprint.name} (complexity: ${detectedBlueprint.complexity ?? "medium"})` });
     }
 
-    // Step 1: Analyze requirements (blueprint-scoped to prevent cross-domain leakage)
+    // Step 0b: SolutionEngine — match to domain solution pack
+    const solutionEngine = new SolutionEngine([GymCRMPack, SupplementStorePack, StreamingPlatformPack, EcommerceAdminPack]);
+    solutionModelResult = solutionEngine.detect(request.prompt);
+
+    // Step 0c: Intent Engine — extract WHY the user needs this app
+    emit("thinking", { message: "Extracting business intent from your prompt..." });
+    intentProfile = await extractIntent(request.prompt, solutionModelResult as any);
+    emit("thinking", { message: `Intent: ${intentProfile.primaryGoal} (confidence: ${intentProfile.confidence}, source: ${intentProfile.source})` });
+
+    // Step 1: Analyze requirements (blueprint-scoped + intent-informed)
     emit("thinking", { message: "Analyzing requirements from your prompt..." });
     requirements = analyzeRequirements(request.prompt, detectedBlueprint);
     emit("thinking", { message: `Found ${requirements.pages.length} pages: [${requirements.pages.map(p => p.name).join(", ")}]` });
@@ -4851,9 +4974,9 @@ export async function runGeneration(
     emit("thinking", { message: `Found ${requirements.entities.length} entities: [${requirements.entities.map(e => e.name).join(", ")}]` });
     emit("thinking", { message: `Found ${requirements.features.length} features: [${requirements.features.map(f => f.name).join(", ")}]` });
 
-    // Step 2: Plan architecture
+    // Step 2: Plan architecture (intent-informed)
     emit("thinking", { message: "Planning project architecture..." });
-    architecture = planArchitecture(requirements, projectName);
+    architecture = planArchitecture(requirements, projectName, intentProfile);
     emit("thinking", { message: `Planned ${architecture.routes.length} routes: [${architecture.routes.map(r => r.path).join(", ")}]` });
     emit("thinking", { message: `Navigation: [${architecture.navigation.map(n => n.label).join(", ")}]` });
     emit("thinking", { message: `Data models: [${architecture.dataModels.map(d => d.name).join(", ")}]` });
@@ -4940,11 +5063,15 @@ export async function runGeneration(
       emit("thinking", { message: `Agents: ${agentResults.successCount} succeeded, ${agentResults.failCount} failed` });
     }
 
+    // Set module-level intent profile for copy generation (hero/CTA)
+    _activeIntentProfile = intentProfile ?? null;
+
     const files = await generateFiles(request.prompt, factory, projectName, llmContent, scraped, architecture);
     const pageCount = files.filter(f => f.type === "page" || f.type === "html").length;
     const componentCount = files.filter(f => f.type === "component").length;
     const configCount = files.filter(f => f.type === "config").length;
-    emit("thinking", { message: `Generated ${files.length} files: ${pageCount} pages, ${componentCount} components, ${configCount} config` });
+    const backendCount = files.filter(f => f.type === "schema" || f.type === "api-route" || f.type === "service").length;
+    emit("thinking", { message: `Generated ${files.length} files: ${pageCount} pages, ${componentCount} components, ${configCount} config, ${backendCount} backend` });
 
     // RPSE domain detection for realism validation
     const rpseDomain = detectRPSEContext(request.prompt).domain;
@@ -4988,13 +5115,17 @@ export async function runGeneration(
 
       // Store behavior context in SSE for runtime access
       const behaviorState = bse.getState();
-      sseEmit("behavior_initialized", {
-        domain: rpseDomain,
-        machines: Object.keys(behaviorState.machines),
-        timeMutations: behaviorProfile.timeMutations.length,
-        eventChains: behaviorProfile.eventChains.length,
-        userJourneys: behaviorProfile.userJourneys.length,
-      });
+      sseEmit({
+        type: "behavior_initialized" as any,
+        source: "system",
+        data: {
+          domain: rpseDomain,
+          machines: Object.keys(behaviorState.machines),
+          timeMutations: behaviorProfile.timeMutations.length,
+          eventChains: behaviorProfile.eventChains.length,
+          userJourneys: behaviorProfile.userJourneys.length,
+        },
+      } as any);
 
       emit("thinking", {
         message: `BSE: Behavior simulation initialized — ${behaviorProfile.stateMachines.length} state machines, ${behaviorProfile.timeMutations.length} time mutations, ${behaviorProfile.eventChains.length} event chains`,
@@ -5088,7 +5219,8 @@ export async function runGeneration(
       qualityScores = calculateQualityScores(
         files, coverage, buildValidation.buildSuccess,
         depthResult.score, depthResult.placeholderCount,
-        pipelineBlueprint
+        pipelineBlueprint,
+        intentProfile
       );
       emit("coverage_report", {
         overallCoverage: coverage.overallCoverage,
@@ -5397,6 +5529,8 @@ export async function runGeneration(
         chains: behaviorProfile.eventChains.length,
         journeys: behaviorProfile.userJourneys.length,
       } : undefined,
+      intentProfile: intentProfile ?? undefined,
+      solutionModel: solutionModelResult ?? undefined,
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";

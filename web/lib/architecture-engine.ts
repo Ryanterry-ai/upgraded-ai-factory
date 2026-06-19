@@ -119,6 +119,7 @@ export interface QualityScores {
   feature: number;       // Feature completeness %
   build: number;         // Build success %
   ux: number;            // UX quality %
+  intentAlignment: number; // Intent alignment %
   overall: number;       // Weighted overall %
 }
 
@@ -384,7 +385,7 @@ export function analyzeRequirements(prompt: string, blueprint?: DomainBlueprint 
 /**
  * Plan the architecture from requirements.
  */
-export function planArchitecture(matrix: RequirementMatrix, projectName: string): ArchitecturePlan {
+export function planArchitecture(matrix: RequirementMatrix, projectName: string, intentProfile?: { prioritizedSystems: string[]; primaryProblem: string; primaryGoal: string } | null): ArchitecturePlan {
   const routes: RoutePlan[] = [];
   const layouts: LayoutPlan[] = [];
   const navigation: NavigationPlan[] = [];
@@ -549,6 +550,36 @@ export function planArchitecture(matrix: RequirementMatrix, projectName: string)
     apiRoutes.push({ path: `${basePath}/[id]`, method: "GET", description: `Get ${entity.name} by ID`, entity: entity.name });
     apiRoutes.push({ path: `${basePath}/[id]`, method: "PUT", description: `Update ${entity.name}`, entity: entity.name });
     apiRoutes.push({ path: `${basePath}/[id]`, method: "DELETE", description: `Delete ${entity.name}`, entity: entity.name });
+  }
+
+  // ═══ INTENT-DRIVEN PAGE EMPHASIS ═══
+  // Reorder pages so that routes matching prioritizedSystems appear first
+  if (intentProfile?.prioritizedSystems?.length) {
+    const prioritized = intentProfile.prioritizedSystems;
+    routes.sort((a, b) => {
+      const aIdx = prioritized.findIndex(s =>
+        a.name.toLowerCase().includes(s.toLowerCase()) ||
+        a.components.some(c => c.toLowerCase().includes(s.toLowerCase()))
+      );
+      const bIdx = prioritized.findIndex(s =>
+        b.name.toLowerCase().includes(s.toLowerCase()) ||
+        b.components.some(c => c.toLowerCase().includes(s.toLowerCase()))
+      );
+      const aScore = aIdx >= 0 ? aIdx : 999;
+      const bScore = bIdx >= 0 ? bIdx : 999;
+      return aScore - bScore;
+    });
+
+    // Also reorder navigation to match
+    navigation.sort((a, b) => {
+      const aIdx = prioritized.findIndex(s =>
+        a.label.toLowerCase().includes(s.toLowerCase())
+      );
+      const bIdx = prioritized.findIndex(s =>
+        b.label.toLowerCase().includes(s.toLowerCase())
+      );
+      return (aIdx >= 0 ? aIdx : 999) - (bIdx >= 0 ? bIdx : 999);
+    });
   }
 
   return { routes, layouts, navigation, components, dataModels, apiRoutes };
@@ -818,7 +849,8 @@ export function calculateQualityScores(
   buildSuccess: boolean,
   componentDepthScore?: number,
   placeholderCount?: number,
-  blueprint?: DomainBlueprint | null
+  blueprint?: DomainBlueprint | null,
+  intentProfile?: { prioritizedSystems: string[] } | null
 ): QualityScores {
   // Coverage score (requirement fulfillment) — only counts files with real content
   const coverage = Math.round(validation.overallCoverage * 100);
@@ -920,16 +952,32 @@ export function calculateQualityScores(
       : 100;
   }
 
-  // Overall (weighted) — depth is dominant, but domain correctness is critical
+  // Intent alignment score — what fraction of prioritizedSystems produced matching pages/components
+  let intentAlignment = 100; // Default: perfect if no intent provided
+  if (intentProfile?.prioritizedSystems?.length) {
+    const allContent = files.map(f => (f.path + " " + f.content).toLowerCase()).join(" ");
+    let matched = 0;
+    for (const system of intentProfile.prioritizedSystems) {
+      const systemLower = system.toLowerCase();
+      // Check if any file path or content references this system's keywords
+      if (allContent.includes(systemLower) || allContent.includes(systemLower.replace(/\s+/g, ""))) {
+        matched++;
+      }
+    }
+    intentAlignment = Math.round((matched / intentProfile.prioritizedSystems.length) * 100);
+  }
+
+  // Overall (weighted) — depth is dominant, intent alignment is a new factor
   let overall = Math.round(
-    coverage * 0.12 +
+    coverage * 0.10 +
     architectureScore * 0.10 +
     featureScore * 0.08 +
     buildScore * 0.10 +
     depthScore * 0.30 +
     uxScore * 0.10 +
     workflowScore * 0.10 +
-    domainScore * 0.10
+    domainScore * 0.10 +
+    intentAlignment * 0.02
   );
 
   // NO QUALITY FLOOR — scores must reflect actual quality
@@ -941,6 +989,7 @@ export function calculateQualityScores(
     feature: featureScore,
     build: buildScore,
     ux: Math.min(100, uxScore),
+    intentAlignment: Math.min(100, Math.max(0, intentAlignment)),
     overall: Math.min(100, Math.max(0, overall)),
   };
 }

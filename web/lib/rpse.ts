@@ -416,8 +416,37 @@ export function getRPSEChartData(domain: string): Array<{ label: string; value: 
 /**
  * Get dashboard stats for a domain — real KPIs with trends.
  */
-export function getRPSEDashboardStats(domain: string): Array<{ label: string; value: string; change: string; trend: "up" | "down" }> {
-  return getRPSEData(domain).dashboardStats;
+export function getRPSEDashboardStats(
+  domain: string,
+  intentProfile?: { successMetrics: Array<{ metric: string; direction: string; targetHint?: string }>; primaryProblem: string } | null
+): Array<{ label: string; value: string; change: string; trend: "up" | "down" }> {
+  const stats = getRPSEData(domain).dashboardStats;
+
+  // If intent has specific success metrics, bias the dashboard to reflect the stated problem
+  if (intentProfile?.successMetrics?.length) {
+    return stats.map(stat => {
+      const matchingMetric = intentProfile.successMetrics.find(m =>
+        stat.label.toLowerCase().includes(m.metric.toLowerCase()) ||
+        m.metric.toLowerCase().includes(stat.label.toLowerCase())
+      );
+      if (matchingMetric) {
+        // Show elevated/worsened value to reflect the stated problem
+        const problemWord = intentProfile.primaryProblem.toLowerCase();
+        if (problemWord.includes("churn") || problemWord.includes("losing") || problemWord.includes("retention")) {
+          return { ...stat, value: stat.value, change: "+18% concern", trend: "down" as const };
+        }
+        if (problemWord.includes("payment") || problemWord.includes("invoice") || problemWord.includes("collection")) {
+          return { ...stat, value: stat.value, change: "30% overdue", trend: "down" as const };
+        }
+        if (problemWord.includes("lead") || problemWord.includes("conversion")) {
+          return { ...stat, value: stat.value, change: "Below target", trend: "down" as const };
+        }
+      }
+      return stat;
+    });
+  }
+
+  return stats;
 }
 
 /**

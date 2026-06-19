@@ -1,0 +1,12 @@
+#!/bin/sh
+# Pre-commit hook: block commit if TypeScript compilation fails
+# This prevents the backtick-in-template-literal bug class from shipping again.
+
+echo "Running TypeScript compilation check..."
+npx tsc --noEmit -p web/tsconfig.json
+if [ $? -ne 0 ]; then
+  echo "❌ TypeScript compilation failed. Commit blocked."
+  echo "Fix the errors above before committing."
+  exit 1
+fi
+echo "✅ TypeScript compilation passed."
