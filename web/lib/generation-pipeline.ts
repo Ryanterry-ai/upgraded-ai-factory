@@ -340,7 +340,7 @@ function getHeroContent(prompt: string): { title: string; subtitle: string; cta:
 }
 
 // Module-level intent profile for copy generation
-let _activeIntentProfile: { primaryProblem: string; primaryGoal: string } | null = null;
+let _activeIntentProfile: { primaryProblem: string; primaryGoal: string; successMetrics?: Array<{ metric: string; direction: string; targetHint?: string }> } | null = null;
 
 function genHero(prompt: string): string {
   const h = getHeroContent(prompt);
@@ -4453,7 +4453,7 @@ export function ${name}() {
   // Chart/Stats components — RPSE domain-specific data
   if (lower.includes("chart") || lower.includes("graph") || lower.includes("stats")) {
     const chartData = getRPSEChartData(domain);
-    const statsData = getRPSEDashboardStats(domain);
+    const statsData = getRPSEDashboardStats(domain, _activeIntentProfile);
     const isStatsComponent = lower.includes("stats") && !lower.includes("chart") && !lower.includes("graph");
     return `"use client";
 import { useState, useEffect } from "react";
@@ -4715,7 +4715,7 @@ export function ${name}() {
 
   // Dashboard components — RPSE domain-specific data
   if (lower.includes("dashboard") || lower.includes("overview")) {
-    const dashStats = getRPSEDashboardStats(domain);
+    const dashStats = getRPSEDashboardStats(domain, _activeIntentProfile);
     const activity = getRPSEActivityFeed(domain);
     const chartData = getRPSEChartData(domain);
     return `"use client";
@@ -4857,7 +4857,7 @@ export function ${name}() {
   );
 }`,
     Stats: (() => {
-      const statsData = getRPSEDashboardStats(domain);
+      const statsData = getRPSEDashboardStats(domain, _activeIntentProfile);
       const metrics = getRPSEMetrics(domain);
       const metricEntries = Object.entries(metrics).slice(0, 4);
       return `export function Stats() {

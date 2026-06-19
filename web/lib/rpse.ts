@@ -415,38 +415,56 @@ export function getRPSEChartData(domain: string): Array<{ label: string; value: 
 
 /**
  * Get dashboard stats for a domain — real KPIs with trends.
+ * Intent-driven: biases stats to reflect the user's stated problem.
  */
 export function getRPSEDashboardStats(
   domain: string,
-  intentProfile?: { successMetrics: Array<{ metric: string; direction: string; targetHint?: string }>; primaryProblem: string } | null
+  intentProfile?: { successMetrics?: Array<{ metric: string; direction: string; targetHint?: string }>; primaryProblem?: string; primaryGoal?: string } | null
 ): Array<{ label: string; value: string; change: string; trend: "up" | "down" }> {
   const stats = getRPSEData(domain).dashboardStats;
 
-  // If intent has specific success metrics, bias the dashboard to reflect the stated problem
-  if (intentProfile?.successMetrics?.length) {
-    return stats.map(stat => {
-      const matchingMetric = intentProfile.successMetrics.find(m =>
-        stat.label.toLowerCase().includes(m.metric.toLowerCase()) ||
-        m.metric.toLowerCase().includes(stat.label.toLowerCase())
-      );
-      if (matchingMetric) {
-        // Show elevated/worsened value to reflect the stated problem
-        const problemWord = intentProfile.primaryProblem.toLowerCase();
-        if (problemWord.includes("churn") || problemWord.includes("losing") || problemWord.includes("retention")) {
-          return { ...stat, value: stat.value, change: "+18% concern", trend: "down" as const };
-        }
-        if (problemWord.includes("payment") || problemWord.includes("invoice") || problemWord.includes("collection")) {
-          return { ...stat, value: stat.value, change: "30% overdue", trend: "down" as const };
-        }
-        if (problemWord.includes("lead") || problemWord.includes("conversion")) {
-          return { ...stat, value: stat.value, change: "Below target", trend: "down" as const };
+  if (!intentProfile) return stats;
+
+  const problem = (intentProfile.primaryProblem || "").toLowerCase();
+  const goal = (intentProfile.primaryGoal || "").toLowerCase();
+
+  // Intent-driven problem patterns: bias dashboard stats to reflect stated problem
+  const problemPatterns: Array<{ keywords: string[]; labelMatch: string[]; change: string; trend: "up" | "down" }> = [
+    { keywords: ["churn", "losing", "retention", "leaving"], labelMatch: ["retention", "churn", "active", "member"], change: "+18% concern", trend: "down" },
+    { keywords: ["payment", "invoice", "collection", "overdue"], labelMatch: ["payment", "invoice", "revenue", "collection"], change: "30% overdue", trend: "down" },
+    { keywords: ["lead", "conversion", "pipeline", "acquisition"], labelMatch: ["lead", "conversion", "pipeline", "prospect"], change: "Below target", trend: "down" },
+    { keywords: ["inventory", "stock", "out of stock", "reorder"], labelMatch: ["inventory", "stock", "product"], change: "Low stock alert", trend: "down" },
+    { keywords: ["wait", "waitlist", "booking", "reservation"], labelMatch: ["booking", "reservation", "waitlist", "table"], change: "High demand", trend: "down" },
+    { keywords: ["engagement", "usage", "adoption", "activation"], labelMatch: ["usage", "engagement", "active", "feature"], change: "Below target", trend: "down" },
+    { keywords: ["revenue", "growth", "sales", "upsell"], labelMatch: ["revenue", "sales", "order", "growth"], change: "Needs improvement", trend: "down" },
+    { keywords: ["no-show", "attendance", "show up"], labelMatch: ["attendance", "check-in", "show", "visit"], change: "12% no-show", trend: "down" },
+    { keywords: ["satisfaction", "review", "complaint", "nps"], labelMatch: ["satisfaction", "rating", "review", "nps"], change: "Below 4.0", trend: "down" },
+  ];
+
+  return stats.map(stat => {
+    const statLabel = stat.label.toLowerCase();
+
+    // Check problem patterns
+    for (const pattern of problemPatterns) {
+      const matchesProblem = pattern.keywords.some(k => problem.includes(k));
+      const matchesLabel = pattern.labelMatch.some(l => statLabel.includes(l));
+      if (matchesProblem && matchesLabel) {
+        return { ...stat, change: pattern.change, trend: pattern.trend };
+      }
+    }
+
+    // Check goal alignment: if goal mentions a metric, highlight it
+    if (goal) {
+      const goalKeywords = goal.split(/\s+/).filter(w => w.length > 4);
+      for (const kw of goalKeywords) {
+        if (statLabel.includes(kw)) {
+          return { ...stat, change: "Focus area", trend: "up" };
         }
       }
-      return stat;
-    });
-  }
+    }
 
-  return stats;
+    return stat;
+  });
 }
 
 /**
