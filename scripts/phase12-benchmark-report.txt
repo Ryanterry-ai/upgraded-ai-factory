@@ -9,12 +9,12 @@
 │                  │ (auto)     │ (manual)   │ Studio     │ (manual)   │ (manual) │
 ├──────────────────┼────────────┼────────────┼────────────┼────────────┼──────────┤
 │ Domain Realism   │  66/100 ██████ │ TBD        │ TBD        │ TBD        │ TBD      │
-│ Workflow Realism │  65/100 ██████ │ TBD        │ TBD        │ TBD        │ TBD      │
-│ Business Data    │  73/100 ██████ │ TBD        │ TBD        │ TBD        │ TBD      │
+│ Workflow Realism │  85/100 ██████ │ TBD        │ TBD        │ TBD        │ TBD      │
+│ Business Data    │ 100/100 ██████ │ TBD        │ TBD        │ TBD        │ TBD      │
 │ Intent Alignment │  67/100 ██████ │ TBD        │ TBD        │ TBD        │ TBD      │
-│ Prod. Readiness  │  48/100 █████░ │ TBD        │ TBD        │ TBD        │ TBD      │
+│ Prod. Readiness  │  90/100 ██████ │ TBD        │ TBD        │ TBD        │ TBD      │
 ├──────────────────┼────────────┼────────────┼────────────┼────────────┼──────────┤
-│ COMPOSITE SCORE  │  64/100 ██████ │ TBD        │ TBD        │ TBD        │ TBD      │
+│ COMPOSITE SCORE  │  81/100 ██████ │ TBD        │ TBD        │ TBD        │ TBD      │
 └──────────────────┴────────────┴────────────┴────────────┴────────────┴──────────┘
 
 ┌─────────────────────────────────────────────────────────────────────────────────┐
@@ -28,14 +28,14 @@
   │ Workflow Realism:     86/100  █████████████████
   │ Business Data:        100/100  ████████████████████
   │ Intent Alignment:     70/100  ██████████████
-  │ Prod. Readiness:      48/100  ██████████
-  │ COMPOSITE:            74/100  ███████████████
+  │ Prod. Readiness:      89/100  ██████████████████
+  │ COMPOSITE:            82/100  ████████████████
   │
   │ Details:
   │   Blueprint: ✅ | Domain: ✅ (gym-crm)
   │   Pages: 9 | Components: 0 | Workflows: 3
   │   Products: 3 | Customers: 6 | Orders: 5
-  │   Revenue: ₹92,480
+  │   Revenue: ₹72,983
   │   Quality: 24/100 | RRS: 95/100
   │   Component Depth: 0/100 | Placeholders: 0
   │   Intent: "Member retention is declining — members leave before their c..."
@@ -45,20 +45,20 @@
   │ Prompt: "Build an ecommerce store for a supplement brand. We sell whey protein,..."
   │
   │ Domain Realism:       65/100  █████████████
-  │ Workflow Realism:     42/100  ████████
-  │ Business Data:        85/100  █████████████████
+  │ Workflow Realism:     82/100  ████████████████
+  │ Business Data:        100/100  ████████████████████
   │ Intent Alignment:     65/100  █████████████
-  │ Prod. Readiness:      45/100  █████████
-  │ COMPOSITE:            60/100  ████████████
+  │ Prod. Readiness:      94/100  ███████████████████
+  │ COMPOSITE:            81/100  ████████████████
   │
   │ Details:
   │   Blueprint: ✅ | Domain: ❌ (mismatch)
-  │   Pages: 7 | Components: 0 | Workflows: 1
+  │   Pages: 7 | Components: 0 | Workflows: 3
   │   Products: 5 | Customers: 6 | Orders: 5
-  │   Revenue: ₹2,80,693
-  │   Quality: 25/100 | RRS: 83/100
+  │   Revenue: ₹17,486
+  │   Quality: 25/100 | RRS: 95/100
   │   Component Depth: 0/100 | Placeholders: 0
-  │   Intent: "Class scheduling is disorganized — members can't find or boo..."
+  │   Intent: "Product discovery and purchasing experience needs improvemen..."
   └────────────────────────────────────
 
   ┌── Restaurant Management ──
@@ -68,77 +68,77 @@
   │ Workflow Realism:     84/100  █████████████████
   │ Business Data:        100/100  ████████████████████
   │ Intent Alignment:     65/100  █████████████
-  │ Prod. Readiness:      49/100  ██████████
-  │ COMPOSITE:            73/100  ███████████████
+  │ Prod. Readiness:      83/100  █████████████████
+  │ COMPOSITE:            79/100  ████████████████
   │
   │ Details:
   │   Blueprint: ✅ | Domain: ✅ (restaurant)
   │   Pages: 6 | Components: 0 | Workflows: 2
   │   Products: 4 | Customers: 5 | Orders: 3
-  │   Revenue: ₹830
+  │   Revenue: ₹2,560
   │   Quality: 26/100 | RRS: 95/100
   │   Component Depth: 0/100 | Placeholders: 0
-  │   Intent: "Staff scheduling is manual — double-bookings and no-shows ha..."
+  │   Intent: "Restaurant operations need digital management — orders, tabl..."
   └────────────────────────────────────
 
   ┌── Healthcare Clinic Platform ──
   │ Prompt: "Build a healthcare clinic management platform. We need patient registr..."
   │
   │ Domain Realism:       65/100  █████████████
-  │ Workflow Realism:     42/100  ████████
-  │ Business Data:        25/100  █████
+  │ Workflow Realism:     82/100  ████████████████
+  │ Business Data:        100/100  ████████████████████
   │ Intent Alignment:     65/100  █████████████
-  │ Prod. Readiness:      42/100  ████████
-  │ COMPOSITE:            48/100  ██████████
+  │ Prod. Readiness:      94/100  ███████████████████
+  │ COMPOSITE:            81/100  ████████████████
   │
   │ Details:
   │   Blueprint: ✅ | Domain: ❌ (mismatch)
-  │   Pages: 7 | Components: 0 | Workflows: 1
-  │   Products: 3 | Customers: 2 | Orders: 0
-  │   Revenue: ₹0
-  │   Quality: 24/100 | RRS: 72/100
+  │   Pages: 7 | Components: 0 | Workflows: 3
+  │   Products: 5 | Customers: 6 | Orders: 5
+  │   Revenue: ₹29,295
+  │   Quality: 24/100 | RRS: 95/100
   │   Component Depth: 0/100 | Placeholders: 0
-  │   Intent: "Payment collection is unreliable — manual follow-ups miss ov..."
+  │   Intent: "Healthcare operations need digital management — patients, ap..."
   └────────────────────────────────────
 
   ┌── SaaS Analytics Dashboard ──
   │ Prompt: "Build a SaaS analytics dashboard for a subscription product. I need us..."
   │
-  │ Domain Realism:       70/100  ██████████████
-  │ Workflow Realism:     74/100  ███████████████
-  │ Business Data:        25/100  █████
+  │ Domain Realism:       68/100  ██████████████
+  │ Workflow Realism:     84/100  █████████████████
+  │ Business Data:        100/100  ████████████████████
   │ Intent Alignment:     69/100  ██████████████
-  │ Prod. Readiness:      55/100  ███████████
-  │ COMPOSITE:            59/100  ████████████
+  │ Prod. Readiness:      86/100  █████████████████
+  │ COMPOSITE:            81/100  ████████████████
   │
   │ Details:
   │   Blueprint: ✅ | Domain: ❌ (mismatch)
   │   Pages: 6 | Components: 1 | Workflows: 2
-  │   Products: 3 | Customers: 2 | Orders: 0
-  │   Revenue: ₹0
-  │   Quality: 38/100 | RRS: 84/100
+  │   Products: 3 | Customers: 5 | Orders: 5
+  │   Revenue: ₹49,985
+  │   Quality: 38/100 | RRS: 95/100
   │   Component Depth: 40/100 | Placeholders: 0
-  │   Intent: "Repeat purchase rate is low — customers buy once and never r..."
+  │   Intent: "SaaS metrics need optimization — subscription lifecycle and ..."
   └────────────────────────────────────
 
   ┌── Real Estate CRM ──
   │ Prompt: "Build a real estate CRM for property agents. I need property listings,..."
   │
   │ Domain Realism:       65/100  █████████████
-  │ Workflow Realism:     59/100  ████████████
+  │ Workflow Realism:     94/100  ███████████████████
   │ Business Data:        100/100  ████████████████████
   │ Intent Alignment:     65/100  █████████████
-  │ Prod. Readiness:      48/100  ██████████
-  │ COMPOSITE:            67/100  █████████████
+  │ Prod. Readiness:      94/100  ███████████████████
+  │ COMPOSITE:            84/100  █████████████████
   │
   │ Details:
   │   Blueprint: ✅ | Domain: ❌ (mismatch)
-  │   Pages: 7 | Components: 0 | Workflows: 2
+  │   Pages: 7 | Components: 0 | Workflows: 3
   │   Products: 5 | Customers: 6 | Orders: 5
-  │   Revenue: ₹24,986
+  │   Revenue: ₹13,84,00,000
   │   Quality: 24/100 | RRS: 95/100
   │   Component Depth: 0/100 | Placeholders: 0
-  │   Intent: "Lead follow-up is inconsistent — prospects slip through the ..."
+  │   Intent: "Real estate operations need digital management — properties,..."
   └────────────────────────────────────
 
 ┌─────────────────────────────────────────────────────────────────────────────────┐

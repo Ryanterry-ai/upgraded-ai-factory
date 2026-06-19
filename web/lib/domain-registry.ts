@@ -295,6 +295,22 @@ const ECOMMERCE_STORE: DomainBlueprint = {
         { id: "ship", name: "Ship", description: "Fulfill order" },
         { id: "deliver", name: "Deliver", description: "Customer receives" },
       ], outputEntity: "order" },
+    { id: "wf-inventory", name: "Inventory Reorder", description: "Low stock → PO → Supplier → Restock", trigger: "Stock falls below reorder point",
+      steps: [
+        { id: "detect", name: "Low Stock Detected", description: "Alert triggered" },
+        { id: "po", name: "Create PO", description: "Purchase order created" },
+        { id: "confirm", name: "Supplier Confirms", description: "Supplier accepts" },
+        { id: "receive", name: "Receive Stock", description: "Goods received" },
+        { id: "update", name: "Update Inventory", description: "Stock levels updated" },
+      ], outputEntity: "product" },
+    { id: "wf-returns", name: "Return & Refund", description: "Return request → Approve → Refund → Restock", trigger: "Customer requests return",
+      steps: [
+        { id: "request", name: "Return Requested", description: "Customer initiates" },
+        { id: "approve", name: "Approve Return", description: "Staff reviews" },
+        { id: "receive-return", name: "Receive Return", description: "Product returned" },
+        { id: "refund", name: "Process Refund", description: "Refund issued" },
+        { id: "restock", name: "Restock", description: "Product restocked" },
+      ], outputEntity: "order" },
   ],
 
   pages: [
@@ -727,6 +743,20 @@ const HEALTHCARE_CLINIC: DomainBlueprint = {
         { id: "prescribe", name: "Prescribe", description: "Issue prescription" },
         { id: "billing", name: "Billing", description: "Collect payment" },
       ], outputEntity: "appointment" },
+    { id: "wf-prescription", name: "Prescription Fulfillment", description: "Prescribe → Pharmacy → Dispense → Follow-up", trigger: "Doctor issues prescription",
+      steps: [
+        { id: "issue", name: "Issue Prescription", description: "Doctor prescribes" },
+        { id: "pharmacy", name: "Send to Pharmacy", description: "Pharmacy receives" },
+        { id: "dispense", name: "Dispense Medicine", description: "Medicines dispensed" },
+        { id: "followup", name: "Schedule Follow-up", description: "Follow-up booked" },
+      ], outputEntity: "prescription" },
+    { id: "wf-emergency", name: "Emergency Intake", description: "Arrival → Triage → Treatment → Discharge", trigger: "Emergency patient arrives",
+      steps: [
+        { id: "arrive", name: "Patient Arrives", description: "Emergency arrival" },
+        { id: "triage", name: "Triage", description: "Assess severity" },
+        { id: "treat", name: "Treatment", description: "Provide treatment" },
+        { id: "discharge", name: "Discharge", description: "Patient discharged" },
+       ], outputEntity: "appointment" },
   ],
 
   pages: [
@@ -889,6 +919,21 @@ const REAL_ESTATE_CRM: DomainBlueprint = {
         { id: "book", name: "Book", description: "Token payment" },
         { id: "register", name: "Register", description: "Final registration" },
       ], outputEntity: "deal" },
+    { id: "wf-rental", name: "Rental Process", description: "Lead → Visit → Agreement → Move-in", trigger: "Rental inquiry",
+      steps: [
+        { id: "inquiry", name: "Rental Inquiry", description: "Tenant inquiry" },
+        { id: "match", name: "Match Property", description: "Find rental properties" },
+        { id: "visit", name: "Schedule Visit", description: "Property visit" },
+        { id: "agreement", name: "Rental Agreement", description: "Sign agreement" },
+        { id: "movein", name: "Move-in", description: "Tenant moves in" },
+      ], outputEntity: "deal" },
+    { id: "wf-followup", name: "Lead Follow-up", description: "New lead → Contact → Nurture → Convert", trigger: "New lead captured",
+      steps: [
+        { id: "capture", name: "Lead Captured", description: "Inquiry received" },
+        { id: "contact", name: "First Contact", description: "Agent calls" },
+        { id: "nurture", name: "Nurture", description: "Regular follow-ups" },
+        { id: "convert", name: "Convert", description: "Lead becomes client" },
+      ], outputEntity: "lead" },
   ],
 
   pages: [

@@ -147,13 +147,76 @@ function validateAndNormalize(
 
 function fallbackFromSolutionModel(prompt: string, solutionModel: SolutionModel): IntentProfile {
   const lower = prompt.toLowerCase();
+  const domain = solutionModel.domain.toLowerCase();
 
   // ═══ RULE-BASED INTENT EXTRACTION (Phase 2) ═══
   // Analyze the prompt text to infer the dominant problem and prioritize systems.
   // This runs when no LLM key is available.
+  //
+  // Strategy: Domain-specific rules first (higher weight), then generic rules.
+  // A domain-specific match beats any generic match regardless of confidence.
 
-  // Problem detection rules — ordered by specificity (most specific first)
-  const problemRules: Array<{
+  // Domain-specific rules — checked first, weighted 2x
+  const domainRules: Array<{
+    pattern: RegExp;
+    problem: string;
+    goal: string;
+    systems: string[];
+    confidence: number;
+    domains: string[];  // only apply to these domains
+  }> = [
+    // Supplement-specific: authenticity / trust
+    { pattern: /authentic|trust|lab.?test|fssai|certif|genuin|quality|clean.?label|transparent/i,
+      problem: "Customers don't trust supplement authenticity — lab reports and certifications matter",
+      goal: "Build trust through transparent lab testing, FSSAI compliance, and ingredient traceability",
+      systems: ["Brand Store", "Goal Based Shopping"],
+      confidence: 0.9, domains: ["ecommerce", "supplement", "retail"] },
+    // Supplement-specific: repeat / loyalty / retention
+    { pattern: /repeat|loyal|subscri|reorder|coming.?back|lifetime.?value|subscription/i,
+      problem: "Repeat purchase rate is low — customers buy once and never return",
+      goal: "Increase repeat purchases with subscription plans, loyalty rewards, and reorder reminders",
+      systems: ["Goal Based Shopping", "Brand Store"],
+      confidence: 0.9, domains: ["ecommerce", "supplement", "retail"] },
+    // Ecommerce-specific: product / catalog
+    { pattern: /product|catalog|listing|brand|review|cart|checkout/i,
+      problem: "Product discovery and purchasing experience needs improvement",
+      goal: "Build a seamless product browsing and checkout experience",
+      systems: ["Product Catalog", "Order Management"],
+      confidence: 0.8, domains: ["ecommerce", "supplement", "retail"] },
+    // Restaurant-specific: ordering / reservation
+    { pattern: /order|reservation|menu|kitchen|table|dining|food/i,
+      problem: "Restaurant operations need digital management — orders, tables, and menu",
+      goal: "Streamline restaurant operations with digital ordering and reservation system",
+      systems: ["Order Management", "Reservation System"],
+      confidence: 0.8, domains: ["restaurant", "food", "dining"] },
+    // Healthcare-specific: patient / appointment
+    { pattern: /patient|appointment|doctor|prescription|medical|health/i,
+      problem: "Healthcare operations need digital management — patients, appointments, records",
+      goal: "Streamline clinic operations with digital patient and appointment management",
+      systems: ["Patient Management", "Appointment Scheduling"],
+      confidence: 0.8, domains: ["healthcare", "clinic", "medical"] },
+    // Real estate-specific: property / lead
+    { pattern: /property|listing|agent|lead|deal|visit|real estate/i,
+      problem: "Real estate operations need digital management — properties, leads, deals",
+      goal: "Streamline real estate operations with digital property and lead management",
+      systems: ["Lead Management", "Property Listings"],
+      confidence: 0.8, domains: ["real estate", "property", "realty"] },
+    // Hotel-specific: room / booking
+    { pattern: /room|booking|reservation|guest|check.?in|check.?out|hotel/i,
+      problem: "Hotel operations need digital management — rooms, bookings, guests",
+      goal: "Streamline hotel operations with digital room and booking management",
+      systems: ["Room Management", "Reservation System"],
+      confidence: 0.8, domains: ["hotel", "hospitality", "accommodation"] },
+    // SaaS-specific: subscription / churn
+    { pattern: /subscription|churn|trial|convert|recurring|mrr|arr/i,
+      problem: "SaaS metrics need optimization — subscription lifecycle and retention",
+      goal: "Improve subscription metrics with better trial conversion and churn prevention",
+      systems: ["Subscription Management", "Analytics"],
+      confidence: 0.8, domains: ["saas", "subscription", "software"] },
+  ];
+
+  // Generic rules — checked second, lower priority
+  const genericRules: Array<{
     pattern: RegExp;
     problem: string;
     goal: string;
@@ -196,18 +259,6 @@ function fallbackFromSolutionModel(prompt: string, solutionModel: SolutionModel)
       goal: "Enable easy class booking and schedule management",
       systems: ["Staff Management", "Member Management"],
       confidence: 0.5 },
-    // Supplement-specific: authenticity / trust
-    { pattern: /authentic|trust|lab.?test|fssai|certif|genuin|quality|clean.?label|transparent/i,
-      problem: "Customers don't trust supplement authenticity — lab reports and certifications matter",
-      goal: "Build trust through transparent lab testing, FSSAI compliance, and ingredient traceability",
-      systems: ["Brand Store", "Goal Based Shopping"],
-      confidence: 0.8 },
-    // Supplement-specific: repeat / loyalty / retention
-    { pattern: /repeat|loyal|retention|subscri|reorder|coming.?back|lifetime.?value|subscription/i,
-      problem: "Repeat purchase rate is low — customers buy once and never return",
-      goal: "Increase repeat purchases with subscription plans, loyalty rewards, and reorder reminders",
-      systems: ["Goal Based Shopping", "Brand Store"],
-      confidence: 0.8 },
     // Ecommerce-specific
     { pattern: /order|fulfillment|shipping|delivery/i,
       problem: "Order fulfillment is slow — customers complain about delivery times",
@@ -232,13 +283,29 @@ function fallbackFromSolutionModel(prompt: string, solutionModel: SolutionModel)
       confidence: 0.6 },
   ];
 
-  // Find the best matching rule
-  let bestRule: typeof problemRules[0] | null = null;
+  // Phase 1: Check domain-specific rules first (2x confidence weight)
+  let bestRule: typeof genericRules[0] | null = null;
   let bestConfidence = 0;
-  for (const rule of problemRules) {
-    if (rule.pattern.test(lower) && rule.confidence > bestConfidence) {
-      bestRule = rule;
-      bestConfidence = rule.confidence;
+  let isDomainMatch = false;
+
+  for (const rule of domainRules) {
+    if (rule.pattern.test(lower) && rule.domains.some(d => domain.includes(d) || lower.includes(d))) {
+      const weightedConfidence = rule.confidence * 2; // Domain-specific gets 2x weight
+      if (weightedConfidence > bestConfidence) {
+        bestRule = rule;
+        bestConfidence = weightedConfidence;
+        isDomainMatch = true;
+      }
+    }
+  }
+
+  // Phase 2: If no domain-specific match, check generic rules
+  if (!isDomainMatch) {
+    for (const rule of genericRules) {
+      if (rule.pattern.test(lower) && rule.confidence > bestConfidence) {
+        bestRule = rule;
+        bestConfidence = rule.confidence;
+      }
     }
   }
 
@@ -260,7 +327,7 @@ function fallbackFromSolutionModel(prompt: string, solutionModel: SolutionModel)
     constraints: [],
     prioritizedSystems: bestRule?.systems ?? solutionModel.systems.map(s => s.name),
     source: "fallback-default",
-    confidence: bestRule ? 0.6 : 0.3,
+    confidence: bestRule ? (isDomainMatch ? 0.8 : 0.6) : 0.3,
   };
 }
 

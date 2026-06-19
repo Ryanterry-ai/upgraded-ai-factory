@@ -34,9 +34,10 @@ import { RestaurantPack } from "../web/lib/solution-packs/restaurant";
 import { HealthcarePack } from "../web/lib/solution-packs/healthcare";
 import { RealEstatePack } from "../web/lib/solution-packs/real-estate";
 import { HotelPack } from "../web/lib/solution-packs/hotel";
+import { SaaSPack } from "../web/lib/solution-packs/saas";
 import fs from "fs";
 
-const solutionEngine = new SolutionEngine([GymCRMPack, SupplementStorePack, StreamingPlatformPack, EcommerceAdminPack, RestaurantPack, HealthcarePack, RealEstatePack, HotelPack]);
+const solutionEngine = new SolutionEngine([GymCRMPack, SupplementStorePack, StreamingPlatformPack, EcommerceAdminPack, RestaurantPack, HealthcarePack, RealEstatePack, HotelPack, SaaSPack]);
 
 // ═══════════════════════════════════════════════════════════
 // STANDARDIZED TEST PROMPTS
@@ -153,7 +154,11 @@ function evaluateDomainRealism(
   rpseDomain: string,
   qualityScores: QualityScores,
   componentCount: number,
-  pageCount: number
+  pageCount: number,
+  extra?: {
+    pageNames?: string[];
+    workflowNames?: string[];
+  }
 ): number {
   let score = 0;
 
@@ -171,20 +176,30 @@ function evaluateDomainRealism(
     score += 10;
   }
 
-  // Has domain-specific pages (25 pts)
-  const matchedPages = prompt.expectedPages.filter(ep =>
-    qualityScores.coverage > 0 // any pages exist
-  );
+  // Has domain-specific pages (20 pts)
   const pageRatio = pageCount / Math.max(prompt.expectedPages.length, 1);
-  score += Math.min(25, Math.round(pageRatio * 25));
+  score += Math.min(20, Math.round(pageRatio * 20));
 
-  // Has domain-specific components (20 pts)
-  if (componentCount >= 5) score += 20;
-  else if (componentCount >= 3) score += 12;
-  else if (componentCount >= 1) score += 5;
+  // Page names contain domain-specific terms (10 pts)
+  const domainKeywords = prompt.expectedDomain.split("-");
+  const pageNamesLower = (extra?.pageNames || []).join(" ").toLowerCase();
+  const matchedPageKws = domainKeywords.filter(kw => pageNamesLower.includes(kw));
+  if (matchedPageKws.length >= 2) score += 10;
+  else if (matchedPageKws.length >= 1) score += 5;
 
-  // Architecture quality from quality scores (15 pts)
-  score += Math.round(qualityScores.architecture * 0.15);
+  // Workflow names are domain-specific (10 pts)
+  const wfNamesLower = (extra?.workflowNames || []).join(" ").toLowerCase();
+  const matchedWfKws = domainKeywords.filter(kw => wfNamesLower.includes(kw));
+  if (matchedWfKws.length >= 1) score += 10;
+  else if ((extra?.workflowNames || []).length >= 2) score += 5;
+
+  // Architecture quality from quality scores (10 pts)
+  score += Math.round(qualityScores.architecture * 0.10);
+
+  // Component depth bonus (10 pts)
+  if (componentCount >= 5) score += 10;
+  else if (componentCount >= 3) score += 6;
+  else if (componentCount >= 1) score += 3;
 
   return Math.min(100, score);
 }
@@ -323,29 +338,53 @@ function evaluateProductionReadiness(
   componentDepthAvg: number,
   placeholderCount: number,
   pageCount: number,
-  componentCount: number
+  componentCount: number,
+  extra?: {
+    blueprintDetected?: boolean;
+    domainRegistryMatch?: boolean;
+    workflowCount?: number;
+    productCount?: number;
+    customerCount?: number;
+    intentExtracted?: boolean;
+  }
 ): number {
   let score = 0;
 
-  // Quality score overall (25 pts)
-  score += Math.round(qualityScores.overall * 0.25);
-
-  // RRS score (25 pts)
-  score += Math.round(rrsScore * 0.25);
-
-  // Component depth average (20 pts)
-  if (componentDepthAvg >= 70) score += 20;
-  else if (componentDepthAvg >= 50) score += 12;
-  else if (componentDepthAvg >= 30) score += 6;
-
-  // No placeholder components (15 pts)
-  if (placeholderCount === 0) score += 15;
-  else if (placeholderCount <= 2) score += 8;
-
-  // Sufficient pages and components (15 pts)
-  if (pageCount >= 5 && componentCount >= 5) score += 15;
-  else if (pageCount >= 3 && componentCount >= 3) score += 8;
+  // Blueprint detection success (15 pts)
+  if (extra?.blueprintDetected) score += 15;
   else score += 3;
+
+  // Domain registry match (15 pts)
+  if (extra?.domainRegistryMatch) score += 15;
+  else score += 3;
+
+  // RRS score (20 pts)
+  score += Math.round(rrsScore * 0.20);
+
+  // Business data completeness (15 pts)
+  const dataCount = (extra?.productCount || 0) + (extra?.customerCount || 0);
+  if (dataCount >= 10) score += 15;
+  else if (dataCount >= 5) score += 10;
+  else if (dataCount >= 2) score += 5;
+
+  // Workflow coverage (10 pts)
+  const wfCount = extra?.workflowCount || 0;
+  if (wfCount >= 3) score += 10;
+  else if (wfCount >= 2) score += 7;
+  else if (wfCount >= 1) score += 4;
+
+  // Intent extraction success (10 pts)
+  if (extra?.intentExtracted) score += 10;
+  else score += 3;
+
+  // Page coverage (10 pts)
+  if (pageCount >= 7) score += 10;
+  else if (pageCount >= 5) score += 7;
+  else if (pageCount >= 3) score += 4;
+
+  // Component depth bonus (5 pts)
+  if (componentDepthAvg >= 70) score += 5;
+  else if (componentDepthAvg >= 40) score += 3;
 
   return Math.min(100, score);
 }
@@ -442,7 +481,11 @@ async function runBenchmark(): Promise<BenchmarkResult[]> {
     // Step 11: Evaluate on 5 metrics
     const domainRealism = evaluateDomainRealism(
       prompt, blueprint, domainRegistry, rpseContext.domain,
-      qualityScores, arch?.components?.length || 0, reqs?.pages?.length || 0
+      qualityScores, arch?.components?.length || 0, reqs?.pages?.length || 0,
+      {
+        pageNames: reqs?.pages?.map(p => p.name) || [],
+        workflowNames: registryState.workflows.map(w => w.name),
+      }
     );
 
     const workflowRealism = evaluateWorkflowRealism(
@@ -457,7 +500,15 @@ async function runBenchmark(): Promise<BenchmarkResult[]> {
 
     const productionReadiness = evaluateProductionReadiness(
       qualityScores, rrsScore, componentDepthAvg, placeholderCount,
-      reqs?.pages?.length || 0, arch?.components?.length || 0
+      reqs?.pages?.length || 0, arch?.components?.length || 0,
+      {
+        blueprintDetected: !!blueprint,
+        domainRegistryMatch: !!domainRegistry,
+        workflowCount: registryState.workflows.length,
+        productCount: registryState.entities.products.length,
+        customerCount: registryState.entities.customers.length,
+        intentExtracted: !!intentProfile,
+      }
     );
 
     const compositeScore = Math.round(

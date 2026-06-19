@@ -705,20 +705,52 @@ function computeOrderTotal(items: { price: number; qty: number }[]): number {
 }
 
 export function generateFromRegistry(domainId: string): BusinessState {
+  // Normalize domain ID — RPSE may return short forms (e.g. "healthcare" vs "healthcare-clinic")
+  const normalizedId = normalizeDomainId(domainId);
+
   // Try product config first
-  const config = DOMAIN_PRODUCT_CONFIGS[domainId];
+  const config = DOMAIN_PRODUCT_CONFIGS[normalizedId] || DOMAIN_PRODUCT_CONFIGS[domainId];
   if (config) {
-    return generateFromConfig(domainId, config);
+    return generateFromConfig(normalizedId || domainId, config);
   }
 
   // Fallback: try direct ID lookup first, then keyword detection
-  const blueprint = getDomainById(domainId) || detectDomain(domainId);
+  const blueprint = getDomainById(normalizedId) || getDomainById(domainId) || detectDomain(domainId);
   if (blueprint) {
-    return generateFromBlueprint(domainId, blueprint);
+    return generateFromConfig(domainId, {
+      currency: "₹",
+      products: blueprint.dataModels.slice(0, 3).map((m, i) => ({
+        name: `${m} Service ${i + 1}`, brand: blueprint.name, price: (i + 1) * 500, originalPrice: (i + 1) * 700,
+        category: m.toLowerCase(), rating: 4.5, benefits: [`${m}-related service`],
+      })),
+      customers: [
+        { name: "Rajesh Kumar", city: "Mumbai", email: "rajesh.k@gmail.com", phone: "+91 98765 43210" },
+        { name: "Priya Sharma", city: "Bangalore", email: "priya.s@outlook.com", phone: "+91 87654 32109" },
+        { name: "Vikram Singh", city: "Noida", email: "vikram.singh@yahoo.com", phone: "+91 76543 21098" },
+      ],
+      orderPrefix: domainId.substring(0, 3).toUpperCase(),
+    });
   }
 
   // Ultimate fallback: supplement store
   return generateFromConfig("supplement-store", DOMAIN_PRODUCT_CONFIGS["supplement-store"]);
+}
+
+function normalizeDomainId(domainId: string): string {
+  // Map RPSE short forms to config keys
+  const aliasMap: Record<string, string> = {
+    "healthcare": "healthcare-clinic",
+    "saas": "saas-platform",
+    "ecommerce": "ecommerce-store",
+    "gym": "gym-crm",
+    "restaurant": "restaurant",
+    "real-estate": "real-estate-crm",
+    "hotel": "hotel-booking",
+    "education": "education-platform",
+    "agency": "agency-crm",
+    "supplement": "supplement-store",
+  };
+  return aliasMap[domainId] || domainId;
 }
 
 function generateFromConfig(domainId: string, config: DomainProductConfig): BusinessState {

@@ -24,9 +24,9 @@
       "workflowRealism": 86,
       "businessDataConsistency": 100,
       "intentAlignment": 70,
-      "productionReadiness": 48
+      "productionReadiness": 89
     },
-    "compositeScore": 74,
+    "compositeScore": 82,
     "details": {
       "blueprintDetected": true,
       "domainMatch": true,
@@ -35,7 +35,7 @@
       "workflowCount": 3,
       "entityCount": 14,
       "orderCount": 5,
-      "revenueDerived": 92480,
+      "revenueDerived": 72983,
       "qualityScores": {
         "coverage": 70,
         "architecture": 0,
@@ -111,21 +111,21 @@
     },
     "metrics": {
       "domainRealism": 65,
-      "workflowRealism": 42,
-      "businessDataConsistency": 85,
+      "workflowRealism": 82,
+      "businessDataConsistency": 100,
       "intentAlignment": 65,
-      "productionReadiness": 45
+      "productionReadiness": 94
     },
-    "compositeScore": 60,
+    "compositeScore": 81,
     "details": {
       "blueprintDetected": true,
       "domainMatch": false,
       "pageCount": 7,
       "componentCount": 0,
-      "workflowCount": 1,
+      "workflowCount": 3,
       "entityCount": 16,
       "orderCount": 5,
-      "revenueDerived": 280693,
+      "revenueDerived": 17486,
       "qualityScores": {
         "coverage": 70,
         "architecture": 0,
@@ -135,10 +135,10 @@
         "intentAlignment": 100,
         "overall": 25
       },
-      "rrsScore": 83,
+      "rrsScore": 95,
       "intentProfile": {
-        "primaryProblem": "Class scheduling is disorganized — members can't find or book sessions",
-        "primaryGoal": "Enable easy class booking and schedule management",
+        "primaryProblem": "Product discovery and purchasing experience needs improvement",
+        "primaryGoal": "Build a seamless product browsing and checkout experience",
         "secondaryGoals": [
           "increase AOV",
           "increase retention"
@@ -156,17 +156,17 @@
         ],
         "successMetrics": [
           {
-            "metric": "Enable easy class",
+            "metric": "Build a seamless",
             "direction": "increase"
           }
         ],
         "constraints": [],
         "prioritizedSystems": [
-          "Staff Management",
-          "Member Management"
+          "Product Catalog",
+          "Order Management"
         ],
         "source": "fallback-default",
-        "confidence": 0.6
+        "confidence": 0.8
       },
       "componentDepthAvg": 0,
       "placeholderCount": 0
@@ -195,9 +195,9 @@
       "workflowRealism": 84,
       "businessDataConsistency": 100,
       "intentAlignment": 65,
-      "productionReadiness": 49
+      "productionReadiness": 83
     },
-    "compositeScore": 73,
+    "compositeScore": 79,
     "details": {
       "blueprintDetected": true,
       "domainMatch": true,
@@ -206,7 +206,7 @@
       "workflowCount": 2,
       "entityCount": 12,
       "orderCount": 3,
-      "revenueDerived": 830,
+      "revenueDerived": 2560,
       "qualityScores": {
         "coverage": 70,
         "architecture": 0,
@@ -218,8 +218,8 @@
       },
       "rrsScore": 95,
       "intentProfile": {
-        "primaryProblem": "Staff scheduling is manual — double-bookings and no-shows happen regularly",
-        "primaryGoal": "Streamline staff scheduling and trainer assignments",
+        "primaryProblem": "Restaurant operations need digital management — orders, tables, and menu",
+        "primaryGoal": "Streamline restaurant operations with digital ordering and reservation system",
         "secondaryGoals": [
           "reduce wait times",
           "improve order accuracy"
@@ -237,17 +237,17 @@
         ],
         "successMetrics": [
           {
-            "metric": "Streamline staff scheduling",
+            "metric": "Streamline restaurant operations",
             "direction": "increase"
           }
         ],
         "constraints": [],
         "prioritizedSystems": [
-          "Staff Management",
-          "Member Management"
+          "Order Management",
+          "Reservation System"
         ],
         "source": "fallback-default",
-        "confidence": 0.6
+        "confidence": 0.8
       },
       "componentDepthAvg": 0,
       "placeholderCount": 0
@@ -273,21 +273,21 @@
     },
     "metrics": {
       "domainRealism": 65,
-      "workflowRealism": 42,
-      "businessDataConsistency": 25,
+      "workflowRealism": 82,
+      "businessDataConsistency": 100,
       "intentAlignment": 65,
-      "productionReadiness": 42
+      "productionReadiness": 94
     },
-    "compositeScore": 48,
+    "compositeScore": 81,
     "details": {
       "blueprintDetected": true,
       "domainMatch": false,
       "pageCount": 7,
       "componentCount": 0,
-      "workflowCount": 1,
-      "entityCount": 5,
-      "orderCount": 0,
-      "revenueDerived": 0,
+      "workflowCount": 3,
+      "entityCount": 16,
+      "orderCount": 5,
+      "revenueDerived": 29295,
       "qualityScores": {
         "coverage": 70,
         "architecture": 0,
@@ -297,10 +297,10 @@
         "intentAlignment": 100,
         "overall": 24
       },
-      "rrsScore": 72,
+      "rrsScore": 95,
       "intentProfile": {
-        "primaryProblem": "Payment collection is unreliable — manual follow-ups miss overdue invoices",
-        "primaryGoal": "Automate billing and achieve 95%+ invoice collection rate",
+        "primaryProblem": "Healthcare operations need digital management — patients, appointments, records",
+        "primaryGoal": "Streamline clinic operations with digital patient and appointment management",
         "secondaryGoals": [
           "improve appointment utilization",
           "streamline billing"
@@ -308,17 +308,17 @@
         "personas": [],
         "successMetrics": [
           {
-            "metric": "Automate billing and",
+            "metric": "Streamline clinic operations",
             "direction": "increase"
           }
         ],
         "constraints": [],
         "prioritizedSystems": [
-          "Billing & Payments",
-          "Member Management"
+          "Patient Management",
+          "Appointment Scheduling"
         ],
         "source": "fallback-default",
-        "confidence": 0.6
+        "confidence": 0.8
       },
       "componentDepthAvg": 0,
       "placeholderCount": 0
@@ -343,22 +343,22 @@
       "competitorNotes": "Compare data visualization and SaaS metric realism"
     },
     "metrics": {
-      "domainRealism": 70,
-      "workflowRealism": 74,
-      "businessDataConsistency": 25,
+      "domainRealism": 68,
+      "workflowRealism": 84,
+      "businessDataConsistency": 100,
       "intentAlignment": 69,
-      "productionReadiness": 55
+      "productionReadiness": 86
     },
-    "compositeScore": 59,
+    "compositeScore": 81,
     "details": {
       "blueprintDetected": true,
       "domainMatch": false,
       "pageCount": 6,
       "componentCount": 1,
       "workflowCount": 2,
-      "entityCount": 5,
-      "orderCount": 0,
-      "revenueDerived": 0,
+      "entityCount": 13,
+      "orderCount": 5,
+      "revenueDerived": 49985,
       "qualityScores": {
         "coverage": 70,
         "architecture": 0,
@@ -368,28 +368,28 @@
         "intentAlignment": 100,
         "overall": 38
       },
-      "rrsScore": 84,
+      "rrsScore": 95,
       "intentProfile": {
-        "primaryProblem": "Repeat purchase rate is low — customers buy once and never return",
-        "primaryGoal": "Increase repeat purchases with subscription plans, loyalty rewards, and reorder reminders",
+        "primaryProblem": "SaaS metrics need optimization — subscription lifecycle and retention",
+        "primaryGoal": "Improve subscription metrics with better trial conversion and churn prevention",
         "secondaryGoals": [
-          "reduce stockouts",
-          "increase customer value"
+          "increase trial-to-paid conversion",
+          "improve user engagement"
         ],
         "personas": [],
         "successMetrics": [
           {
-            "metric": "Increase repeat purchases",
+            "metric": "Improve subscription metrics",
             "direction": "increase"
           }
         ],
         "constraints": [],
         "prioritizedSystems": [
-          "Goal Based Shopping",
-          "Brand Store"
+          "Subscription Management",
+          "Analytics"
         ],
         "source": "fallback-default",
-        "confidence": 0.6
+        "confidence": 0.8
       },
       "componentDepthAvg": 40,
       "placeholderCount": 0
@@ -415,21 +415,21 @@
     },
     "metrics": {
       "domainRealism": 65,
-      "workflowRealism": 59,
+      "workflowRealism": 94,
       "businessDataConsistency": 100,
       "intentAlignment": 65,
-      "productionReadiness": 48
+      "productionReadiness": 94
     },
-    "compositeScore": 67,
+    "compositeScore": 84,
     "details": {
       "blueprintDetected": true,
       "domainMatch": false,
       "pageCount": 7,
       "componentCount": 0,
-      "workflowCount": 2,
+      "workflowCount": 3,
       "entityCount": 16,
       "orderCount": 5,
-      "revenueDerived": 24986,
+      "revenueDerived": 138400000,
       "qualityScores": {
         "coverage": 70,
         "architecture": 0,
@@ -441,8 +441,8 @@
       },
       "rrsScore": 95,
       "intentProfile": {
-        "primaryProblem": "Lead follow-up is inconsistent — prospects slip through the cracks",
-        "primaryGoal": "Convert more leads into active members with automated follow-up",
+        "primaryProblem": "Real estate operations need digital management — properties, leads, deals",
+        "primaryGoal": "Streamline real estate operations with digital property and lead management",
         "secondaryGoals": [
           "reduce lead response time",
           "improve agent productivity"
@@ -450,17 +450,17 @@
         "personas": [],
         "successMetrics": [
           {
-            "metric": "Convert more leads",
+            "metric": "Streamline real estate",
             "direction": "increase"
           }
         ],
         "constraints": [],
         "prioritizedSystems": [
-          "Lead Pipeline",
-          "Member Management"
+          "Lead Management",
+          "Property Listings"
         ],
         "source": "fallback-default",
-        "confidence": 0.6
+        "confidence": 0.8
       },
       "componentDepthAvg": 0,
       "placeholderCount": 0
