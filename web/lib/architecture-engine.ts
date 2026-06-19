@@ -209,6 +209,50 @@ export function analyzeRequirements(prompt: string, blueprint?: DomainBlueprint 
         components: bpPage.components, // Pass blueprint components through
       });
     }
+    
+    // ═══ BLUEPRINT-BASED COMPONENT DETECTION ═══
+    // Add domain-specific components from blueprint requiredComponents
+    for (const bpComp of blueprint.requiredComponents) {
+      const exists = components.some(c => c.name === bpComp.name);
+      if (!exists) {
+        components.push({
+          id: `comp-${bpComp.name.toLowerCase().replace(/\s+/g, "-")}`,
+          type: "component",
+          name: bpComp.name,
+          description: bpComp.description,
+          required: true,
+          keywords: bpComp.keywords || [bpComp.name.toLowerCase()],
+        });
+      }
+    }
+    
+    // Add common domain-specific components based on blueprint ID
+    const domainComponents: Record<string, string[]> = {
+      "gym-crm": ["DashboardStats", "Charts", "RecentActivity", "QuickActions", "MemberTable", "AttendanceCalendar", "RevenueChart", "ClassSchedule", "StaffTable"],
+      "ecommerce": ["Hero", "FeaturedProducts", "CategoryGrid", "Testimonials", "CTA", "ProductGrid", "FilterSidebar", "CartItems", "CheckoutForm"],
+      "restaurant": ["Hero", "FeaturedProducts", "CategoryGrid", "MenuGrid", "ReservationForm", "OrderCart", "CheckoutForm", "ContactForm"],
+      "healthcare-clinic": ["Hero", "Features", "Testimonials", "CTA", "Stats", "PatientTable", "AppointmentCalendar", "DoctorTable", "PrescriptionForm", "BillingTable"],
+      "saas-platform": ["DashboardStats", "Charts", "RecentActivity", "QuickActions", "UserTable", "RevenueChart", "SettingsForm", "SubscriptionTable", "AnalyticsChart", "TenantManager"],
+      "real-estate-crm": ["Hero", "Features", "Testimonials", "CTA", "Stats", "PropertyGrid", "LeadPipeline", "DealPipeline", "VisitScheduler", "DocumentManager"],
+      "admin-dashboard": ["DashboardStats", "Charts", "RecentActivity", "QuickActions", "DataTable", "Sidebar"],
+      "streaming": ["Hero", "FeaturedProducts", "CategoryGrid", "Testimonials", "CTA", "ProductGrid", "FilterSidebar"],
+    };
+    
+    const domainId = blueprint.id;
+    const domainSpecificComps = domainComponents[domainId] || [];
+    for (const compName of domainSpecificComps) {
+      const exists = components.some(c => c.name === compName);
+      if (!exists) {
+        components.push({
+          id: `comp-${compName.toLowerCase().replace(/\s+/g, "-")}`,
+          type: "component",
+          name: compName,
+          description: `${compName} component`,
+          required: true,
+          keywords: [compName.toLowerCase()],
+        });
+      }
+    }
   } else {
     // NO BLUEPRINT: Fall back to regex keyword matching (legacy behavior)
     const pagePatterns: { pattern: RegExp; name: string; route: string; keywords: string[] }[] = [
@@ -330,6 +374,9 @@ export function analyzeRequirements(prompt: string, blueprint?: DomainBlueprint 
     { pattern: /\b(students?|learners?)\b/i, name: "Student", keywords: ["student", "learner"] },
     { pattern: /\b(teachers?|instructors?)\b/i, name: "Teacher", keywords: ["teacher", "instructor"] },
     { pattern: /\b(properties?|listings?)\b/i, name: "Property", keywords: ["property", "listing"] },
+    { pattern: /\b(subscriptions?|plans?|tiers?)\b/i, name: "Subscription", keywords: ["subscription", "plan", "tier"] },
+    { pattern: /\b(tenants?|organizations?|companies?)\b/i, name: "Tenant", keywords: ["tenant", "organization", "company"] },
+    { pattern: /\b(mrr|arr|revenue|churn|analytics)\b/i, name: "Metric", keywords: ["mrr", "arr", "revenue", "churn", "analytics"] },
   ];
 
   for (const { pattern, name, keywords } of entityPatterns) {
@@ -500,6 +547,38 @@ export function planArchitecture(matrix: RequirementMatrix, projectName: string,
       route.components = page.keywords.some(k => ["class", "schedule"].includes(k))
         ? ["ClassSchedule", "ClassCard", "BookingButton"]
         : ["ClassSchedule"];
+    }
+
+    // ═══ FALLBACK: Generate components for unmapped pages ═══
+    // Never allow a page to have 0 components
+    if (route.components.length === 0) {
+      const pageNameLower = page.name.toLowerCase().replace(/\s+/g, "");
+      // Generate a domain-appropriate component name from the page name
+      const mainComponent = pageNameLower.charAt(0).toUpperCase() + pageNameLower.slice(1);
+      const listComponent = `${mainComponent}List`;
+      const formComponent = `${mainComponent}Form`;
+      
+      // Determine if this page is likely a list, form, or dashboard based on keywords
+      const isList = page.type === "list" || page.keywords?.some(k => ["list", "table", "directory", "catalog"].includes(k));
+      const isForm = page.type === "form" || page.keywords?.some(k => ["form", "create", "add", "edit"].includes(k));
+      const isDashboard = page.type === "dashboard" || page.name.toLowerCase().includes("dashboard");
+      const isCalendar = page.type === "calendar" || page.keywords?.some(k => ["calendar", "schedule", "booking"].includes(k));
+      const isKanban = page.type === "kanban" || page.keywords?.some(k => ["pipeline", "kanban", "board"].includes(k));
+
+      if (isDashboard) {
+        route.components = [`${mainComponent}Stats`, `${mainComponent}Charts`, `${mainComponent}RecentActivity`];
+      } else if (isCalendar) {
+        route.components = [`${mainComponent}Calendar`, `${mainComponent}Form`];
+      } else if (isKanban) {
+        route.components = [`${mainComponent}Board`, `${mainComponent}Card`, `${mainComponent}Form`];
+      } else if (isList) {
+        route.components = [listComponent, `${mainComponent}Search`, `${mainComponent}Filters`];
+      } else if (isForm) {
+        route.components = [formComponent];
+      } else {
+        // Default: table + form for any unmapped page
+        route.components = [listComponent, formComponent];
+      }
     }
 
     routes.push(route);
