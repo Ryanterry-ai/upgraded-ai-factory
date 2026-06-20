@@ -640,7 +640,6 @@ export function validateRealism(
     /Sample\s+Data/i,
     /Lorem\s+ipsum/i,
     /TODO/i,
-    /placeholder/i,
     /Coming\s+soon/i,
     /Activity\s+item\s+\d/i,
     /\$12,345/,

@@ -221,7 +221,7 @@ export function analyzeRequirements(prompt: string, blueprint?: DomainBlueprint 
           name: bpComp.name,
           description: bpComp.description,
           required: true,
-          keywords: bpComp.keywords || [bpComp.name.toLowerCase()],
+          keywords: [bpComp.name.toLowerCase()],
         });
       }
     }
@@ -559,11 +559,11 @@ export function planArchitecture(matrix: RequirementMatrix, projectName: string,
       const formComponent = `${mainComponent}Form`;
       
       // Determine if this page is likely a list, form, or dashboard based on keywords
-      const isList = page.type === "list" || page.keywords?.some(k => ["list", "table", "directory", "catalog"].includes(k));
-      const isForm = page.type === "form" || page.keywords?.some(k => ["form", "create", "add", "edit"].includes(k));
-      const isDashboard = page.type === "dashboard" || page.name.toLowerCase().includes("dashboard");
-      const isCalendar = page.type === "calendar" || page.keywords?.some(k => ["calendar", "schedule", "booking"].includes(k));
-      const isKanban = page.type === "kanban" || page.keywords?.some(k => ["pipeline", "kanban", "board"].includes(k));
+      const isList = (page.type as string) === "list" || page.keywords?.some(k => ["list", "table", "directory", "catalog"].includes(k));
+      const isForm = (page.type as string) === "form" || page.keywords?.some(k => ["form", "create", "add", "edit"].includes(k));
+      const isDashboard = (page.type as string) === "dashboard" || page.name.toLowerCase().includes("dashboard");
+      const isCalendar = (page.type as string) === "calendar" || page.keywords?.some(k => ["calendar", "schedule", "booking"].includes(k));
+      const isKanban = (page.type as string) === "kanban" || page.keywords?.some(k => ["pipeline", "kanban", "board"].includes(k));
 
       if (isDashboard) {
         route.components = [`${mainComponent}Stats`, `${mainComponent}Charts`, `${mainComponent}RecentActivity`];

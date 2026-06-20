@@ -719,9 +719,9 @@ export function generateFromRegistry(domainId: string): BusinessState {
   if (blueprint) {
     return generateFromConfig(domainId, {
       currency: "₹",
-      products: blueprint.dataModels.slice(0, 3).map((m, i) => ({
-        name: `${m} Service ${i + 1}`, brand: blueprint.name, price: (i + 1) * 500, originalPrice: (i + 1) * 700,
-        category: m.toLowerCase(), rating: 4.5, benefits: [`${m}-related service`],
+      products: (blueprint.entities || []).slice(0, 3).map((m: any, i: number) => ({
+        name: `${typeof m === 'string' ? m : m.name} Service ${i + 1}`, brand: blueprint.name, price: (i + 1) * 500, originalPrice: (i + 1) * 700,
+        category: (typeof m === 'string' ? m : m.name).toLowerCase(), rating: 4.5, benefits: [`${typeof m === 'string' ? m : m.name}-related service`],
       })),
       customers: [
         { name: "Rajesh Kumar", city: "Mumbai", email: "rajesh.k@gmail.com", phone: "+91 98765 43210" },

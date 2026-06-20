@@ -281,6 +281,18 @@ function buildBlueprint(prompt: string, factory: string, projectName: string, re
   };
 }
 
+function extractBrandName(prompt: string): string {
+  if (!prompt) return "Project";
+  const urlMatch = prompt.match(/(?:https?:\/\/)?(?:www\.)?([a-zA-Z0-9-]+)\.[a-zA-Z]{2,}/i);
+  if (urlMatch) return urlMatch[1].replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  const nameMatch = prompt.match(/(?:for|called|named|titled|brand(?:ed)?\s+(?:as)?)\s+(?:a\s+)?(?:the\s+)?["']?([A-Z][A-Za-z0-9\s&]+?)["']?\s*(?:\.|,|$)/i);
+  if (nameMatch) return nameMatch[1].trim();
+  const firstLine = prompt.split(/[.\n]/)[0].trim();
+  const words = firstLine.split(/\s+/).filter(w => w.length > 2 && !/^(build|create|make|design|generate|develop|a|an|the|for|with|and|that|which)$/i.test(w));
+  if (words.length > 0) return words.slice(0, 3).join(" ").replace(/\b\w/g, c => c.toUpperCase());
+  return "Project";
+}
+
 function genHeader(name: string, navigation?: string[], colors?: LLMContent["colors"]): string {
   const navLinks = (navigation && navigation.length > 0)
     ? navigation.slice(0, 6)
@@ -3820,7 +3832,7 @@ export function ${name}() {
 }
 
 const COMPONENT_GENERATORS: Record<string, (prompt?: string) => string> = {
-  Header: () => genHeader("Project"),
+  Header: (prompt) => genHeader(extractBrandName(prompt || "Project"), undefined, undefined),
   Footer: genFooter,
   Hero: (p) => genHero(p || "Welcome"),
   Features: (p) => genFeatures(p),
@@ -5330,19 +5342,13 @@ export async function runGeneration(
         const fileIdx = files.findIndex(f => f.path === filePath);
         if (fileIdx === -1) continue;
 
-        // Try blueprint-specific generator first
+        // Try domain generator FIRST (highest quality)
         let regenerated = false;
-        if (pipelineBlueprint) {
-          const bpSpec = pipelineBlueprint.requiredComponents.find(c => c.name === compName);
-          if (bpSpec) {
-            // Blueprint component exists but was still a stub — try the domain generator
-            const generator = COMPONENT_GENERATORS[compName];
-            if (generator) {
-              files[fileIdx].content = generator(request.prompt);
-              regenerated = true;
-              emit("thinking", { message: `Regenerated ${compName} from domain generator (${files[fileIdx].content.split("\n").length} lines)` });
-            }
-          }
+        const generator = COMPONENT_GENERATORS[compName];
+        if (generator) {
+          files[fileIdx].content = generator(request.prompt);
+          regenerated = true;
+          emit("thinking", { message: `Regenerated ${compName} from domain generator (${files[fileIdx].content.split("\n").length} lines)` });
         }
 
         // If not regenerated, use a detailed generic generator
