@@ -374,13 +374,26 @@ function getHeroContent(prompt: string): { title: string; subtitle: string; cta:
 // Module-level intent profile for copy generation
 let _activeIntentProfile: { primaryProblem: string; primaryGoal: string; successMetrics?: Array<{ metric: string; direction: string; targetHint?: string }> } | null = null;
 
+// Module-level Business Genesis — single source of truth for all component mock data
+import { generateBusinessGenesis, type BusinessGenesis } from "./business-genesis";
+let _activeGenesis: BusinessGenesis | null = null;
+function getGenesis(): BusinessGenesis {
+  return _activeGenesis || generateBusinessGenesis("supplement store for India");
+}
+
 function genHero(prompt: string): string {
+  const genesis = getGenesis();
   const h = getHeroContent(prompt);
   const blueprint = detectBlueprint(prompt);
   const domain = blueprint?.id || "generic";
 
   // Get domain-specific hero content
   const heroContent = getHeroContentForDomain(domain, h);
+
+  // Enrich with Business Genesis data
+  heroContent.title = heroContent.title || genesis.brand.tagline;
+  heroContent.subtitle = heroContent.subtitle || genesis.brand.description;
+  heroContent.stats = heroContent.stats || genesis.stats;
 
   // Intent-driven override: only use intent text if it's SHORT and doesn't read like a problem statement
   if (_activeIntentProfile?.primaryGoal && _activeIntentProfile.primaryGoal !== "Unspecified") {
@@ -612,9 +625,11 @@ export function ContactForm() {
 }
 
 function genPricingTable(prompt?: string): string {
-  const blueprint = detectBlueprint(prompt || "");
-  const domain = blueprint?.id || "generic";
-  const plans = getPricingForDomain(domain);
+  const genesis = getGenesis();
+  // Use genesis pricing if available, else fallback to domain-specific
+  const plans = genesis.pricing.length > 0
+    ? genesis.pricing.map(p => ({ ...p, cta: p.popular ? "Get Started" : "Learn More" }))
+    : getPricingForDomain(detectBlueprint(prompt || "")?.id || "generic");
   return `export function PricingTable() {
   const plans = ${JSON.stringify(plans, null, 2)};
   return (
@@ -727,9 +742,13 @@ function genBlogList(): string {
 }
 
 function genTestimonials(prompt?: string): string {
-  const blueprint = detectBlueprint(prompt || "");
-  const domain = blueprint?.id || "generic";
-  const testimonials = getTestimonialsForDomain(domain);
+  const genesis = getGenesis();
+  const testimonials = genesis.testimonials.map(t => ({
+    name: t.name,
+    role: `${t.location} Customer`,
+    quote: t.quote,
+    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${t.name.split(" ")[0]}`,
+  }));
   return `export function Testimonials() {
   const items = ${JSON.stringify(testimonials, null, 2)};
   return (
@@ -748,7 +767,7 @@ function genTestimonials(prompt?: string): string {
               </div>
               <p className="text-gray-600 italic mb-4">&quot;{item.quote}&quot;</p>
               <div className="flex items-center gap-3">
-                ${domain === "ecommerce" ? `<img src="${"{item.avatar}"}" alt="${"{item.name}"}" className="w-10 h-10 rounded-full" />` : ""}
+                <img src={item.avatar} alt={item.name} className="w-10 h-10 rounded-full" />
                 <div>
                   <p className="font-semibold">{item.name}</p>
                   <p className="text-sm text-gray-500">{item.role}</p>
@@ -794,9 +813,13 @@ function getTestimonialsForDomain(domain: string): Array<{ name: string; role: s
 }
 
 function genCTA(prompt?: string): string {
+  const genesis = getGenesis();
   const blueprint = detectBlueprint(prompt || "");
   const domain = blueprint?.id || "generic";
   const content = getCTAForDomain(domain, prompt);
+
+  // Enrich with genesis data
+  content.subtitle = content.subtitle || `Experience the ${genesis.brand.name} difference. Built for quality, trusted by thousands.`;
 
   // Intent-driven override: only if text is SHORT and not problem-focused
   if (_activeIntentProfile?.primaryGoal && _activeIntentProfile.primaryGoal !== "Unspecified") {
@@ -5322,6 +5345,11 @@ export async function runGeneration(
 
     // Set module-level intent profile for copy generation (hero/CTA)
     _activeIntentProfile = intentProfile ?? null;
+
+    // Generate Business Genesis — single source of truth for all component mock data
+    const bp = detectBlueprint(request.prompt);
+    _activeGenesis = generateBusinessGenesis(request.prompt, bp);
+    emit("thinking", { message: `Genesis: ${_activeGenesis.brand.name} — ${_activeGenesis.products.length} products, ${_activeGenesis.testimonials.length} testimonials, ${_activeGenesis.stats.length} stats` });
 
     const files = await generateFiles(request.prompt, factory, projectName, llmContent, scraped, architecture);
     const pageCount = files.filter(f => f.type === "page" || f.type === "html").length;
