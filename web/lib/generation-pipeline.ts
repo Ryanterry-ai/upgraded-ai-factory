@@ -4104,6 +4104,16 @@ ${usage}
 
   // ─── GENERATE COMPONENTS FROM ARCHITECTURE ───
   const generatedComponents = new Set<string>();
+  const componentBlueprint = detectBlueprint(prompt);
+
+  // Inline RPSE: quick quality check per component
+  function isComponentStub(content: string): boolean {
+    const lines = content.split("\n").length;
+    if (lines < 15) return true;
+    if (/this section provides|component content|feature coming soon|sample component/i.test(content)) return true;
+    if (lines < 25 && /<h[12]>/.test(content) && !/<input|<select|<table|<form|<div\s+className/.test(content)) return true;
+    return false;
+  }
 
   // Generate page-specific components
   for (const route of architecture.routes) {
@@ -4121,12 +4131,27 @@ ${usage}
           else if (compName === "CTA" && llmContent.ctaText) content = genCTALLM(llmContent.ctaText);
           else if (compName === "Header") content = genHeader(projectName, navItems, llmContent.colors);
         }
+        // Inline RPSE: if stub detected, try detailed generator
+        if (isComponentStub(content)) {
+          const detailed = genDetailedComponent(compName, prompt, componentBlueprint);
+          if (!isComponentStub(detailed)) {
+            content = detailed;
+          }
+        }
         files.push({ path: `src/components/${compName}.tsx`, content, type: "component" });
       } else {
         // Generate a generic component for missing ones
+        let content = genGenericComponent(compName, prompt);
+        // Inline RPSE: if stub detected, try detailed generator
+        if (isComponentStub(content)) {
+          const detailed = genDetailedComponent(compName, prompt, componentBlueprint);
+          if (!isComponentStub(detailed)) {
+            content = detailed;
+          }
+        }
         files.push({
           path: `src/components/${compName}.tsx`,
-          content: genGenericComponent(compName, prompt),
+          content,
           type: "component",
         });
       }
