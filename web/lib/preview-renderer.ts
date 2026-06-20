@@ -354,11 +354,13 @@ export function generateReactPreview(
       }
     } else if (name === "CTA" || name === "cta") {
       const ctaText = buttons[0] || "Start Free Trial";
+      const ctaTitle = headings[0] || paragraphs[0]?.slice(0, 60) || "Take the Next Step";
+      const ctaSub = paragraphs[1] || paragraphs[0]?.slice(0, 100) || "Join thousands of satisfied customers.";
       sections.push(`
         <section style="padding:60px 24px;background:linear-gradient(135deg,#6366f1,#8b5cf6);">
           <div style="max-width:600px;margin:0 auto;text-align:center;">
-            <h2 style="font-size:28px;font-weight:700;color:white;margin-bottom:12px;">Ready to Get Started?</h2>
-            <p style="font-size:15px;color:rgba(255,255,255,0.8);margin-bottom:24px;">Join thousands of users building amazing things.</p>
+            <h2 style="font-size:28px;font-weight:700;color:white;margin-bottom:12px;">${escapeHtml(ctaTitle)}</h2>
+            <p style="font-size:15px;color:rgba(255,255,255,0.8);margin-bottom:24px;">${escapeHtml(ctaSub.slice(0, 120))}</p>
             <a href="#" style="display:inline-block;padding:12px 32px;border-radius:8px;background:white;color:#6366f1;font-weight:600;font-size:14px;text-decoration:none;">${escapeHtml(ctaText)}</a>
           </div>
         </section>`);

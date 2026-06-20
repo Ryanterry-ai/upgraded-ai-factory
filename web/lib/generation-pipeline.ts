@@ -156,16 +156,24 @@ function detectDomainFull(prompt: string): { blueprint: DomainBlueprint | null; 
 
 function extractProjectName(prompt: string, explicitName?: string): string {
   if (explicitName) return sanitizeName(explicitName);
+  const COUNTRIES = new Set(["india", "usa", "uk", "canada", "australia", "germany", "france", "japan", "china", "brazil", "nigeria", "uae", "singapore", "pakistan", "bangladesh", "nepal", "sri lanka"]);
   // Try explicit patterns first
   const explicitMatch = prompt.match(/(?:called?|named?|titled?|for)\s+["']?([A-Z][^"'.]+)["']?/i);
-  if (explicitMatch) return sanitizeName(explicitMatch[1]);
+  if (explicitMatch) {
+    const name = sanitizeName(explicitMatch[1]);
+    if (!COUNTRIES.has(name.toLowerCase()) && name !== "my-project") return name;
+  }
   // Try to extract a brand-like name (capitalized words before "website"/"app"/"platform"/"system")
   const brandMatch = prompt.match(/\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)*)\s+(?:website|app|platform|system|site|store|shop)/i);
-  if (brandMatch) return sanitizeName(brandMatch[1]);
+  if (brandMatch) {
+    const name = sanitizeName(brandMatch[1]);
+    if (!COUNTRIES.has(name.toLowerCase())) return name;
+  }
   // Try "a X agency/business/company" pattern
   const typeMatch = prompt.match(/(?:a|an|the)\s+(?:modern\s+|professional\s+|creative\s+)?(\w+(?:\s+\w+)?)\s+(?:website|app|platform|agency|business|company|store|shop|system|project)/i);
   if (typeMatch) return sanitizeName(typeMatch[1]);
-  return "my-project";
+  // Fall back to extractBrandName
+  return sanitizeName(extractBrandName(prompt));
 }
 
 function buildBlueprint(prompt: string, factory: string, projectName: string, requirements?: RequirementMatrix) {
@@ -348,8 +356,9 @@ function genFooter(): string {
 
 function getHeroContent(prompt: string): { title: string; subtitle: string; cta: string } {
   const ctx = extractProjectContext(prompt);
+  const brand = extractBrandName(prompt);
   const isUrlPrompt = /^https?:\/\//i.test(prompt.trim()) || /^www\./i.test(prompt.trim());
-  if (isUrlPrompt) return { title: "Welcome", subtitle: "Loading content from source website...", cta: "Get Started" };
+  if (isUrlPrompt) return { title: brand, subtitle: `Discover what ${brand} has to offer. Browse our collection and find exactly what you need.`, cta: "Explore Now" };
   const map: Record<string, { title: string; subtitle: string; cta: string }> = {
     "health & fitness": { title: "Transform Your Body, Transform Your Life", subtitle: "Personalized fitness programs and expert coaching to help you achieve your health goals.", cta: "Start Your Journey" },
     "digital marketing": { title: "Grow Your Business With Data-Driven Marketing", subtitle: "We craft strategies that deliver measurable results and accelerate your online growth.", cta: "Get a Free Audit" },
@@ -358,8 +367,8 @@ function getHeroContent(prompt: string): { title: string; subtitle: string; cta:
   };
   if (ctx.industry && map[ctx.industry]) return map[ctx.industry];
   const nameMatch = prompt.match(/(?:for|called|named)\s+(?:a\s+)?(?:the\s+)?["']?([^"'.]+?)["']?\s*(?:\.|,|$)/i);
-  const name = nameMatch?.[1]?.trim() || "Your Project";
-  return { title: `Welcome to ${name}`, subtitle: "A modern solution built with care and precision.", cta: "Learn More" };
+  const name = nameMatch?.[1]?.trim() || brand;
+  return { title: `Welcome to ${name}`, subtitle: `Premium quality, built with care. Discover what ${name} has to offer.`, cta: "Explore Now" };
 }
 
 // Module-level intent profile for copy generation
@@ -492,7 +501,7 @@ function getHeroContentForDomain(domain: string, fallback: { title: string; subt
       ],
     };
   }
-  return { ...fallback, secondaryCta: "Learn More" };
+  return { ...fallback, secondaryCta: "See How It Works" };
 }
 
 function getProjectFeatures(prompt: string): Array<{ title: string; description: string; icon: string }> {
@@ -787,7 +796,7 @@ function getTestimonialsForDomain(domain: string): Array<{ name: string; role: s
 function genCTA(prompt?: string): string {
   const blueprint = detectBlueprint(prompt || "");
   const domain = blueprint?.id || "generic";
-  const content = getCTAForDomain(domain);
+  const content = getCTAForDomain(domain, prompt);
 
   // Intent-driven override: only if text is SHORT and not problem-focused
   if (_activeIntentProfile?.primaryGoal && _activeIntentProfile.primaryGoal !== "Unspecified") {
@@ -814,7 +823,7 @@ function genCTA(prompt?: string): string {
 `;
 }
 
-function getCTAForDomain(domain: string): { title: string; subtitle: string; cta: string; secondaryCta: string } {
+function getCTAForDomain(domain: string, prompt?: string): { title: string; subtitle: string; cta: string; secondaryCta: string } {
   if (domain === "ecommerce") return { title: "Fuel Your Fitness Goals Today", subtitle: "Join 50,000+ Indian athletes who trust our lab-tested, FSSAI certified supplements. Free shipping above ₹999.", cta: "Shop Now", secondaryCta: "View Lab Reports" };
   if (domain === "gym-crm") return { title: "Transform Your Gym Management", subtitle: "Start managing members, billing, and attendance in one powerful platform. Free for 14 days.", cta: "Start Free Trial", secondaryCta: "Book a Demo" };
   if (domain === "streaming") return { title: "Start Watching Today", subtitle: "Stream thousands of movies, shows, and originals. No ads, cancel anytime.", cta: "Start Free Trial", secondaryCta: "Browse Plans" };
@@ -822,7 +831,11 @@ function getCTAForDomain(domain: string): { title: string; subtitle: string; cta
   if (domain === "restaurant") return { title: "Reserve Your Table Tonight", subtitle: "Experience authentic cuisine crafted by our award-winning chef. Book online for instant confirmation.", cta: "Reserve Now", secondaryCta: "View Menu" };
   if (domain === "admin-dashboard") return { title: "Take Control of Your Business", subtitle: "Real-time analytics, order management, and inventory tracking all in one dashboard.", cta: "View Dashboard", secondaryCta: "Generate Report" };
   if (domain === "blog") return { title: "Stay in the Loop", subtitle: "Get the latest articles, guides, and insights delivered to your inbox every week.", cta: "Subscribe Now", secondaryCta: "Read Latest" };
-  return { title: "Ready to Get Started?", subtitle: "Join thousands of users who are already building amazing things with our platform.", cta: "Get Started Free", secondaryCta: "Learn More" };
+  // Dynamic fallback based on prompt — never generic
+  const brand = extractBrandName(prompt || "");
+  const ctx = extractProjectContext(prompt || "");
+  const industry = ctx.industry || "business";
+  return { title: `Start Your ${industry.charAt(0).toUpperCase() + industry.slice(1)} Journey`, subtitle: `Experience the ${brand} difference. Built for quality, trusted by thousands.`, cta: "Get Started", secondaryCta: "See How It Works" };
 }
 
 function genProductGrid(): string {
@@ -1174,35 +1187,53 @@ export function CartDrawer({ isOpen, onClose }: { isOpen: boolean; onClose: () =
 function genCartSummary(): string {
   return `"use client";
 import { useState } from "react";
+import { useCart } from "@/lib/data-provider";
 
 const INDIAN_STATES = ["Andhra Pradesh","Bihar","Delhi","Gujarat","Haryana","Karnataka","Kerala","Madhya Pradesh","Maharashtra","Punjab","Rajasthan","Tamil Nadu","Telangana","Uttar Pradesh","West Bengal"];
 
 export function CheckoutModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
+  const { items, total, itemCount, clearCart } = useCart();
   const [step, setStep] = useState(1);
   const [paymentMethod, setPaymentMethod] = useState("upi");
   const [upiId, setUpiId] = useState("");
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [address, setAddress] = useState({ name: "", phone: "", line1: "", line2: "", city: "", pincode: "", state: "" });
 
-  const subtotal = 6497;
-  const shipping = 0;
-  const discount = 650;
-  const total = subtotal - discount + shipping;
+  const shipping = total >= 999 ? 0 : 99;
+  const discount = 0;
+  const orderTotal = total - discount + shipping;
 
-  const placeOrder = () => { setOrderPlaced(true); };
+  const placeOrder = () => {
+    setOrderPlaced(true);
+    clearCart();
+  };
 
   if (!isOpen) return null;
+  if (items.length === 0 && !orderPlaced) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+        <div className="bg-white rounded-3xl max-w-md w-full p-8 text-center">
+          <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4"><span className="text-4xl">🛒</span></div>
+          <h2 className="text-2xl font-bold mb-2">Your cart is empty</h2>
+          <p className="text-gray-500 mb-6">Add some products to get started</p>
+          <button onClick={onClose} className="w-full bg-amber-600 text-white py-3 rounded-xl font-semibold hover:bg-amber-700">Browse Products</button>
+        </div>
+      </div>
+    );
+  }
   if (orderPlaced) {
     return (
       <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
         <div className="bg-white rounded-3xl max-w-md w-full p-8 text-center">
           <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"><span className="text-4xl">✓</span></div>
           <h2 className="text-2xl font-bold mb-2">Order Placed!</h2>
-          <p className="text-gray-500 mb-4">Thank you for your purchase</p>
+          <p className="text-gray-500 mb-4">Thank you for your purchase. You'll receive a confirmation on WhatsApp and email.</p>
           <div className="bg-gray-50 rounded-xl p-4 mb-6 text-left">
             <div className="flex justify-between text-sm mb-1"><span className="text-gray-500">Order ID</span><span className="font-mono font-bold">FC-{Math.random().toString(36).slice(2,8).toUpperCase()}</span></div>
             <div className="flex justify-between text-sm mb-1"><span className="text-gray-500">Payment</span><span className="font-medium">{paymentMethod === "upi" ? "UPI: " + upiId : paymentMethod === "cod" ? "Cash on Delivery" : paymentMethod}</span></div>
+            <div className="flex justify-between text-sm mb-1"><span className="text-gray-500">Delivery to</span><span className="font-medium">{address.city}{address.state ? ", " + address.state : ""}</span></div>
             <div className="flex justify-between text-sm mb-1"><span className="text-gray-500">Estimated Delivery</span><span className="font-medium">{new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-IN", { day: "numeric", month: "short" })}</span></div>
-            <div className="flex justify-between text-sm font-bold mt-2 pt-2 border-t"><span>Total Paid</span><span>₹{total.toLocaleString("en-IN")}</span></div>
+            <div className="flex justify-between text-sm font-bold mt-2 pt-2 border-t"><span>Total Paid</span><span>₹{orderTotal.toLocaleString("en-IN")}</span></div>
           </div>
           <button onClick={onClose} className="w-full bg-amber-600 text-white py-3 rounded-xl font-semibold hover:bg-amber-700">Continue Shopping</button>
         </div>
@@ -1215,7 +1246,7 @@ export function CheckoutModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
       <div className="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
-          <h2 className="text-lg font-bold" style={{ fontFamily: "'Outfit', sans-serif" }}>Checkout</h2>
+          <h2 className="text-lg font-bold" style={{ fontFamily: "'Outfit', sans-serif" }}>Checkout · {itemCount} item{itemCount !== 1 ? "s" : ""}</h2>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">✕</button>
         </div>
 
@@ -1235,17 +1266,17 @@ export function CheckoutModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
             <div className="space-y-4">
               <h3 className="font-semibold">Delivery Address</h3>
               <div className="grid grid-cols-2 gap-3">
-                <input placeholder="Full Name" className="px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                <input placeholder="Phone Number" className="px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                <input placeholder="Full Name" value={address.name} onChange={(e) => setAddress({...address, name: e.target.value})} className="px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                <input placeholder="Phone Number" value={address.phone} onChange={(e) => setAddress({...address, phone: e.target.value})} className="px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
               </div>
-              <input placeholder="Address Line 1" className="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
-              <input placeholder="Address Line 2 (Optional)" className="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <input placeholder="Address Line 1" value={address.line1} onChange={(e) => setAddress({...address, line1: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+              <input placeholder="Address Line 2 (Optional)" value={address.line2} onChange={(e) => setAddress({...address, line2: e.target.value})} className="w-full px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
               <div className="grid grid-cols-3 gap-3">
-                <input placeholder="City" className="px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                <input placeholder="Pincode" maxLength={6} className="px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
-                <select className="px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
-                  <option>State</option>
-                  {INDIAN_STATES.map(s => <option key={s}>{s}</option>)}
+                <input placeholder="City" value={address.city} onChange={(e) => setAddress({...address, city: e.target.value})} className="px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                <input placeholder="Pincode" maxLength={6} value={address.pincode} onChange={(e) => setAddress({...address, pincode: e.target.value})} className="px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500" />
+                <select value={address.state} onChange={(e) => setAddress({...address, state: e.target.value})} className="px-3 py-2.5 border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white">
+                  <option value="">State</option>
+                  {INDIAN_STATES.map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
               </div>
               <button onClick={() => setStep(2)} className="w-full bg-amber-600 text-white py-3 rounded-xl font-semibold hover:bg-amber-700">Continue to Payment</button>
@@ -1255,7 +1286,6 @@ export function CheckoutModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
           {step === 2 && (
             <div className="space-y-4">
               <h3 className="font-semibold">Payment Method</h3>
-              {/* Payment Options */}
               <div className="space-y-2">
                 {[
                   { id: "upi", label: "BHIM UPI", icon: "📱", desc: "Google Pay, PhonePe, Paytm" },
@@ -1286,13 +1316,17 @@ export function CheckoutModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
           {step === 3 && (
             <div className="space-y-4">
               <h3 className="font-semibold">Order Summary</h3>
-              <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm">
-                <div className="flex justify-between"><span className="text-gray-500">Whey Protein Isolate × 2</span><span>₹4,998</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Creatine Monohydrate × 1</span><span>₹1,499</span></div>
-                <div className="border-t pt-2 flex justify-between"><span className="text-gray-500">Subtotal</span><span>₹{subtotal.toLocaleString("en-IN")}</span></div>
-                <div className="flex justify-between text-green-600"><span>FITINDIA Discount</span><span>-₹{discount.toLocaleString("en-IN")}</span></div>
-                <div className="flex justify-between"><span className="text-gray-500">Shipping</span><span className="text-green-600">FREE</span></div>
-                <div className="border-t pt-2 flex justify-between font-bold text-lg"><span>Total</span><span>₹{total.toLocaleString("en-IN")}</span></div>
+              <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm max-h-48 overflow-y-auto">
+                {items.map((item) => (
+                  <div key={item.id} className="flex justify-between">
+                    <span className="text-gray-600">{item.name} × {item.quantity}</span>
+                    <span className="font-medium">₹{(item.price * item.quantity).toLocaleString("en-IN")}</span>
+                  </div>
+                ))}
+                <div className="border-t pt-2 flex justify-between"><span className="text-gray-500">Subtotal</span><span>₹{total.toLocaleString("en-IN")}</span></div>
+                {discount > 0 && <div className="flex justify-between text-green-600"><span>Discount</span><span>-₹{discount.toLocaleString("en-IN")}</span></div>}
+                <div className="flex justify-between"><span className="text-gray-500">Shipping</span><span className={shipping === 0 ? "text-green-600" : ""}>{shipping === 0 ? "FREE" : "₹" + shipping}</span></div>
+                <div className="border-t pt-2 flex justify-between font-bold text-lg"><span>Total</span><span>₹{orderTotal.toLocaleString("en-IN")}</span></div>
               </div>
               <div className="bg-amber-50 rounded-xl p-3 text-xs text-amber-800">
                 <p>📦 Estimated delivery: <strong>{new Date(Date.now() + 3 * 86400000).toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" })}</strong></p>
@@ -1300,7 +1334,7 @@ export function CheckoutModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
               </div>
               <div className="flex gap-3">
                 <button onClick={() => setStep(2)} className="flex-1 border border-gray-300 py-3 rounded-xl font-medium text-sm hover:bg-gray-50">Back</button>
-                <button onClick={placeOrder} className="flex-1 bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700">Place Order — ₹{total.toLocaleString("en-IN")}</button>
+                <button onClick={placeOrder} className="flex-1 bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700">Place Order — ₹{orderTotal.toLocaleString("en-IN")}</button>
               </div>
             </div>
           )}
@@ -1989,11 +2023,12 @@ No markdown. No explanation. Only JSON.`;
 
   if (usedFallback || !content) return null;
 
+  const brand = extractBrandName(prompt);
   try {
     const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
     const parsed = JSON.parse(cleaned);
     return {
-      heroTitle: typeof parsed.heroTitle === "string" ? parsed.heroTitle : "Welcome",
+      heroTitle: typeof parsed.heroTitle === "string" && parsed.heroTitle !== "Welcome" ? parsed.heroTitle : brand,
       heroSubtitle: typeof parsed.heroSubtitle === "string" ? parsed.heroSubtitle : prompt.slice(0, 150),
       features: Array.isArray(parsed.features)
         ? parsed.features.slice(0, 6).map((f: Record<string, string>) => ({
@@ -2002,7 +2037,7 @@ No markdown. No explanation. Only JSON.`;
           }))
         : [],
       aboutText: typeof parsed.aboutText === "string" ? parsed.aboutText : "",
-      ctaText: typeof parsed.ctaText === "string" ? parsed.ctaText : "Get Started",
+      ctaText: typeof parsed.ctaText === "string" && parsed.ctaText !== "Get Started" ? parsed.ctaText : "Explore Now",
       navigation: Array.isArray(parsed.navigation) ? parsed.navigation.slice(0, 8) : [],
       sections: Array.isArray(parsed.sections) ? parsed.sections.slice(0, 6) : [],
       colors: parsed.colors && typeof parsed.colors === "object" ? {
@@ -2034,10 +2069,10 @@ function genHeroLLM(title: string, subtitle: string, ctaText?: string, colors?: 
         </p>
         <div className="mt-8 flex justify-center gap-4">
           <button className="rounded-lg px-8 py-3 text-white font-medium transition-colors hover:opacity-90" style={{ background: "${accent}" }}>
-            ${ctaText || "Get Started"}
+            ${ctaText || "Explore Now"}
           </button>
           <button className="rounded-lg border px-8 py-3 font-medium transition-colors hover:opacity-80" style={{ borderColor: "${accent}", color: "${accent}" }}>
-            Learn More
+            See How It Works
           </button>
         </div>
       </div>
@@ -2078,10 +2113,10 @@ function genAboutLLM(text: string): string {
       <div className="container mx-auto px-4 max-w-3xl">
         <h1 className="text-4xl font-bold mb-8">About Us</h1>
         <p className="text-lg text-gray-600 mb-4">
-          ${text || "We are a team dedicated to building amazing products that help people succeed."}
+          ${text || "Founded with a passion for excellence, we deliver premium products and services that our customers trust."}
         </p>
         <p className="text-lg text-gray-600">
-          Our mission is to provide the best tools and experiences for our users.
+          Our commitment to quality, transparency, and customer satisfaction drives everything we do.
         </p>
       </div>
     </section>
@@ -3827,13 +3862,67 @@ export function ${name}() {
 }`;
   }
 
-  // Default: section with heading and content
+  // Default: generate a USEFUL section based on component name
+  const readable = name.replace(/([A-Z])/g, " $1").trim();
+  const lowerName = name.toLowerCase();
+  const ctx = extractProjectContext(prompt || "");
+  const brand = extractBrandName(prompt || "");
+  const domain = ctx.industry || "business";
+
+  // Generate meaningful content based on component name patterns
+  let content = "";
+  let items: string[] = [];
+
+  if (/about|story|mission|vision/i.test(lowerName)) {
+    content = `${brand} was founded with a mission to deliver exceptional ${domain} solutions. We combine innovation with reliability to serve our customers better.`;
+    items = ["Our Mission", "Our Story", "Our Values", "Our Team"];
+  } else if (/team|member|staff/i.test(lowerName)) {
+    content = `Meet the team behind ${brand}. Our experts bring decades of combined experience in ${domain}.`;
+    items = ["Leadership", "Engineering", "Design", "Operations"];
+  } else if (/testimonial|review|feedback/i.test(lowerName)) {
+    content = `See what our customers say about ${brand}.`;
+    items = ["Customer Stories", "Ratings & Reviews", "Video Testimonials", "Case Studies"];
+  } else if (/blog|article|news|post/i.test(lowerName)) {
+    content = `Latest insights and updates from ${brand}.`;
+    items = ["Industry Trends", "How-To Guides", "Product Updates", "Company News"];
+  } else if (/service|offering/i.test(lowerName)) {
+    content = `Explore our comprehensive range of ${domain} services designed to help you succeed.`;
+    items = ["Core Services", "Custom Solutions", "Enterprise Plans", "Support"];
+  } else if (/pricing|plan|package/i.test(lowerName)) {
+    content = `Transparent pricing for every need. Choose the plan that works for you.`;
+    items = ["Starter", "Professional", "Enterprise", "Custom"];
+  } else if (/faq|question|help/i.test(lowerName)) {
+    content = `Frequently asked questions about ${brand} and our ${domain} solutions.`;
+    items = ["Getting Started", "Billing & Payments", "Shipping & Delivery", "Returns & Refunds"];
+  } else if (/gallery|portfolio|showcase/i.test(lowerName)) {
+    content = `Browse our work and see the quality ${brand} delivers.`;
+    items = ["Featured Work", "Recent Projects", "Client Results", "Before & After"];
+  } else if (/contact|reach|connect/i.test(lowerName)) {
+    content = `Get in touch with the ${brand} team. We're here to help.`;
+    items = ["Email Us", "Call Us", "Visit Us", "Live Chat"];
+  } else if (/feature|capability/i.test(lowerName)) {
+    content = `Discover what makes ${brand} the preferred choice for ${domain}.`;
+    items = ["Key Features", "Integrations", "API Access", "Customization"];
+  } else if (/partner|collaboration/i.test(lowerName)) {
+    content = `Partner with ${brand} to expand your ${domain} capabilities.`;
+    items = ["Partner Program", "Affiliate Options", "Enterprise Agreements", "Co-Marketing"];
+  } else if (/location|office|store/i.test(lowerName)) {
+    content = `Find ${brand} near you. We serve customers across India.`;
+    items = ["Mumbai", "Delhi", "Bangalore", "All Locations"];
+  } else {
+    content = `Everything you need for your ${domain} experience, powered by ${brand}.`;
+    items = ["Overview", "Details", "Resources", "Support"];
+  }
+
   return `export function ${name}() {
   return (
     <section className="py-12">
       <div className="container mx-auto px-4 max-w-4xl">
-        <h2 className="text-2xl font-bold mb-4">${name.replace(/([A-Z])/g, " $1").trim()}</h2>
-        <p className="text-gray-600 leading-relaxed">This section provides ${name.replace(/([A-Z])/g, " $1").trim().toLowerCase()} functionality for the application.</p>
+        <h2 className="text-2xl font-bold mb-4">${readable}</h2>
+        <p className="text-gray-600 leading-relaxed mb-6">${content}</p>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          ${items.map(item => `<div className="p-4 bg-gray-50 rounded-xl text-center"><p className="font-medium text-sm">${item}</p></div>`).join("\n          ")}
+        </div>
       </div>
     </section>
   );
