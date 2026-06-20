@@ -316,13 +316,15 @@ function genHeader(name: string, navigation?: string[], colors?: LLMContent["col
     : ["Home", "About", "Contact"];
   const links = navLinks.map((n) => {
     const slug = n.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    return `<Link href="/${slug}" className="text-sm font-medium hover:opacity-80 transition-opacity">${n}</Link>`;
+    return `<Link href="/${slug}" className="text-sm font-medium hover:opacity-80 transition-opacity" onClick={() => setMenuOpen(false)}>${n}</Link>`;
   }).join("\n          ");
   const accent = colors?.primary || "#2563eb";
   return `"use client";
 import Link from "next/link";
+import { useState } from "react";
 
 export function Header() {
+  const [menuOpen, setMenuOpen] = useState(false);
   return (
     <header className="sticky top-0 z-50 w-full border-b backdrop-blur supports-[backdrop-filter]:bg-white/80">
       <nav className="container mx-auto flex h-16 items-center justify-between px-4">
@@ -330,7 +332,17 @@ export function Header() {
         <div className="hidden md:flex gap-6">
           ${links}
         </div>
+        <button className="md:hidden p-2 rounded-lg hover:bg-gray-100" onClick={() => setMenuOpen(!menuOpen)} aria-label="Toggle menu">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            {menuOpen ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /> : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />}
+          </svg>
+        </button>
       </nav>
+      {menuOpen && (
+        <div className="md:hidden border-t bg-white px-4 py-4 space-y-3">
+          ${links}
+        </div>
+      )}
     </header>
   );
 }
