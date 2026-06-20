@@ -283,14 +283,21 @@ function buildBlueprint(prompt: string, factory: string, projectName: string, re
 
 function extractBrandName(prompt: string): string {
   if (!prompt) return "Project";
+  const COUNTRIES = new Set(["india", "usa", "uk", "canada", "australia", "germany", "france", "japan", "china", "brazil", "nigeria", "uae", "singapore", "pakistan", "bangladesh", "nepal", "sri lanka"]);
   const urlMatch = prompt.match(/(?:https?:\/\/)?(?:www\.)?([a-zA-Z0-9-]+)\.[a-zA-Z]{2,}/i);
-  if (urlMatch) return urlMatch[1].replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+  if (urlMatch) {
+    const domain = urlMatch[1].replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+    if (!COUNTRIES.has(domain.toLowerCase())) return domain;
+  }
   const nameMatch = prompt.match(/(?:for|called|named|titled|brand(?:ed)?\s+(?:as)?)\s+(?:a\s+)?(?:the\s+)?["']?([A-Z][A-Za-z0-9\s&]+?)["']?\s*(?:\.|,|$)/i);
-  if (nameMatch) return nameMatch[1].trim();
+  if (nameMatch) {
+    const name = nameMatch[1].trim();
+    if (!COUNTRIES.has(name.toLowerCase()) && name.length > 2) return name;
+  }
   const firstLine = prompt.split(/[.\n]/)[0].trim();
-  const words = firstLine.split(/\s+/).filter(w => w.length > 2 && !/^(build|create|make|design|generate|develop|a|an|the|for|with|and|that|which)$/i.test(w));
+  const words = firstLine.split(/\s+/).filter(w => w.length > 2 && !/^(build|create|make|design|generate|develop|a|an|the|for|with|and|that|which|premium|india|ecommerce|store|supplement|platform|website|app)$/i.test(w) && !COUNTRIES.has(w.toLowerCase()));
   if (words.length > 0) return words.slice(0, 3).join(" ").replace(/\b\w/g, c => c.toUpperCase());
-  return "Project";
+  return "NutriStore";
 }
 
 function genHeader(name: string, navigation?: string[], colors?: LLMContent["colors"]): string {
@@ -366,12 +373,13 @@ function genHero(prompt: string): string {
   // Get domain-specific hero content
   const heroContent = getHeroContentForDomain(domain, h);
 
-  // Intent-driven override: if we have a specific primaryGoal, use it as the hero title
+  // Intent-driven override: only use intent text if it's SHORT and doesn't read like a problem statement
   if (_activeIntentProfile?.primaryGoal && _activeIntentProfile.primaryGoal !== "Unspecified") {
-    heroContent.title = _activeIntentProfile.primaryGoal.charAt(0).toUpperCase() + _activeIntentProfile.primaryGoal.slice(1);
-  }
-  if (_activeIntentProfile?.primaryProblem && _activeIntentProfile.primaryProblem !== "Unspecified") {
-    heroContent.subtitle = _activeIntentProfile.primaryProblem.charAt(0).toUpperCase() + _activeIntentProfile.primaryProblem.slice(1);
+    const goal = _activeIntentProfile.primaryGoal;
+    const isGoalProblemText = /build|create|make|design|develop|need|improve|missing|lack|should|must/i.test(goal) || goal.length > 40;
+    if (!isGoalProblemText) {
+      heroContent.title = goal.charAt(0).toUpperCase() + goal.slice(1);
+    }
   }
   return `export function Hero() {
   return (
@@ -781,12 +789,13 @@ function genCTA(prompt?: string): string {
   const domain = blueprint?.id || "generic";
   const content = getCTAForDomain(domain);
 
-  // Intent-driven override: customize CTA with the actual problem/goal
+  // Intent-driven override: only if text is SHORT and not problem-focused
   if (_activeIntentProfile?.primaryGoal && _activeIntentProfile.primaryGoal !== "Unspecified") {
-    content.title = _activeIntentProfile.primaryGoal.charAt(0).toUpperCase() + _activeIntentProfile.primaryGoal.slice(1);
-  }
-  if (_activeIntentProfile?.primaryProblem && _activeIntentProfile.primaryProblem !== "Unspecified") {
-    content.subtitle = _activeIntentProfile.primaryProblem.charAt(0).toUpperCase() + _activeIntentProfile.primaryProblem.slice(1);
+    const goal = _activeIntentProfile.primaryGoal;
+    const isGoalProblemText = /build|create|make|design|develop|need|improve|missing|lack|should|must/i.test(goal) || goal.length > 40;
+    if (!isGoalProblemText) {
+      content.title = goal.charAt(0).toUpperCase() + goal.slice(1);
+    }
   }
   return `export function CTA() {
   return (
