@@ -426,6 +426,7 @@ function scoreProductionReadiness(
   domainRegistry: RegDomain | null,
   intentProfile: IntentProfile | null,
   agentResults: WorkflowResult | null,
+  allFiles: Array<{ path: string; content: string; type: string }>,
 ): number {
   let score = 0;
 
@@ -466,10 +467,34 @@ function scoreProductionReadiness(
   // Has libs/utils (5 pts)
   if (generated.libs.length >= 1) score += 5;
 
-  // Total file count indicates real generation (15 pts)
-  if (generated.total >= 15) score += 15;
-  else if (generated.total >= 10) score += 10;
-  else if (generated.total >= 5) score += 5;
+  // Build readiness checks (static analysis)
+  const allContent = allFiles.map(f => f.content).join("\n");
+  const buildIssues: string[] = [];
+
+  // Check: All imports reference existing files
+  const importPattern = /from\s+["'](@\/[^"']+)["']/g;
+  let match;
+  while ((match = importPattern.exec(allContent)) !== null) {
+    const importPath = match[1].replace("@/", "src/");
+    const exists = allFiles.some(f => f.path.includes(importPath.replace("src/", "")));
+    if (!exists) buildIssues.push(`Missing import: ${match[1]}`);
+  }
+
+  // Check: No undefined references (common patterns)
+  const undefinedPatterns = [/\bundefined\b/g, /\bNaN\b/g];
+  for (const pattern of undefinedPatterns) {
+    if (pattern.test(allContent)) buildIssues.push(`Potential undefined reference`);
+  }
+
+  // Check: JSX syntax validity (basic)
+  const openTags = (allContent.match(/<[A-Z][^>]*>/g) || []).length;
+  const closeTags = (allContent.match(/<\/[A-Z][^>]*>/g) || []).length;
+  if (Math.abs(openTags - closeTags) > 5) buildIssues.push(`JSX tag mismatch: ${openTags} open, ${closeTags} close`);
+
+  // Build readiness score (15 pts total)
+  if (buildIssues.length === 0) score += 15;
+  else if (buildIssues.length <= 2) score += 10;
+  else if (buildIssues.length <= 5) score += 5;
 
   return Math.min(100, score);
 }
@@ -667,7 +692,7 @@ async function runFullBenchmark(): Promise<FullBenchmarkResult[]> {
       const workflowRealism = scoreWorkflowRealism(businessState, prompt);
       const intentAlignment = scoreIntentAlignment(intentProfile, prompt, requirementMatrix, architecture);
       const businessData = scoreBusinessData(businessState, prompt);
-      const productionReadiness = scoreProductionReadiness(generated, qualityScores, blueprint, domainRegistry, intentProfile, agentResults);
+      const productionReadiness = scoreProductionReadiness(generated, qualityScores, blueprint, domainRegistry, intentProfile, agentResults, generatedFiles);
 
       const composite = Math.round(
         domainRealism * 0.25 +

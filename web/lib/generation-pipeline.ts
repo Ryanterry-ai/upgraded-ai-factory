@@ -29,6 +29,7 @@ import {
   getRPSEMetrics,
   validateRealism,
   evaluateHumanPerception,
+  evaluateWorkflowReality,
   generateDataProvider,
   type RPSEContext,
   type RPSEDataBundle,
@@ -1050,7 +1051,7 @@ export function ProductGrid() {
                       <span>Net Wt: {selectedProduct.weight}</span>
                       {selectedProduct.veg ? <span className="text-green-600">🟥 Veg</span> : <span className="text-red-600">🟧 Non-Veg</span>}
                     </div>
-                    <button className="w-full bg-amber-600 text-white py-3 rounded-xl font-semibold hover:bg-amber-700 transition-colors">Add to Cart — ₹{selectedProduct.price.toLocaleString("en-IN")}</button>
+                    <button onClick={() => { addItem(selectedProduct); setSelectedProduct(null); }} className="w-full bg-amber-600 text-white py-3 rounded-xl font-semibold hover:bg-amber-700 transition-colors">Add to Cart — ₹{selectedProduct.price.toLocaleString("en-IN")}</button>
                   </div>
                 </div>
               </div>
@@ -1342,9 +1343,9 @@ export function CheckoutModal({ isOpen, onClose }: { isOpen: boolean; onClose: (
               <h3 className="font-semibold">Order Summary</h3>
               <div className="bg-gray-50 rounded-xl p-4 space-y-2 text-sm max-h-48 overflow-y-auto">
                 {items.map((item) => (
-                  <div key={item.id} className="flex justify-between">
-                    <span className="text-gray-600">{item.name} × {item.quantity}</span>
-                    <span className="font-medium">₹{(item.price * item.quantity).toLocaleString("en-IN")}</span>
+                  <div key={item.product.id} className="flex justify-between">
+                    <span className="text-gray-600">{item.product.name} × {item.quantity}</span>
+                    <span className="font-medium">₹{(item.product.price * item.quantity).toLocaleString("en-IN")}</span>
                   </div>
                 ))}
                 <div className="border-t pt-2 flex justify-between"><span className="text-gray-500">Subtotal</span><span>₹{total.toLocaleString("en-IN")}</span></div>
@@ -2712,6 +2713,7 @@ export function LeadPipeline() {
   const [selectedPlan, setSelectedPlan] = useState("premium");
   const [filterSource, setFilterSource] = useState("all");
   const [filterPriority, setFilterPriority] = useState("all");
+  const [draggedLead, setDraggedLead] = useState<Lead | null>(null);
 
   const filtered = leads
     .filter(l => filterSource === "all" || l.source === filterSource)
@@ -3431,7 +3433,7 @@ export function ReviewList() {
           <div className="flex gap-0.5 my-1 justify-center">
             {[1,2,3,4,5].map(s => <span key={s} className={\`text-lg \${s <= Math.round(Number(avgRating)) ? "text-amber-400" : "text-gray-300"}\`}>★</span>)}
           </div>
-          <p className="text-sm text-gray-500">{MOCK_REVIEWS.length} reviews</p>
+          <p className="text-sm text-gray-500">{REVIEWS.length} reviews</p>
         </div>
         <div className="flex-1 min-w-[200px] space-y-1">
           {ratingCounts.map(({ rating, count, pct }) => (
@@ -5561,6 +5563,13 @@ export async function runGeneration(
       for (const f of failed) {
         emit("thinking", { message: `  ✗ ${f.name}: ${f.detail}` });
       }
+    }
+
+    // ═══ WORKFLOW REALITY SCORE ═══
+    const workflowReality = evaluateWorkflowReality(files, rpseDomain);
+    emit("thinking", { message: `Workflow Reality: ${workflowReality.score}/100 — ${workflowReality.verdict}` });
+    for (const wf of workflowReality.workflows) {
+      emit("thinking", { message: `  ${wf.score >= 80 ? "✓" : "✗"} ${wf.name}: ${wf.score}%` });
     }
 
     // Generate preview from files (React preview for non-scraped, HTML for scraped)

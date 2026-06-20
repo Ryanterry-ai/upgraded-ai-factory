@@ -76,7 +76,7 @@
           "agentName": "Product Manager",
           "success": true,
           "output": "{\"scope\":\"Iron Peak Fitness — a Gym CRM SaaS built for Gym owners, staff, and members. Core features include Member management with profiles, Attendance tracking and check-in, Billing and invoice generation.\",\"features\":[\"Member management with profiles\",\"Attendance tracking and check-in\",\"Billing and invoice generation\",\"Lead pipeline and conversion\",\"Class scheduling and booking\"],\"audience\":\"Gym owners, staff, and members\",\"successCriteria\":\"Functional gym-crm application with realistic data, responsive design, and all core workflows operational\"}",
-          "duration": 0,
+          "duration": 1,
           "tokenUsage": 0
         },
         {
@@ -1571,13 +1571,13 @@
             "email": "rahul@gmail.com",
             "phone": "+91 98765 11111",
             "city": "Mumbai",
-            "totalSpent": 21995,
+            "totalSpent": 45493,
             "orderIds": [
               "GYM-001"
             ],
             "lastOrderDate": "2026-05-21",
-            "membership": "platinum",
-            "createdAt": "2026-05-26"
+            "membership": "bronze",
+            "createdAt": "2026-06-20"
           },
           {
             "id": "C-002",
@@ -1585,13 +1585,13 @@
             "email": "priya.p@gmail.com",
             "phone": "+91 87654 22222",
             "city": "Mumbai",
-            "totalSpent": 18495,
+            "totalSpent": 4497,
             "orderIds": [
               "GYM-002"
             ],
             "lastOrderDate": "2026-05-26",
             "membership": "platinum",
-            "createdAt": "2026-05-26"
+            "createdAt": "2026-06-15"
           },
           {
             "id": "C-003",
@@ -1599,7 +1599,7 @@
             "email": "amit.s@gmail.com",
             "phone": "+91 76543 33333",
             "city": "Delhi",
-            "totalSpent": 20994,
+            "totalSpent": 1499,
             "orderIds": [
               "GYM-003"
             ],
@@ -1613,13 +1613,13 @@
             "email": "neha.g@gmail.com",
             "phone": "+91 65432 44444",
             "city": "Gurgaon",
-            "totalSpent": 23997,
+            "totalSpent": 4998,
             "orderIds": [
               "GYM-004"
             ],
             "lastOrderDate": "2026-06-05",
-            "membership": "silver",
-            "createdAt": "2026-05-26"
+            "membership": "platinum",
+            "createdAt": "2026-05-21"
           },
           {
             "id": "C-005",
@@ -1627,12 +1627,12 @@
             "email": "vikram.r@gmail.com",
             "phone": "+91 54321 55555",
             "city": "Pune",
-            "totalSpent": 4998,
+            "totalSpent": 8996,
             "orderIds": [
               "GYM-005"
             ],
             "lastOrderDate": "2026-06-10",
-            "membership": "silver",
+            "membership": "gold",
             "createdAt": "2026-05-26"
           }
         ],
@@ -1644,10 +1644,10 @@
             "price": 1499,
             "originalPrice": 1499,
             "category": "membership",
-            "stock": 188,
+            "stock": 77,
             "reorderPoint": 15,
             "rating": 4.5,
-            "reviewCount": 4408,
+            "reviewCount": 1831,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -1664,10 +1664,10 @@
             "price": 2499,
             "originalPrice": 2499,
             "category": "membership",
-            "stock": 92,
+            "stock": 58,
             "reorderPoint": 15,
             "rating": 4.7,
-            "reviewCount": 1684,
+            "reviewCount": 377,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -1684,10 +1684,10 @@
             "price": 4499,
             "originalPrice": 4499,
             "category": "membership",
-            "stock": 208,
+            "stock": 76,
             "reorderPoint": 15,
             "rating": 4.8,
-            "reviewCount": 851,
+            "reviewCount": 3458,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -1704,10 +1704,10 @@
             "price": 7999,
             "originalPrice": 7999,
             "category": "membership",
-            "stock": 106,
+            "stock": 71,
             "reorderPoint": 15,
             "rating": 4.9,
-            "reviewCount": 3051,
+            "reviewCount": 153,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -1724,28 +1724,28 @@
             "customerId": "C-001",
             "items": [
               {
-                "productId": "P-2",
-                "name": "Standard Membership",
+                "productId": "P-4",
+                "name": "VIP Membership",
                 "qty": 2,
-                "price": 2499
+                "price": 7999
               },
               {
                 "productId": "P-4",
                 "name": "VIP Membership",
-                "qty": 1,
+                "qty": 2,
                 "price": 7999
               },
               {
                 "productId": "P-3",
                 "name": "Premium Membership",
-                "qty": 2,
+                "qty": 3,
                 "price": 4499
               }
             ],
-            "total": 21995,
+            "total": 45493,
             "status": "pending",
             "paymentMethod": "upi",
-            "shippingAddress": "Ahmedabad",
+            "shippingAddress": "Kolkata",
             "createdAt": "2026-05-21",
             "updatedAt": "2026-05-21"
           },
@@ -1754,28 +1754,16 @@
             "customerId": "C-002",
             "items": [
               {
-                "productId": "P-3",
-                "name": "Premium Membership",
-                "qty": 2,
-                "price": 4499
-              },
-              {
-                "productId": "P-2",
-                "name": "Standard Membership",
-                "qty": 2,
-                "price": 2499
-              },
-              {
-                "productId": "P-3",
-                "name": "Premium Membership",
-                "qty": 1,
-                "price": 4499
+                "productId": "P-1",
+                "name": "Basic Membership",
+                "qty": 3,
+                "price": 1499
               }
             ],
-            "total": 18495,
+            "total": 4497,
             "status": "processing",
             "paymentMethod": "cod",
-            "shippingAddress": "Kolkata",
+            "shippingAddress": "Ahmedabad",
             "createdAt": "2026-05-26",
             "updatedAt": "2026-05-26"
           },
@@ -1784,52 +1772,22 @@
             "customerId": "C-003",
             "items": [
               {
-                "productId": "P-3",
-                "name": "Premium Membership",
-                "qty": 1,
-                "price": 4499
-              },
-              {
-                "productId": "P-3",
-                "name": "Premium Membership",
-                "qty": 3,
-                "price": 4499
-              },
-              {
                 "productId": "P-1",
                 "name": "Basic Membership",
-                "qty": 2,
+                "qty": 1,
                 "price": 1499
               }
             ],
-            "total": 20994,
+            "total": 1499,
             "status": "shipped",
             "paymentMethod": "card",
-            "shippingAddress": "Pune",
+            "shippingAddress": "Lucknow",
             "createdAt": "2026-05-31",
             "updatedAt": "2026-05-31"
           },
           {
             "id": "GYM-004",
             "customerId": "C-004",
-            "items": [
-              {
-                "productId": "P-4",
-                "name": "VIP Membership",
-                "qty": 3,
-                "price": 7999
-              }
-            ],
-            "total": 23997,
-            "status": "delivered",
-            "paymentMethod": "netbanking",
-            "shippingAddress": "Lucknow",
-            "createdAt": "2026-06-05",
-            "updatedAt": "2026-06-05"
-          },
-          {
-            "id": "GYM-005",
-            "customerId": "C-005",
             "items": [
               {
                 "productId": "P-2",
@@ -1839,9 +1797,33 @@
               }
             ],
             "total": 4998,
+            "status": "delivered",
+            "paymentMethod": "netbanking",
+            "shippingAddress": "Delhi",
+            "createdAt": "2026-06-05",
+            "updatedAt": "2026-06-05"
+          },
+          {
+            "id": "GYM-005",
+            "customerId": "C-005",
+            "items": [
+              {
+                "productId": "P-1",
+                "name": "Basic Membership",
+                "qty": 3,
+                "price": 1499
+              },
+              {
+                "productId": "P-3",
+                "name": "Premium Membership",
+                "qty": 1,
+                "price": 4499
+              }
+            ],
+            "total": 8996,
             "status": "cancelled",
             "paymentMethod": "upi",
-            "shippingAddress": "Ahmedabad",
+            "shippingAddress": "Delhi",
             "createdAt": "2026-06-10",
             "updatedAt": "2026-06-10"
           }
@@ -1850,7 +1832,7 @@
           {
             "id": "MOV-1",
             "productId": "P-1",
-            "quantity": 5,
+            "quantity": 10,
             "type": "sale",
             "orderId": "GYM-001",
             "note": "Sold Basic Membership",
@@ -1859,7 +1841,7 @@
           {
             "id": "MOV-2",
             "productId": "P-2",
-            "quantity": 23,
+            "quantity": 12,
             "type": "sale",
             "orderId": "GYM-002",
             "note": "Sold Standard Membership",
@@ -1868,7 +1850,7 @@
           {
             "id": "MOV-3",
             "productId": "P-3",
-            "quantity": 5,
+            "quantity": 23,
             "type": "sale",
             "orderId": "GYM-003",
             "note": "Sold Premium Membership",
@@ -1917,12 +1899,12 @@
         }
       ],
       "metrics": {
-        "totalRevenue": 85481,
+        "totalRevenue": 56487,
         "totalOrders": 5,
         "activeOrders": 3,
         "deliveredOrders": 1,
         "cancelledOrders": 1,
-        "averageOrderValue": 21370,
+        "averageOrderValue": 14122,
         "totalCustomers": 5,
         "repeatCustomerRate": 0,
         "lowStockItems": 0,
@@ -1966,34 +1948,34 @@
         },
         "topProducts": [
           {
-            "productId": "P-3",
-            "name": "Premium Membership",
-            "revenue": 40491,
-            "units": 9
-          },
-          {
             "productId": "P-4",
             "name": "VIP Membership",
             "revenue": 31996,
             "units": 4
           },
           {
-            "productId": "P-2",
-            "name": "Standard Membership",
-            "revenue": 9996,
-            "units": 4
+            "productId": "P-3",
+            "name": "Premium Membership",
+            "revenue": 13497,
+            "units": 3
           },
           {
             "productId": "P-1",
             "name": "Basic Membership",
-            "revenue": 2998,
+            "revenue": 5996,
+            "units": 4
+          },
+          {
+            "productId": "P-2",
+            "name": "Standard Membership",
+            "revenue": 4998,
             "units": 2
           }
         ],
         "membershipBreakdown": {
+          "bronze": 2,
           "platinum": 2,
-          "bronze": 1,
-          "silver": 2
+          "gold": 1
         },
         "inventoryHealth": {
           "inStock": 4,
@@ -2010,7 +1992,7 @@
           "data": {
             "orderId": "GYM-001",
             "customerId": "C-001",
-            "total": 21995
+            "total": 45493
           },
           "timestamp": "2026-05-21"
         },
@@ -2022,7 +2004,7 @@
           "data": {
             "orderId": "GYM-002",
             "customerId": "C-002",
-            "total": 18495
+            "total": 4497
           },
           "timestamp": "2026-05-26"
         },
@@ -2034,7 +2016,7 @@
           "data": {
             "orderId": "GYM-003",
             "customerId": "C-003",
-            "total": 20994
+            "total": 1499
           },
           "timestamp": "2026-05-31"
         },
@@ -2046,7 +2028,7 @@
           "data": {
             "orderId": "GYM-004",
             "customerId": "C-004",
-            "total": 23997
+            "total": 4998
           },
           "timestamp": "2026-06-05"
         },
@@ -2058,7 +2040,7 @@
           "data": {
             "orderId": "GYM-005",
             "customerId": "C-005",
-            "total": 4998
+            "total": 8996
           },
           "timestamp": "2026-06-10"
         }
@@ -4435,13 +4417,13 @@
             "email": "amit.p@gmail.com",
             "phone": "+91 98765 11111",
             "city": "Ahmedabad",
-            "totalSpent": 16397,
+            "totalSpent": 3698,
             "orderIds": [
               "ECM-001"
             ],
             "lastOrderDate": "2026-05-21",
-            "membership": "bronze",
-            "createdAt": "2026-06-30"
+            "membership": "gold",
+            "createdAt": "2026-06-20"
           },
           {
             "id": "C-002",
@@ -4449,7 +4431,7 @@
             "email": "neha.g@gmail.com",
             "phone": "+91 87654 22222",
             "city": "Delhi",
-            "totalSpent": 50595,
+            "totalSpent": 14391,
             "orderIds": [
               "ECM-002"
             ],
@@ -4463,13 +4445,13 @@
             "email": "sanjay.k@gmail.com",
             "phone": "+91 76543 33333",
             "city": "Chennai",
-            "totalSpent": 199,
+            "totalSpent": 18096,
             "orderIds": [
               "ECM-003"
             ],
             "lastOrderDate": "2026-05-31",
-            "membership": "platinum",
-            "createdAt": "2026-07-05"
+            "membership": "gold",
+            "createdAt": "2026-05-21"
           },
           {
             "id": "C-004",
@@ -4482,8 +4464,8 @@
               "ECM-004"
             ],
             "lastOrderDate": "2026-06-05",
-            "membership": "silver",
-            "createdAt": "2026-06-20"
+            "membership": "platinum",
+            "createdAt": "2026-06-25"
           },
           {
             "id": "C-005",
@@ -4491,13 +4473,13 @@
             "email": "rahul.j@gmail.com",
             "phone": "+91 54321 55555",
             "city": "Pune",
-            "totalSpent": 5994,
+            "totalSpent": 597,
             "orderIds": [
               "ECM-005"
             ],
             "lastOrderDate": "2026-06-10",
             "membership": "silver",
-            "createdAt": "2026-07-05"
+            "createdAt": "2026-06-15"
           }
         ],
         "products": [
@@ -4508,10 +4490,10 @@
             "price": 1299,
             "originalPrice": 4490,
             "category": "electronics",
-            "stock": 61,
+            "stock": 209,
             "reorderPoint": 15,
             "rating": 4.2,
-            "reviewCount": 4190,
+            "reviewCount": 2752,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -4528,10 +4510,10 @@
             "price": 15999,
             "originalPrice": 18999,
             "category": "phones",
-            "stock": 12,
+            "stock": 94,
             "reorderPoint": 15,
             "rating": 4.4,
-            "reviewCount": 1448,
+            "reviewCount": 4567,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -4548,10 +4530,10 @@
             "price": 3499,
             "originalPrice": 4995,
             "category": "kitchen",
-            "stock": 82,
+            "stock": 165,
             "reorderPoint": 15,
             "rating": 4.3,
-            "reviewCount": 1891,
+            "reviewCount": 2491,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -4568,10 +4550,10 @@
             "price": 2199,
             "originalPrice": 3499,
             "category": "fashion",
-            "stock": 201,
+            "stock": 54,
             "reorderPoint": 15,
             "rating": 4.5,
-            "reviewCount": 2309,
+            "reviewCount": 1422,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -4588,10 +4570,10 @@
             "price": 699,
             "originalPrice": 1199,
             "category": "home",
-            "stock": 57,
+            "stock": 83,
             "reorderPoint": 15,
             "rating": 4.6,
-            "reviewCount": 4010,
+            "reviewCount": 3514,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -4608,10 +4590,10 @@
             "price": 199,
             "originalPrice": 299,
             "category": "personal",
-            "stock": 151,
+            "stock": 88,
             "reorderPoint": 15,
             "rating": 4.1,
-            "reviewCount": 300,
+            "reviewCount": 148,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -4628,22 +4610,22 @@
             "customerId": "C-001",
             "items": [
               {
-                "productId": "P-6",
-                "name": "Yardley London Body Spray",
-                "qty": 2,
-                "price": 199
+                "productId": "P-3",
+                "name": "Prestige Iris Mixer",
+                "qty": 1,
+                "price": 3499
               },
               {
-                "productId": "P-2",
-                "name": "Samsung Galaxy M34",
+                "productId": "P-6",
+                "name": "Yardley London Body Spray",
                 "qty": 1,
-                "price": 15999
+                "price": 199
               }
             ],
-            "total": 16397,
+            "total": 3698,
             "status": "pending",
             "paymentMethod": "upi",
-            "shippingAddress": "Kolkata",
+            "shippingAddress": "Delhi",
             "createdAt": "2026-05-21",
             "updatedAt": "2026-05-21"
           },
@@ -4654,20 +4636,26 @@
               {
                 "productId": "P-1",
                 "name": "boAt Airdopes 141",
-                "qty": 2,
+                "qty": 3,
                 "price": 1299
               },
               {
-                "productId": "P-2",
-                "name": "Samsung Galaxy M34",
+                "productId": "P-1",
+                "name": "boAt Airdopes 141",
                 "qty": 3,
-                "price": 15999
+                "price": 1299
+              },
+              {
+                "productId": "P-4",
+                "name": "Wildcraft Backpack 44L",
+                "qty": 3,
+                "price": 2199
               }
             ],
-            "total": 50595,
+            "total": 14391,
             "status": "processing",
             "paymentMethod": "cod",
-            "shippingAddress": "Lucknow",
+            "shippingAddress": "Pune",
             "createdAt": "2026-05-26",
             "updatedAt": "2026-05-26"
           },
@@ -4676,16 +4664,22 @@
             "customerId": "C-003",
             "items": [
               {
-                "productId": "P-6",
-                "name": "Yardley London Body Spray",
+                "productId": "P-5",
+                "name": "Milton Thermosteel Bottle",
+                "qty": 3,
+                "price": 699
+              },
+              {
+                "productId": "P-2",
+                "name": "Samsung Galaxy M34",
                 "qty": 1,
-                "price": 199
+                "price": 15999
               }
             ],
-            "total": 199,
+            "total": 18096,
             "status": "shipped",
             "paymentMethod": "card",
-            "shippingAddress": "Lucknow",
+            "shippingAddress": "Kolkata",
             "createdAt": "2026-05-31",
             "updatedAt": "2026-05-31"
           },
@@ -4703,7 +4697,7 @@
             "total": 31998,
             "status": "delivered",
             "paymentMethod": "netbanking",
-            "shippingAddress": "Kolkata",
+            "shippingAddress": "Hyderabad",
             "createdAt": "2026-06-05",
             "updatedAt": "2026-06-05"
           },
@@ -4714,26 +4708,14 @@
               {
                 "productId": "P-6",
                 "name": "Yardley London Body Spray",
-                "qty": 2,
-                "price": 199
-              },
-              {
-                "productId": "P-3",
-                "name": "Prestige Iris Mixer",
-                "qty": 1,
-                "price": 3499
-              },
-              {
-                "productId": "P-5",
-                "name": "Milton Thermosteel Bottle",
                 "qty": 3,
-                "price": 699
+                "price": 199
               }
             ],
-            "total": 5994,
+            "total": 597,
             "status": "cancelled",
             "paymentMethod": "upi",
-            "shippingAddress": "Mumbai",
+            "shippingAddress": "Bangalore",
             "createdAt": "2026-06-10",
             "updatedAt": "2026-06-10"
           }
@@ -4742,7 +4724,7 @@
           {
             "id": "MOV-1",
             "productId": "P-1",
-            "quantity": 7,
+            "quantity": 22,
             "type": "sale",
             "orderId": "ECM-001",
             "note": "Sold boAt Airdopes 141",
@@ -4751,7 +4733,7 @@
           {
             "id": "MOV-2",
             "productId": "P-2",
-            "quantity": 11,
+            "quantity": 20,
             "type": "sale",
             "orderId": "ECM-002",
             "note": "Sold Samsung Galaxy M34",
@@ -4760,7 +4742,7 @@
           {
             "id": "MOV-3",
             "productId": "P-3",
-            "quantity": 17,
+            "quantity": 13,
             "type": "sale",
             "orderId": "ECM-003",
             "note": "Sold Prestige Iris Mixer",
@@ -4814,15 +4796,15 @@
         }
       ],
       "metrics": {
-        "totalRevenue": 99189,
+        "totalRevenue": 68183,
         "totalOrders": 5,
         "activeOrders": 3,
         "deliveredOrders": 1,
         "cancelledOrders": 1,
-        "averageOrderValue": 24797,
+        "averageOrderValue": 17046,
         "totalCustomers": 5,
         "repeatCustomerRate": 0,
-        "lowStockItems": 1,
+        "lowStockItems": 0,
         "outOfStockItems": 0,
         "revenueByDay": [
           {
@@ -4865,30 +4847,42 @@
           {
             "productId": "P-2",
             "name": "Samsung Galaxy M34",
-            "revenue": 95994,
-            "units": 6
+            "revenue": 47997,
+            "units": 3
           },
           {
             "productId": "P-1",
             "name": "boAt Airdopes 141",
-            "revenue": 2598,
-            "units": 2
+            "revenue": 7794,
+            "units": 6
           },
           {
-            "productId": "P-6",
-            "name": "Yardley London Body Spray",
-            "revenue": 597,
+            "productId": "P-4",
+            "name": "Wildcraft Backpack 44L",
+            "revenue": 6597,
+            "units": 3
+          },
+          {
+            "productId": "P-3",
+            "name": "Prestige Iris Mixer",
+            "revenue": 3499,
+            "units": 1
+          },
+          {
+            "productId": "P-5",
+            "name": "Milton Thermosteel Bottle",
+            "revenue": 2097,
             "units": 3
           }
         ],
         "membershipBreakdown": {
-          "bronze": 1,
-          "silver": 3,
+          "gold": 2,
+          "silver": 2,
           "platinum": 1
         },
         "inventoryHealth": {
-          "inStock": 5,
-          "lowStock": 1,
+          "inStock": 6,
+          "lowStock": 0,
           "outOfStock": 0
         }
       },
@@ -4901,7 +4895,7 @@
           "data": {
             "orderId": "ECM-001",
             "customerId": "C-001",
-            "total": 16397
+            "total": 3698
           },
           "timestamp": "2026-05-21"
         },
@@ -4913,7 +4907,7 @@
           "data": {
             "orderId": "ECM-002",
             "customerId": "C-002",
-            "total": 50595
+            "total": 14391
           },
           "timestamp": "2026-05-26"
         },
@@ -4925,7 +4919,7 @@
           "data": {
             "orderId": "ECM-003",
             "customerId": "C-003",
-            "total": 199
+            "total": 18096
           },
           "timestamp": "2026-05-31"
         },
@@ -4949,7 +4943,7 @@
           "data": {
             "orderId": "ECM-005",
             "customerId": "C-005",
-            "total": 5994
+            "total": 597
           },
           "timestamp": "2026-06-10"
         }
@@ -7102,13 +7096,13 @@
             "email": "arjun.m@gmail.com",
             "phone": "+91 98765 10101",
             "city": "Mumbai",
-            "totalSpent": 680,
+            "totalSpent": 1380,
             "orderIds": [
               "RST-001"
             ],
             "lastOrderDate": "2026-05-21",
-            "membership": "gold",
-            "createdAt": "2026-05-21"
+            "membership": "platinum",
+            "createdAt": "2026-06-25"
           },
           {
             "id": "C-002",
@@ -7116,13 +7110,13 @@
             "email": "sneha.k@gmail.com",
             "phone": "+91 87654 20202",
             "city": "Mumbai",
-            "totalSpent": 1020,
+            "totalSpent": 1000,
             "orderIds": [
               "RST-002"
             ],
             "lastOrderDate": "2026-05-26",
             "membership": "bronze",
-            "createdAt": "2026-06-25"
+            "createdAt": "2026-07-05"
           },
           {
             "id": "C-003",
@@ -7130,13 +7124,13 @@
             "email": "rohan.j@gmail.com",
             "phone": "+91 76543 30303",
             "city": "Delhi",
-            "totalSpent": 420,
+            "totalSpent": 880,
             "orderIds": [
               "RST-003"
             ],
             "lastOrderDate": "2026-05-31",
-            "membership": "platinum",
-            "createdAt": "2026-06-25"
+            "membership": "silver",
+            "createdAt": "2026-06-20"
           }
         ],
         "products": [
@@ -7147,10 +7141,10 @@
             "price": 380,
             "originalPrice": 380,
             "category": "mains",
-            "stock": 17,
+            "stock": 141,
             "reorderPoint": 15,
             "rating": 4.8,
-            "reviewCount": 3126,
+            "reviewCount": 1550,
             "veg": false,
             "fssai": "10019062000",
             "weight": "",
@@ -7166,10 +7160,10 @@
             "price": 320,
             "originalPrice": 320,
             "category": "mains",
-            "stock": 200,
+            "stock": 181,
             "reorderPoint": 15,
             "rating": 4.7,
-            "reviewCount": 1072,
+            "reviewCount": 567,
             "veg": false,
             "fssai": "10019062000",
             "weight": "",
@@ -7184,10 +7178,10 @@
             "price": 60,
             "originalPrice": 60,
             "category": "breads",
-            "stock": 195,
+            "stock": 19,
             "reorderPoint": 15,
             "rating": 4.6,
-            "reviewCount": 1146,
+            "reviewCount": 4065,
             "veg": false,
             "fssai": "10019062000",
             "weight": "",
@@ -7202,10 +7196,10 @@
             "price": 150,
             "originalPrice": 150,
             "category": "rice",
-            "stock": 142,
+            "stock": 195,
             "reorderPoint": 15,
             "rating": 4.5,
-            "reviewCount": 2908,
+            "reviewCount": 139,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -7220,10 +7214,10 @@
             "price": 120,
             "originalPrice": 120,
             "category": "desserts",
-            "stock": 98,
+            "stock": 117,
             "reorderPoint": 15,
             "rating": 4.7,
-            "reviewCount": 4380,
+            "reviewCount": 578,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -7238,10 +7232,10 @@
             "price": 40,
             "originalPrice": 40,
             "category": "beverages",
-            "stock": 12,
+            "stock": 67,
             "reorderPoint": 15,
             "rating": 4.8,
-            "reviewCount": 4316,
+            "reviewCount": 372,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -7256,22 +7250,28 @@
             "customerId": "C-001",
             "items": [
               {
-                "productId": "P-5",
-                "name": "Gulab Jamun",
+                "productId": "P-4",
+                "name": "Jeera Rice",
+                "qty": 2,
+                "price": 150
+              },
+              {
+                "productId": "P-6",
+                "name": "Masala Chai",
                 "qty": 3,
-                "price": 120
+                "price": 40
               },
               {
                 "productId": "P-2",
                 "name": "Paneer Tikka Masala",
-                "qty": 1,
+                "qty": 3,
                 "price": 320
               }
             ],
-            "total": 680,
+            "total": 1380,
             "status": "pending",
             "paymentMethod": "upi",
-            "shippingAddress": "Mumbai",
+            "shippingAddress": "Lucknow",
             "createdAt": "2026-05-21",
             "updatedAt": "2026-05-21"
           },
@@ -7282,20 +7282,20 @@
               {
                 "productId": "P-1",
                 "name": "Butter Chicken",
-                "qty": 1,
+                "qty": 2,
                 "price": 380
               },
               {
-                "productId": "P-2",
-                "name": "Paneer Tikka Masala",
+                "productId": "P-5",
+                "name": "Gulab Jamun",
                 "qty": 2,
-                "price": 320
+                "price": 120
               }
             ],
-            "total": 1020,
+            "total": 1000,
             "status": "processing",
             "paymentMethod": "cod",
-            "shippingAddress": "Pune",
+            "shippingAddress": "Ahmedabad",
             "createdAt": "2026-05-26",
             "updatedAt": "2026-05-26"
           },
@@ -7306,20 +7306,20 @@
               {
                 "productId": "P-5",
                 "name": "Gulab Jamun",
-                "qty": 3,
+                "qty": 1,
                 "price": 120
               },
               {
-                "productId": "P-3",
-                "name": "Garlic Naan",
-                "qty": 1,
-                "price": 60
+                "productId": "P-1",
+                "name": "Butter Chicken",
+                "qty": 2,
+                "price": 380
               }
             ],
-            "total": 420,
+            "total": 880,
             "status": "shipped",
             "paymentMethod": "card",
-            "shippingAddress": "Chennai",
+            "shippingAddress": "Bangalore",
             "createdAt": "2026-05-31",
             "updatedAt": "2026-05-31"
           }
@@ -7328,7 +7328,7 @@
           {
             "id": "MOV-1",
             "productId": "P-1",
-            "quantity": 22,
+            "quantity": 8,
             "type": "sale",
             "orderId": "RST-001",
             "note": "Sold Butter Chicken",
@@ -7337,7 +7337,7 @@
           {
             "id": "MOV-2",
             "productId": "P-2",
-            "quantity": 5,
+            "quantity": 18,
             "type": "sale",
             "orderId": "RST-002",
             "note": "Sold Paneer Tikka Masala",
@@ -7386,15 +7386,15 @@
         }
       ],
       "metrics": {
-        "totalRevenue": 2120,
+        "totalRevenue": 3260,
         "totalOrders": 3,
         "activeOrders": 3,
         "deliveredOrders": 0,
         "cancelledOrders": 0,
-        "averageOrderValue": 707,
+        "averageOrderValue": 1087,
         "totalCustomers": 3,
         "repeatCustomerRate": 0,
-        "lowStockItems": 1,
+        "lowStockItems": 0,
         "outOfStockItems": 0,
         "revenueByDay": [
           {
@@ -7435,6 +7435,12 @@
         },
         "topProducts": [
           {
+            "productId": "P-1",
+            "name": "Butter Chicken",
+            "revenue": 1520,
+            "units": 4
+          },
+          {
             "productId": "P-2",
             "name": "Paneer Tikka Masala",
             "revenue": 960,
@@ -7443,30 +7449,30 @@
           {
             "productId": "P-5",
             "name": "Gulab Jamun",
-            "revenue": 720,
-            "units": 6
+            "revenue": 360,
+            "units": 3
           },
           {
-            "productId": "P-1",
-            "name": "Butter Chicken",
-            "revenue": 380,
-            "units": 1
+            "productId": "P-4",
+            "name": "Jeera Rice",
+            "revenue": 300,
+            "units": 2
           },
           {
-            "productId": "P-3",
-            "name": "Garlic Naan",
-            "revenue": 60,
-            "units": 1
+            "productId": "P-6",
+            "name": "Masala Chai",
+            "revenue": 120,
+            "units": 3
           }
         ],
         "membershipBreakdown": {
-          "gold": 1,
+          "platinum": 1,
           "bronze": 1,
-          "platinum": 1
+          "silver": 1
         },
         "inventoryHealth": {
-          "inStock": 5,
-          "lowStock": 1,
+          "inStock": 6,
+          "lowStock": 0,
           "outOfStock": 0
         }
       },
@@ -7479,7 +7485,7 @@
           "data": {
             "orderId": "RST-001",
             "customerId": "C-001",
-            "total": 680
+            "total": 1380
           },
           "timestamp": "2026-05-21"
         },
@@ -7491,7 +7497,7 @@
           "data": {
             "orderId": "RST-002",
             "customerId": "C-002",
-            "total": 1020
+            "total": 1000
           },
           "timestamp": "2026-05-26"
         },
@@ -7503,7 +7509,7 @@
           "data": {
             "orderId": "RST-003",
             "customerId": "C-003",
-            "total": 420
+            "total": 880
           },
           "timestamp": "2026-05-31"
         }
@@ -9449,8 +9455,8 @@
               "MED-001"
             ],
             "lastOrderDate": "2026-05-21",
-            "membership": "bronze",
-            "createdAt": "2026-05-21"
+            "membership": "gold",
+            "createdAt": "2026-06-20"
           },
           {
             "id": "C-002",
@@ -9458,13 +9464,13 @@
             "email": "sunita.i@gmail.com",
             "phone": "+91 87654 23232",
             "city": "Delhi",
-            "totalSpent": 2250,
+            "totalSpent": 4500,
             "orderIds": [
               "MED-002"
             ],
             "lastOrderDate": "2026-05-26",
             "membership": "silver",
-            "createdAt": "2026-06-10"
+            "createdAt": "2026-06-15"
           },
           {
             "id": "C-003",
@@ -9472,13 +9478,13 @@
             "email": "mohammed.a@gmail.com",
             "phone": "+91 76543 34343",
             "city": "Bangalore",
-            "totalSpent": 12147,
+            "totalSpent": 2250,
             "orderIds": [
               "MED-003"
             ],
             "lastOrderDate": "2026-05-31",
-            "membership": "bronze",
-            "createdAt": "2026-06-05"
+            "membership": "silver",
+            "createdAt": "2026-05-31"
           },
           {
             "id": "C-004",
@@ -9486,13 +9492,13 @@
             "email": "kavitha.n@gmail.com",
             "phone": "+91 65432 45454",
             "city": "Chennai",
-            "totalSpent": 2700,
+            "totalSpent": 15995,
             "orderIds": [
               "MED-004"
             ],
             "lastOrderDate": "2026-06-05",
-            "membership": "platinum",
-            "createdAt": "2026-05-26"
+            "membership": "gold",
+            "createdAt": "2026-05-31"
           },
           {
             "id": "C-005",
@@ -9500,13 +9506,13 @@
             "email": "prakash.d@gmail.com",
             "phone": "+91 54321 56565",
             "city": "Pune",
-            "totalSpent": 1500,
+            "totalSpent": 1250,
             "orderIds": [
               "MED-005"
             ],
             "lastOrderDate": "2026-06-10",
-            "membership": "platinum",
-            "createdAt": "2026-05-31"
+            "membership": "bronze",
+            "createdAt": "2026-06-15"
           }
         ],
         "products": [
@@ -9517,10 +9523,10 @@
             "price": 500,
             "originalPrice": 500,
             "category": "consultation",
-            "stock": 141,
+            "stock": 196,
             "reorderPoint": 15,
             "rating": 4.6,
-            "reviewCount": 1574,
+            "reviewCount": 1728,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -9537,10 +9543,10 @@
             "price": 2999,
             "originalPrice": 4500,
             "category": "package",
-            "stock": 123,
+            "stock": 127,
             "reorderPoint": 15,
             "rating": 4.8,
-            "reviewCount": 2722,
+            "reviewCount": 172,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -9558,10 +9564,10 @@
             "price": 1500,
             "originalPrice": 2000,
             "category": "dental",
-            "stock": 44,
+            "stock": 72,
             "reorderPoint": 15,
             "rating": 4.5,
-            "reviewCount": 3264,
+            "reviewCount": 2355,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -9578,10 +9584,10 @@
             "price": 800,
             "originalPrice": 1000,
             "category": "therapy",
-            "stock": 150,
+            "stock": 163,
             "reorderPoint": 15,
             "rating": 4.7,
-            "reviewCount": 734,
+            "reviewCount": 4665,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -9598,10 +9604,10 @@
             "price": 600,
             "originalPrice": 800,
             "category": "optometry",
-            "stock": 202,
+            "stock": 101,
             "reorderPoint": 15,
             "rating": 4.4,
-            "reviewCount": 4283,
+            "reviewCount": 5031,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -9618,10 +9624,10 @@
             "price": 750,
             "originalPrice": 900,
             "category": "vaccination",
-            "stock": 158,
+            "stock": 184,
             "reorderPoint": 15,
             "rating": 4.9,
-            "reviewCount": 488,
+            "reviewCount": 4013,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -9647,7 +9653,7 @@
             "total": 2250,
             "status": "pending",
             "paymentMethod": "upi",
-            "shippingAddress": "Pune",
+            "shippingAddress": "Delhi",
             "createdAt": "2026-05-21",
             "updatedAt": "2026-05-21"
           },
@@ -9656,16 +9662,16 @@
             "customerId": "C-002",
             "items": [
               {
-                "productId": "P-6",
-                "name": "Vaccination - Flu",
+                "productId": "P-3",
+                "name": "Dental Cleaning",
                 "qty": 3,
-                "price": 750
+                "price": 1500
               }
             ],
-            "total": 2250,
+            "total": 4500,
             "status": "processing",
             "paymentMethod": "cod",
-            "shippingAddress": "Hyderabad",
+            "shippingAddress": "Lucknow",
             "createdAt": "2026-05-26",
             "updatedAt": "2026-05-26"
           },
@@ -9676,23 +9682,17 @@
               {
                 "productId": "P-6",
                 "name": "Vaccination - Flu",
-                "qty": 1,
+                "qty": 2,
                 "price": 750
               },
               {
-                "productId": "P-4",
-                "name": "Physiotherapy Session",
-                "qty": 3,
-                "price": 800
-              },
-              {
-                "productId": "P-2",
-                "name": "Full Body Checkup",
-                "qty": 3,
-                "price": 2999
+                "productId": "P-6",
+                "name": "Vaccination - Flu",
+                "qty": 1,
+                "price": 750
               }
             ],
-            "total": 12147,
+            "total": 2250,
             "status": "shipped",
             "paymentMethod": "card",
             "shippingAddress": "Delhi",
@@ -9704,22 +9704,28 @@
             "customerId": "C-004",
             "items": [
               {
-                "productId": "P-6",
-                "name": "Vaccination - Flu",
+                "productId": "P-1",
+                "name": "General Consultation",
                 "qty": 2,
-                "price": 750
+                "price": 500
               },
               {
-                "productId": "P-5",
-                "name": "Eye Examination",
+                "productId": "P-2",
+                "name": "Full Body Checkup",
                 "qty": 2,
-                "price": 600
+                "price": 2999
+              },
+              {
+                "productId": "P-2",
+                "name": "Full Body Checkup",
+                "qty": 3,
+                "price": 2999
               }
             ],
-            "total": 2700,
+            "total": 15995,
             "status": "delivered",
             "paymentMethod": "netbanking",
-            "shippingAddress": "Jaipur",
+            "shippingAddress": "Kolkata",
             "createdAt": "2026-06-05",
             "updatedAt": "2026-06-05"
           },
@@ -9728,16 +9734,22 @@
             "customerId": "C-005",
             "items": [
               {
+                "productId": "P-1",
+                "name": "General Consultation",
+                "qty": 1,
+                "price": 500
+              },
+              {
                 "productId": "P-6",
                 "name": "Vaccination - Flu",
-                "qty": 2,
+                "qty": 1,
                 "price": 750
               }
             ],
-            "total": 1500,
+            "total": 1250,
             "status": "cancelled",
             "paymentMethod": "upi",
-            "shippingAddress": "Mumbai",
+            "shippingAddress": "Kolkata",
             "createdAt": "2026-06-10",
             "updatedAt": "2026-06-10"
           }
@@ -9746,7 +9758,7 @@
           {
             "id": "MOV-1",
             "productId": "P-1",
-            "quantity": 12,
+            "quantity": 21,
             "type": "sale",
             "orderId": "MED-001",
             "note": "Sold General Consultation",
@@ -9755,7 +9767,7 @@
           {
             "id": "MOV-2",
             "productId": "P-2",
-            "quantity": 19,
+            "quantity": 8,
             "type": "sale",
             "orderId": "MED-002",
             "note": "Sold Full Body Checkup",
@@ -9764,7 +9776,7 @@
           {
             "id": "MOV-3",
             "productId": "P-3",
-            "quantity": 20,
+            "quantity": 7,
             "type": "sale",
             "orderId": "MED-003",
             "note": "Sold Dental Cleaning",
@@ -9815,12 +9827,12 @@
         }
       ],
       "metrics": {
-        "totalRevenue": 19347,
+        "totalRevenue": 24995,
         "totalOrders": 5,
         "activeOrders": 3,
         "deliveredOrders": 1,
         "cancelledOrders": 1,
-        "averageOrderValue": 4837,
+        "averageOrderValue": 6249,
         "totalCustomers": 5,
         "repeatCustomerRate": 0,
         "lowStockItems": 0,
@@ -9866,32 +9878,32 @@
           {
             "productId": "P-2",
             "name": "Full Body Checkup",
-            "revenue": 8997,
-            "units": 3
+            "revenue": 14995,
+            "units": 5
           },
           {
             "productId": "P-6",
             "name": "Vaccination - Flu",
-            "revenue": 6750,
-            "units": 9
+            "revenue": 4500,
+            "units": 6
           },
           {
-            "productId": "P-4",
-            "name": "Physiotherapy Session",
-            "revenue": 2400,
+            "productId": "P-3",
+            "name": "Dental Cleaning",
+            "revenue": 4500,
             "units": 3
           },
           {
-            "productId": "P-5",
-            "name": "Eye Examination",
-            "revenue": 1200,
+            "productId": "P-1",
+            "name": "General Consultation",
+            "revenue": 1000,
             "units": 2
           }
         ],
         "membershipBreakdown": {
-          "bronze": 2,
-          "silver": 1,
-          "platinum": 2
+          "gold": 2,
+          "silver": 2,
+          "bronze": 1
         },
         "inventoryHealth": {
           "inStock": 6,
@@ -9920,7 +9932,7 @@
           "data": {
             "orderId": "MED-002",
             "customerId": "C-002",
-            "total": 2250
+            "total": 4500
           },
           "timestamp": "2026-05-26"
         },
@@ -9932,7 +9944,7 @@
           "data": {
             "orderId": "MED-003",
             "customerId": "C-003",
-            "total": 12147
+            "total": 2250
           },
           "timestamp": "2026-05-31"
         },
@@ -9944,7 +9956,7 @@
           "data": {
             "orderId": "MED-004",
             "customerId": "C-004",
-            "total": 2700
+            "total": 15995
           },
           "timestamp": "2026-06-05"
         },
@@ -9956,7 +9968,7 @@
           "data": {
             "orderId": "MED-005",
             "customerId": "C-005",
-            "total": 1500
+            "total": 1250
           },
           "timestamp": "2026-06-10"
         }
@@ -10808,7 +10820,7 @@
           "agentName": "Product Manager",
           "success": true,
           "output": "{\"scope\":\"Acme Corp — a SaaS Dashboard built for general users. Core features include user interface and data management.\",\"features\":[\"User interface\",\"Data management\",\"Responsive design\",\"Authentication\",\"API integration\"],\"audience\":\"General users\",\"successCriteria\":\"Functional saas application with realistic data, responsive design, and all core workflows operational\"}",
-          "duration": 0,
+          "duration": 1,
           "tokenUsage": 0
         },
         {
@@ -10828,7 +10840,7 @@
           "tokenUsage": 0
         }
       ],
-      "totalDuration": 0,
+      "totalDuration": 1,
       "totalTokens": 0,
       "successCount": 3,
       "failCount": 0,
@@ -11876,13 +11888,13 @@
             "email": "hello@techstart.in",
             "phone": "+91 98765 60601",
             "city": "Bangalore",
-            "totalSpent": 32996,
+            "totalSpent": 47991,
             "orderIds": [
               "SAA-001"
             ],
             "lastOrderDate": "2026-05-21",
-            "membership": "platinum",
-            "createdAt": "2026-05-31"
+            "membership": "silver",
+            "createdAt": "2026-06-25"
           },
           {
             "id": "C-002",
@@ -11890,13 +11902,13 @@
             "email": "team@growfast.io",
             "phone": "+91 87654 70702",
             "city": "Pune",
-            "totalSpent": 14995,
+            "totalSpent": 49995,
             "orderIds": [
               "SAA-002"
             ],
             "lastOrderDate": "2026-05-26",
-            "membership": "silver",
-            "createdAt": "2026-05-31"
+            "membership": "bronze",
+            "createdAt": "2026-06-10"
           },
           {
             "id": "C-003",
@@ -11904,13 +11916,13 @@
             "email": "ops@datapulse.co",
             "phone": "+91 76543 80803",
             "city": "Delhi",
-            "totalSpent": 47991,
+            "totalSpent": 999,
             "orderIds": [
               "SAA-003"
             ],
             "lastOrderDate": "2026-05-31",
-            "membership": "gold",
-            "createdAt": "2026-06-15"
+            "membership": "silver",
+            "createdAt": "2026-06-20"
           },
           {
             "id": "C-004",
@@ -11918,13 +11930,13 @@
             "email": "dev@freshcart.com",
             "phone": "+91 65432 90904",
             "city": "Chennai",
-            "totalSpent": 62993,
+            "totalSpent": 999,
             "orderIds": [
               "SAA-004"
             ],
             "lastOrderDate": "2026-06-05",
-            "membership": "platinum",
-            "createdAt": "2026-05-26"
+            "membership": "gold",
+            "createdAt": "2026-06-25"
           },
           {
             "id": "C-005",
@@ -11932,13 +11944,13 @@
             "email": "admin@mediconnect.in",
             "phone": "+91 54321 10105",
             "city": "Hyderabad",
-            "totalSpent": 14995,
+            "totalSpent": 23992,
             "orderIds": [
               "SAA-005"
             ],
             "lastOrderDate": "2026-06-10",
-            "membership": "bronze",
-            "createdAt": "2026-07-05"
+            "membership": "platinum",
+            "createdAt": "2026-05-26"
           }
         ],
         "products": [
@@ -11949,10 +11961,10 @@
             "price": 999,
             "originalPrice": 999,
             "category": "subscription",
-            "stock": 28,
+            "stock": 32,
             "reorderPoint": 15,
             "rating": 4.3,
-            "reviewCount": 4929,
+            "reviewCount": 2381,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -11969,10 +11981,10 @@
             "price": 2999,
             "originalPrice": 2999,
             "category": "subscription",
-            "stock": 200,
+            "stock": 190,
             "reorderPoint": 15,
             "rating": 4.6,
-            "reviewCount": 3398,
+            "reviewCount": 4014,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -11990,10 +12002,10 @@
             "price": 9999,
             "originalPrice": 9999,
             "category": "subscription",
-            "stock": 125,
+            "stock": 112,
             "reorderPoint": 15,
             "rating": 4.8,
-            "reviewCount": 4532,
+            "reviewCount": 4260,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -12020,14 +12032,20 @@
               {
                 "productId": "P-2",
                 "name": "Professional Plan",
-                "qty": 1,
+                "qty": 3,
+                "price": 2999
+              },
+              {
+                "productId": "P-2",
+                "name": "Professional Plan",
+                "qty": 3,
                 "price": 2999
               }
             ],
-            "total": 32996,
+            "total": 47991,
             "status": "pending",
             "paymentMethod": "upi",
-            "shippingAddress": "Jaipur",
+            "shippingAddress": "Pune",
             "createdAt": "2026-05-21",
             "updatedAt": "2026-05-21"
           },
@@ -12035,6 +12053,78 @@
             "id": "SAA-002",
             "customerId": "C-002",
             "items": [
+              {
+                "productId": "P-3",
+                "name": "Enterprise Plan",
+                "qty": 2,
+                "price": 9999
+              },
+              {
+                "productId": "P-3",
+                "name": "Enterprise Plan",
+                "qty": 1,
+                "price": 9999
+              },
+              {
+                "productId": "P-3",
+                "name": "Enterprise Plan",
+                "qty": 2,
+                "price": 9999
+              }
+            ],
+            "total": 49995,
+            "status": "processing",
+            "paymentMethod": "cod",
+            "shippingAddress": "Ahmedabad",
+            "createdAt": "2026-05-26",
+            "updatedAt": "2026-05-26"
+          },
+          {
+            "id": "SAA-003",
+            "customerId": "C-003",
+            "items": [
+              {
+                "productId": "P-1",
+                "name": "Starter Plan",
+                "qty": 1,
+                "price": 999
+              }
+            ],
+            "total": 999,
+            "status": "shipped",
+            "paymentMethod": "card",
+            "shippingAddress": "Bangalore",
+            "createdAt": "2026-05-31",
+            "updatedAt": "2026-05-31"
+          },
+          {
+            "id": "SAA-004",
+            "customerId": "C-004",
+            "items": [
+              {
+                "productId": "P-1",
+                "name": "Starter Plan",
+                "qty": 1,
+                "price": 999
+              }
+            ],
+            "total": 999,
+            "status": "delivered",
+            "paymentMethod": "netbanking",
+            "shippingAddress": "Pune",
+            "createdAt": "2026-06-05",
+            "updatedAt": "2026-06-05"
+          },
+          {
+            "id": "SAA-005",
+            "customerId": "C-005",
+            "items": [
+              {
+                "productId": "P-2",
+                "name": "Professional Plan",
+                "qty": 3,
+                "price": 2999
+              },
               {
                 "productId": "P-2",
                 "name": "Professional Plan",
@@ -12048,100 +12138,10 @@
                 "price": 2999
               }
             ],
-            "total": 14995,
-            "status": "processing",
-            "paymentMethod": "cod",
-            "shippingAddress": "Delhi",
-            "createdAt": "2026-05-26",
-            "updatedAt": "2026-05-26"
-          },
-          {
-            "id": "SAA-003",
-            "customerId": "C-003",
-            "items": [
-              {
-                "productId": "P-3",
-                "name": "Enterprise Plan",
-                "qty": 3,
-                "price": 9999
-              },
-              {
-                "productId": "P-2",
-                "name": "Professional Plan",
-                "qty": 3,
-                "price": 2999
-              },
-              {
-                "productId": "P-2",
-                "name": "Professional Plan",
-                "qty": 3,
-                "price": 2999
-              }
-            ],
-            "total": 47991,
-            "status": "shipped",
-            "paymentMethod": "card",
-            "shippingAddress": "Hyderabad",
-            "createdAt": "2026-05-31",
-            "updatedAt": "2026-05-31"
-          },
-          {
-            "id": "SAA-004",
-            "customerId": "C-004",
-            "items": [
-              {
-                "productId": "P-2",
-                "name": "Professional Plan",
-                "qty": 1,
-                "price": 2999
-              },
-              {
-                "productId": "P-3",
-                "name": "Enterprise Plan",
-                "qty": 3,
-                "price": 9999
-              },
-              {
-                "productId": "P-3",
-                "name": "Enterprise Plan",
-                "qty": 3,
-                "price": 9999
-              }
-            ],
-            "total": 62993,
-            "status": "delivered",
-            "paymentMethod": "netbanking",
-            "shippingAddress": "Mumbai",
-            "createdAt": "2026-06-05",
-            "updatedAt": "2026-06-05"
-          },
-          {
-            "id": "SAA-005",
-            "customerId": "C-005",
-            "items": [
-              {
-                "productId": "P-2",
-                "name": "Professional Plan",
-                "qty": 1,
-                "price": 2999
-              },
-              {
-                "productId": "P-2",
-                "name": "Professional Plan",
-                "qty": 1,
-                "price": 2999
-              },
-              {
-                "productId": "P-2",
-                "name": "Professional Plan",
-                "qty": 3,
-                "price": 2999
-              }
-            ],
-            "total": 14995,
+            "total": 23992,
             "status": "cancelled",
             "paymentMethod": "upi",
-            "shippingAddress": "Bangalore",
+            "shippingAddress": "Lucknow",
             "createdAt": "2026-06-10",
             "updatedAt": "2026-06-10"
           }
@@ -12150,7 +12150,7 @@
           {
             "id": "MOV-1",
             "productId": "P-1",
-            "quantity": 17,
+            "quantity": 12,
             "type": "sale",
             "orderId": "SAA-001",
             "note": "Sold Starter Plan",
@@ -12159,7 +12159,7 @@
           {
             "id": "MOV-2",
             "productId": "P-2",
-            "quantity": 11,
+            "quantity": 12,
             "type": "sale",
             "orderId": "SAA-002",
             "note": "Sold Professional Plan",
@@ -12168,7 +12168,7 @@
           {
             "id": "MOV-3",
             "productId": "P-3",
-            "quantity": 24,
+            "quantity": 7,
             "type": "sale",
             "orderId": "SAA-003",
             "note": "Sold Enterprise Plan",
@@ -12205,12 +12205,12 @@
         }
       ],
       "metrics": {
-        "totalRevenue": 158975,
+        "totalRevenue": 99984,
         "totalOrders": 5,
         "activeOrders": 3,
         "deliveredOrders": 1,
         "cancelledOrders": 1,
-        "averageOrderValue": 39744,
+        "averageOrderValue": 24996,
         "totalCustomers": 5,
         "repeatCustomerRate": 0,
         "lowStockItems": 0,
@@ -12256,21 +12256,27 @@
           {
             "productId": "P-3",
             "name": "Enterprise Plan",
-            "revenue": 119988,
-            "units": 12
+            "revenue": 79992,
+            "units": 8
           },
           {
             "productId": "P-2",
             "name": "Professional Plan",
-            "revenue": 38987,
-            "units": 13
+            "revenue": 17994,
+            "units": 6
+          },
+          {
+            "productId": "P-1",
+            "name": "Starter Plan",
+            "revenue": 1998,
+            "units": 2
           }
         ],
         "membershipBreakdown": {
-          "platinum": 2,
-          "silver": 1,
+          "silver": 2,
+          "bronze": 1,
           "gold": 1,
-          "bronze": 1
+          "platinum": 1
         },
         "inventoryHealth": {
           "inStock": 3,
@@ -12287,7 +12293,7 @@
           "data": {
             "orderId": "SAA-001",
             "customerId": "C-001",
-            "total": 32996
+            "total": 47991
           },
           "timestamp": "2026-05-21"
         },
@@ -12299,7 +12305,7 @@
           "data": {
             "orderId": "SAA-002",
             "customerId": "C-002",
-            "total": 14995
+            "total": 49995
           },
           "timestamp": "2026-05-26"
         },
@@ -12311,7 +12317,7 @@
           "data": {
             "orderId": "SAA-003",
             "customerId": "C-003",
-            "total": 47991
+            "total": 999
           },
           "timestamp": "2026-05-31"
         },
@@ -12323,7 +12329,7 @@
           "data": {
             "orderId": "SAA-004",
             "customerId": "C-004",
-            "total": 62993
+            "total": 999
           },
           "timestamp": "2026-06-05"
         },
@@ -12335,7 +12341,7 @@
           "data": {
             "orderId": "SAA-005",
             "customerId": "C-005",
-            "total": 14995
+            "total": 23992
           },
           "timestamp": "2026-06-10"
         }
@@ -13048,11 +13054,11 @@
           "agentName": "QA Engineer",
           "success": true,
           "output": "{\"issues\":[],\"missingBestPractices\":[\"Form validation edge cases\",\"Error boundary coverage\",\"Mobile responsive breakpoints\"],\"qualityScore\":82}",
-          "duration": 1,
+          "duration": 0,
           "tokenUsage": 0
         }
       ],
-      "totalDuration": 1,
+      "totalDuration": 0,
       "totalTokens": 0,
       "successCount": 3,
       "failCount": 0,
@@ -14048,13 +14054,13 @@
             "email": "sanjay.k@gmail.com",
             "phone": "+91 98765 11112",
             "city": "Mumbai",
-            "totalSpent": 22000000,
+            "totalSpent": 4500000,
             "orderIds": [
               "RE-001"
             ],
             "lastOrderDate": "2026-05-21",
-            "membership": "bronze",
-            "createdAt": "2026-05-21"
+            "membership": "gold",
+            "createdAt": "2026-05-26"
           },
           {
             "id": "C-002",
@@ -14062,13 +14068,13 @@
             "email": "meera.i@gmail.com",
             "phone": "+91 87654 22223",
             "city": "Bangalore",
-            "totalSpent": 33000000,
+            "totalSpent": 69000000,
             "orderIds": [
               "RE-002"
             ],
             "lastOrderDate": "2026-05-26",
-            "membership": "bronze",
-            "createdAt": "2026-06-25"
+            "membership": "silver",
+            "createdAt": "2026-06-30"
           },
           {
             "id": "C-003",
@@ -14076,13 +14082,13 @@
             "email": "rajiv.m@gmail.com",
             "phone": "+91 76543 33334",
             "city": "Delhi",
-            "totalSpent": 135500000,
+            "totalSpent": 54500000,
             "orderIds": [
               "RE-003"
             ],
             "lastOrderDate": "2026-05-31",
-            "membership": "gold",
-            "createdAt": "2026-07-05"
+            "membership": "platinum",
+            "createdAt": "2026-06-25"
           },
           {
             "id": "C-004",
@@ -14090,13 +14096,13 @@
             "email": "anjali.b@gmail.com",
             "phone": "+91 65432 44445",
             "city": "Pune",
-            "totalSpent": 55100000,
+            "totalSpent": 38500000,
             "orderIds": [
               "RE-004"
             ],
             "lastOrderDate": "2026-06-05",
-            "membership": "bronze",
-            "createdAt": "2026-05-21"
+            "membership": "platinum",
+            "createdAt": "2026-05-26"
           },
           {
             "id": "C-005",
@@ -14104,13 +14110,13 @@
             "email": "karthik.s@gmail.com",
             "phone": "+91 54321 55556",
             "city": "Chennai",
-            "totalSpent": 80800000,
+            "totalSpent": 63000000,
             "orderIds": [
               "RE-005"
             ],
             "lastOrderDate": "2026-06-10",
             "membership": "gold",
-            "createdAt": "2026-05-31"
+            "createdAt": "2026-05-21"
           }
         ],
         "products": [
@@ -14121,10 +14127,10 @@
             "price": 8500000,
             "originalPrice": 9200000,
             "category": "apartment",
-            "stock": 185,
+            "stock": 193,
             "reorderPoint": 15,
             "rating": 4.5,
-            "reviewCount": 2366,
+            "reviewCount": 3554,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -14141,10 +14147,10 @@
             "price": 15000000,
             "originalPrice": 17500000,
             "category": "villa",
-            "stock": 118,
+            "stock": 80,
             "reorderPoint": 15,
             "rating": 4.8,
-            "reviewCount": 1176,
+            "reviewCount": 4819,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -14161,10 +14167,10 @@
             "price": 4500000,
             "originalPrice": 5200000,
             "category": "studio",
-            "stock": 58,
+            "stock": 190,
             "reorderPoint": 15,
             "rating": 4.3,
-            "reviewCount": 2350,
+            "reviewCount": 3482,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -14181,10 +14187,10 @@
             "price": 25000000,
             "originalPrice": 28000000,
             "category": "commercial",
-            "stock": 206,
+            "stock": 18,
             "reorderPoint": 15,
             "rating": 4.7,
-            "reviewCount": 2902,
+            "reviewCount": 1786,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -14201,10 +14207,10 @@
             "price": 5800000,
             "originalPrice": 6500000,
             "category": "apartment",
-            "stock": 111,
+            "stock": 151,
             "reorderPoint": 15,
             "rating": 4.4,
-            "reviewCount": 4140,
+            "reviewCount": 900,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -14221,10 +14227,10 @@
             "price": 3500000,
             "originalPrice": 4000000,
             "category": "plot",
-            "stock": 107,
+            "stock": 170,
             "reorderPoint": 15,
             "rating": 4.2,
-            "reviewCount": 4440,
+            "reviewCount": 2237,
             "veg": true,
             "fssai": "10019062000",
             "weight": "",
@@ -14241,22 +14247,16 @@
             "customerId": "C-001",
             "items": [
               {
-                "productId": "P-1",
-                "name": "2BHK Apartment - Andheri",
-                "qty": 1,
-                "price": 8500000
-              },
-              {
                 "productId": "P-3",
                 "name": "Studio Apartment - Koramangala",
-                "qty": 3,
+                "qty": 1,
                 "price": 4500000
               }
             ],
-            "total": 22000000,
+            "total": 4500000,
             "status": "pending",
             "paymentMethod": "upi",
-            "shippingAddress": "Delhi",
+            "shippingAddress": "Lucknow",
             "createdAt": "2026-05-21",
             "updatedAt": "2026-05-21"
           },
@@ -14265,28 +14265,28 @@
             "customerId": "C-002",
             "items": [
               {
-                "productId": "P-1",
-                "name": "2BHK Apartment - Andheri",
-                "qty": 2,
-                "price": 8500000
+                "productId": "P-2",
+                "name": "3BHK Villa - Whitefield",
+                "qty": 1,
+                "price": 15000000
+              },
+              {
+                "productId": "P-2",
+                "name": "3BHK Villa - Whitefield",
+                "qty": 3,
+                "price": 15000000
               },
               {
                 "productId": "P-3",
                 "name": "Studio Apartment - Koramangala",
                 "qty": 2,
                 "price": 4500000
-              },
-              {
-                "productId": "P-6",
-                "name": "Plot - Devanahalli",
-                "qty": 2,
-                "price": 3500000
               }
             ],
-            "total": 33000000,
+            "total": 69000000,
             "status": "processing",
             "paymentMethod": "cod",
-            "shippingAddress": "Delhi",
+            "shippingAddress": "Mumbai",
             "createdAt": "2026-05-26",
             "updatedAt": "2026-05-26"
           },
@@ -14295,28 +14295,28 @@
             "customerId": "C-003",
             "items": [
               {
-                "productId": "P-4",
-                "name": "Commercial Office Space - BKC",
-                "qty": 2,
-                "price": 25000000
+                "productId": "P-1",
+                "name": "2BHK Apartment - Andheri",
+                "qty": 3,
+                "price": 8500000
               },
               {
                 "productId": "P-6",
                 "name": "Plot - Devanahalli",
-                "qty": 3,
+                "qty": 1,
                 "price": 3500000
               },
               {
-                "productId": "P-4",
-                "name": "Commercial Office Space - BKC",
+                "productId": "P-1",
+                "name": "2BHK Apartment - Andheri",
                 "qty": 3,
-                "price": 25000000
+                "price": 8500000
               }
             ],
-            "total": 135500000,
+            "total": 54500000,
             "status": "shipped",
             "paymentMethod": "card",
-            "shippingAddress": "Mumbai",
+            "shippingAddress": "Ahmedabad",
             "createdAt": "2026-05-31",
             "updatedAt": "2026-05-31"
           },
@@ -14325,28 +14325,22 @@
             "customerId": "C-004",
             "items": [
               {
-                "productId": "P-2",
-                "name": "3BHK Villa - Whitefield",
-                "qty": 2,
-                "price": 15000000
-              },
-              {
-                "productId": "P-5",
-                "name": "1BHK Flat - Vashi",
-                "qty": 2,
-                "price": 5800000
-              },
-              {
                 "productId": "P-3",
                 "name": "Studio Apartment - Koramangala",
                 "qty": 3,
                 "price": 4500000
+              },
+              {
+                "productId": "P-4",
+                "name": "Commercial Office Space - BKC",
+                "qty": 1,
+                "price": 25000000
               }
             ],
-            "total": 55100000,
+            "total": 38500000,
             "status": "delivered",
             "paymentMethod": "netbanking",
-            "shippingAddress": "Jaipur",
+            "shippingAddress": "Bangalore",
             "createdAt": "2026-06-05",
             "updatedAt": "2026-06-05"
           },
@@ -14355,19 +14349,25 @@
             "customerId": "C-005",
             "items": [
               {
-                "productId": "P-4",
-                "name": "Commercial Office Space - BKC",
-                "qty": 3,
-                "price": 25000000
+                "productId": "P-3",
+                "name": "Studio Apartment - Koramangala",
+                "qty": 2,
+                "price": 4500000
               },
               {
-                "productId": "P-5",
-                "name": "1BHK Flat - Vashi",
-                "qty": 1,
-                "price": 5800000
+                "productId": "P-2",
+                "name": "3BHK Villa - Whitefield",
+                "qty": 3,
+                "price": 15000000
+              },
+              {
+                "productId": "P-3",
+                "name": "Studio Apartment - Koramangala",
+                "qty": 2,
+                "price": 4500000
               }
             ],
-            "total": 80800000,
+            "total": 63000000,
             "status": "cancelled",
             "paymentMethod": "upi",
             "shippingAddress": "Ahmedabad",
@@ -14379,7 +14379,7 @@
           {
             "id": "MOV-1",
             "productId": "P-1",
-            "quantity": 20,
+            "quantity": 8,
             "type": "sale",
             "orderId": "RE-001",
             "note": "Sold 2BHK Apartment - Andheri",
@@ -14388,7 +14388,7 @@
           {
             "id": "MOV-2",
             "productId": "P-2",
-            "quantity": 24,
+            "quantity": 5,
             "type": "sale",
             "orderId": "RE-002",
             "note": "Sold 3BHK Villa - Whitefield",
@@ -14397,7 +14397,7 @@
           {
             "id": "MOV-3",
             "productId": "P-3",
-            "quantity": 8,
+            "quantity": 19,
             "type": "sale",
             "orderId": "RE-003",
             "note": "Sold Studio Apartment - Koramangala",
@@ -14450,12 +14450,12 @@
         }
       ],
       "metrics": {
-        "totalRevenue": 245600000,
+        "totalRevenue": 166500000,
         "totalOrders": 5,
         "activeOrders": 3,
         "deliveredOrders": 1,
         "cancelledOrders": 1,
-        "averageOrderValue": 61400000,
+        "averageOrderValue": 41625000,
         "totalCustomers": 5,
         "repeatCustomerRate": 0,
         "lowStockItems": 0,
@@ -14499,39 +14499,40 @@
         },
         "topProducts": [
           {
-            "productId": "P-4",
-            "name": "Commercial Office Space - BKC",
-            "revenue": 125000000,
-            "units": 5
-          },
-          {
-            "productId": "P-3",
-            "name": "Studio Apartment - Koramangala",
-            "revenue": 36000000,
-            "units": 8
-          },
-          {
             "productId": "P-2",
             "name": "3BHK Villa - Whitefield",
-            "revenue": 30000000,
-            "units": 2
+            "revenue": 60000000,
+            "units": 4
           },
           {
             "productId": "P-1",
             "name": "2BHK Apartment - Andheri",
-            "revenue": 25500000,
-            "units": 3
+            "revenue": 51000000,
+            "units": 6
+          },
+          {
+            "productId": "P-3",
+            "name": "Studio Apartment - Koramangala",
+            "revenue": 27000000,
+            "units": 6
+          },
+          {
+            "productId": "P-4",
+            "name": "Commercial Office Space - BKC",
+            "revenue": 25000000,
+            "units": 1
           },
           {
             "productId": "P-6",
             "name": "Plot - Devanahalli",
-            "revenue": 17500000,
-            "units": 5
+            "revenue": 3500000,
+            "units": 1
           }
         ],
         "membershipBreakdown": {
-          "bronze": 3,
-          "gold": 2
+          "gold": 2,
+          "silver": 1,
+          "platinum": 2
         },
         "inventoryHealth": {
           "inStock": 6,
@@ -14548,7 +14549,7 @@
           "data": {
             "orderId": "RE-001",
             "customerId": "C-001",
-            "total": 22000000
+            "total": 4500000
           },
           "timestamp": "2026-05-21"
         },
@@ -14560,7 +14561,7 @@
           "data": {
             "orderId": "RE-002",
             "customerId": "C-002",
-            "total": 33000000
+            "total": 69000000
           },
           "timestamp": "2026-05-26"
         },
@@ -14572,7 +14573,7 @@
           "data": {
             "orderId": "RE-003",
             "customerId": "C-003",
-            "total": 135500000
+            "total": 54500000
           },
           "timestamp": "2026-05-31"
         },
@@ -14584,7 +14585,7 @@
           "data": {
             "orderId": "RE-004",
             "customerId": "C-004",
-            "total": 55100000
+            "total": 38500000
           },
           "timestamp": "2026-06-05"
         },
@@ -14596,7 +14597,7 @@
           "data": {
             "orderId": "RE-005",
             "customerId": "C-005",
-            "total": 80800000
+            "total": 63000000
           },
           "timestamp": "2026-06-10"
         }

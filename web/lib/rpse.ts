@@ -857,6 +857,74 @@ export function evaluateHumanPerception(
 }
 
 // ═══════════════════════════════════════════════════════════
+// WORKFLOW REALITY SCORE
+// "Can the user actually complete the core job?"
+// ═══════════════════════════════════════════════════════════
+
+export interface WorkflowRealityResult {
+  score: number;
+  workflows: { name: string; score: number; checks: string[] }[];
+  verdict: string;
+}
+
+const DOMAIN_WORKFLOWS: Record<string, { name: string; required: string[] }[]> = {
+  ecommerce: [
+    { name: "Browse & Search", required: ["searchQuery", "activeCategory", "sortBy", "filter"] },
+    { name: "Add to Cart", required: ["addItem", "useCart", "onClick"] },
+    { name: "Checkout", required: ["step", "address", "paymentMethod", "placeOrder"] },
+    { name: "Order Tracking", required: ["orderId", "delivery", "status"] },
+  ],
+  "gym-crm": [
+    { name: "Create Member", required: ["addMember", "form", "onSubmit"] },
+    { name: "Assign Trainer", required: ["trainer", "assign", "select"] },
+    { name: "Track Attendance", required: ["attendance", "checkin", "present"] },
+    { name: "Generate Invoice", required: ["invoice", "amount", "pay"] },
+  ],
+  saas: [
+    { name: "Create Workspace", required: ["workspace", "create", "name"] },
+    { name: "Invite Users", required: ["invite", "email", "role"] },
+    { name: "Manage Subscription", required: ["plan", "subscribe", "billing"] },
+    { name: "View Analytics", required: ["chart", "metric", "period"] },
+  ],
+  restaurant: [
+    { name: "Browse Menu", required: ["menu", "category", "item"] },
+    { name: "Place Order", required: ["order", "quantity", "checkout"] },
+    { name: "Table Reservation", required: ["reservation", "date", "time", "guests"] },
+    { name: "Track Order", required: ["status", "preparing", "delivered"] },
+  ],
+  "healthcare-clinic": [
+    { name: "Book Appointment", required: ["appointment", "doctor", "date", "time"] },
+    { name: "View Records", required: ["patient", "history", "record"] },
+    { name: "Make Payment", required: ["payment", "amount", "receipt"] },
+  ],
+};
+
+export function evaluateWorkflowReality(
+  files: Array<{ path: string; content: string; type: string }>,
+  domain: string
+): WorkflowRealityResult {
+  const allContent = files.map(f => f.content).join("\n");
+  const workflows = DOMAIN_WORKFLOWS[domain] || DOMAIN_WORKFLOWS.ecommerce;
+
+  const results = workflows.map(wf => {
+    const checks = wf.required.filter(keyword => {
+      const regex = new RegExp(keyword, "i");
+      return regex.test(allContent);
+    });
+    const score = Math.round((checks.length / wf.required.length) * 100);
+    return { name: wf.name, score, checks: wf.required.map(r => `${r}: ${allContent.includes(r) ? "✓" : "✗"}`) };
+  });
+
+  const avgScore = Math.round(results.reduce((s, r) => s + r.score, 0) / results.length);
+  const failedWorkflows = results.filter(r => r.score < 80);
+  const verdict = failedWorkflows.length === 0
+    ? "All core workflows are functional."
+    : `Needs improvement: ${failedWorkflows.map(w => w.name).join(", ")}.`;
+
+  return { score: avgScore, workflows: results, verdict };
+}
+
+// ═══════════════════════════════════════════════════════════
 // DATA PROVIDER FILE GENERATOR
 // ═══════════════════════════════════════════════════════════
 
