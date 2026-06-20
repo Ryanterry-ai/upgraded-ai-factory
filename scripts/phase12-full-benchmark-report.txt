@@ -1,0 +1,169 @@
+╔══════════════════════════════════════════════════════════════════════════════════╗
+║       PHASE 12.5 — FULL GENERATION BENCHMARK (Actual Pipeline Output)          ║
+╚══════════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                     AGGREGATE SCORES (Full Pipeline)                           │
+├──────────────────┬────────────┬────────────┬──────────────────────────────────┤
+│ Metric           │ Score      │ Target     │ Status                           │
+├──────────────────┼────────────┼────────────┼──────────────────────────────────┤
+│ Domain Realism   │  83/100     │ 85-95      │ ⚠️  CLOSE                            │
+│ Workflow Realism │  88/100     │ 85-95      │ ✅ PASS                            │
+│ Intent Alignment │  77/100     │ 80-95      │ ⚠️  CLOSE                            │
+│ Business Data    │  97/100     │ 90-100     │ ✅ PASS                            │
+│ Prod. Readiness  │  90/100     │ 90-100     │ ✅ PASS                            │
+├──────────────────┼────────────┼────────────┼──────────────────────────────────┤
+│ COMPOSITE        │  87/100     │ 88-95      │ ⚠️  CLOSE                            │
+└──────────────────┴────────────┴────────────┴──────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│            SUBSYSTEM vs FULL PIPELINE COMPARISON                               │
+├──────────────────┬────────────┬────────────┬──────────────────────────────────┤
+│ Metric           │ Subsystem  │ Full Gen   │ Delta                            │
+├──────────────────┼────────────┼────────────┼──────────────────────────────────┤
+│ Domain Realism   │  66/100    │  83/100    │ +17                                │
+│ Workflow Realism │  85/100    │  88/100    │ +3                                │
+│ Intent Alignment │  67/100    │  77/100    │ +10                                │
+│ Business Data    │ 100/100    │  97/100    │ -3                               │
+│ Prod. Readiness  │  90/100    │  90/100    │ +0                                │
+├──────────────────┼────────────┼────────────┼──────────────────────────────────┤
+│ COMPOSITE        │  81/100    │  87/100    │ +6                                │
+└──────────────────┴────────────┴────────────┴──────────────────────────────────┘
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                     PER-PROMPT BREAKDOWN                                       │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+  ┌── Gym CRM SaaS ──
+  │
+  │ Domain Realism:       88/100
+  │ Workflow Realism:     85/100
+  │ Intent Alignment:     75/100
+  │ Business Data:        95/100
+  │ Prod. Readiness:      90/100
+  │ COMPOSITE:            87/100
+  │
+  │ Generated Files:
+  │   Pages: 9
+  │   Components: 28
+  │   Layouts: 1
+  │   Libs: 0
+  │   Total: 40
+  │
+  │ Blueprint: ✅ | Registry: ✅
+  │ Intent: Member retention is declining — members leave befo...
+  │ Agents: ran
+  └────────────────────────────────────
+
+  ┌── Supplement Ecommerce Store ──
+  │
+  │ Domain Realism:       76/100
+  │ Workflow Realism:     100/100
+  │ Intent Alignment:     75/100
+  │ Business Data:        100/100
+  │ Prod. Readiness:      90/100
+  │ COMPOSITE:            88/100
+  │
+  │ Generated Files:
+  │   Pages: 7
+  │   Components: 24
+  │   Layouts: 1
+  │   Libs: 0
+  │   Total: 34
+  │
+  │ Blueprint: ✅ | Registry: ✅
+  │ Intent: Product discovery and purchasing experience needs ...
+  │ Agents: ran
+  └────────────────────────────────────
+
+  ┌── Restaurant Management ──
+  │
+  │ Domain Realism:       73/100
+  │ Workflow Realism:     80/100
+  │ Intent Alignment:     85/100
+  │ Business Data:        90/100
+  │ Prod. Readiness:      90/100
+  │ COMPOSITE:            83/100
+  │
+  │ Generated Files:
+  │   Pages: 6
+  │   Components: 21
+  │   Layouts: 1
+  │   Libs: 0
+  │   Total: 30
+  │
+  │ Blueprint: ✅ | Registry: ✅
+  │ Intent: Restaurant operations need digital management — or...
+  │ Agents: ran
+  └────────────────────────────────────
+
+  ┌── Healthcare Clinic Platform ──
+  │
+  │ Domain Realism:       90/100
+  │ Workflow Realism:     95/100
+  │ Intent Alignment:     80/100
+  │ Business Data:        100/100
+  │ Prod. Readiness:      90/100
+  │ COMPOSITE:            92/100
+  │
+  │ Generated Files:
+  │   Pages: 7
+  │   Components: 17
+  │   Layouts: 1
+  │   Libs: 0
+  │   Total: 27
+  │
+  │ Blueprint: ✅ | Registry: ✅
+  │ Intent: Healthcare operations need digital management — pa...
+  │ Agents: ran
+  └────────────────────────────────────
+
+  ┌── SaaS Analytics Dashboard ──
+  │
+  │ Domain Realism:       81/100
+  │ Workflow Realism:     70/100
+  │ Intent Alignment:     65/100
+  │ Business Data:        95/100
+  │ Prod. Readiness:      90/100
+  │ COMPOSITE:            81/100
+  │
+  │ Generated Files:
+  │   Pages: 6
+  │   Components: 17
+  │   Layouts: 1
+  │   Libs: 0
+  │   Total: 26
+  │
+  │ Blueprint: ✅ | Registry: ✅
+  │ Intent: SaaS metrics need optimization — subscription life...
+  │ Agents: ran
+  └────────────────────────────────────
+
+  ┌── Real Estate CRM ──
+  │
+  │ Domain Realism:       90/100
+  │ Workflow Realism:     100/100
+  │ Intent Alignment:     80/100
+  │ Business Data:        100/100
+  │ Prod. Readiness:      90/100
+  │ COMPOSITE:            93/100
+  │
+  │ Generated Files:
+  │   Pages: 7
+  │   Components: 16
+  │   Layouts: 1
+  │   Libs: 0
+  │   Total: 26
+  │
+  │ Blueprint: ✅ | Registry: ✅
+  │ Intent: Real estate operations need digital management — p...
+  │ Agents: ran
+  └────────────────────────────────────
+
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                     DECISION                                                    │
+└─────────────────────────────────────────────────────────────────────────────────┘
+
+  ⚠️  VERDICT: There is a gap between architecture and generated applications.
+  The pipeline generates good structure but output quality needs improvement.
+  Focus on: file generation quality, component depth, real content.
