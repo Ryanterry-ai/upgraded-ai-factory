@@ -112,6 +112,32 @@ const DOMAIN_PRODUCTS: Record<string, BusinessGenesis["products"]> = {
     { id: "p3", name: "Dental Cleaning", category: "Dental", price: 800, description: "Professional dental cleaning and oral health checkup.", benefits: ["Deep Cleaning", "Polish", "Oral Checkup"], rating: 4.5, reviews: 234, inStock: true },
     { id: "p4", name: "Physiotherapy Session", category: "Therapy", price: 1200, description: "One-on-one physiotherapy session. 45 minutes.", benefits: ["Personalized Plan", "Pain Relief", "Mobility Improvement"], rating: 4.7, reviews: 178, inStock: true },
   ],
+  "agency-crm": [
+    { id: "p1", name: "Starter Plan", category: "Plan", price: 2999, period: "/month", description: "For small agencies with up to 5 team members.", benefits: ["10 Client Accounts", "Basic Pipeline", "Email Integration", "Reporting"], rating: 4.5, reviews: 234, inStock: true, badge: "Starter" },
+    { id: "p2", name: "Growth Plan", category: "Plan", price: 7999, period: "/month", description: "For growing agencies with up to 20 team members.", benefits: ["50 Client Accounts", "Advanced Pipeline", "WhatsApp Integration", "Custom Reports", "Priority Support"], rating: 4.7, reviews: 189, inStock: true, badge: "Most Popular" },
+    { id: "p3", name: "Enterprise Plan", category: "Plan", price: 19999, period: "/month", description: "For large agencies with unlimited team members.", benefits: ["Unlimited Clients", "White Label", "API Access", "Custom Integrations", "Dedicated Manager"], rating: 4.8, reviews: 67, inStock: true },
+  ],
+  "education-platform": [
+    { id: "p1", name: "Basic Course", category: "Course", price: 999, description: "Foundation course with 20 video lessons and quizzes.", benefits: ["20 Video Lessons", "Quizzes", "Certificate", "6-month Access"], rating: 4.6, reviews: 890, inStock: true },
+    { id: "p2", name: "Pro Bootcamp", category: "Bootcamp", price: 9999, originalPrice: 14999, description: "8-week intensive bootcamp with live sessions and projects.", benefits: ["Live Sessions", "4 Projects", "1-on-1 Mentoring", "Job Assistance"], rating: 4.8, reviews: 567, inStock: true, badge: "Best Seller" },
+    { id: "p3", name: "Enterprise Training", category: "Corporate", price: 49999, description: "Custom training program for teams of 10+ employees.", benefits: ["Custom Curriculum", "Dedicated Trainer", "Progress Tracking", "Completion Reports"], rating: 4.7, reviews: 89, inStock: true },
+  ],
+  "real-estate-crm": [
+    { id: "p1", name: "Basic Listing", category: "Listing", price: 1999, period: "/month", description: "List up to 20 properties with photos and details.", benefits: ["20 Listings", "Photo Upload", "Lead Capture", "Basic Analytics"], rating: 4.5, reviews: 345, inStock: true },
+    { id: "p2", name: "Premium Listing", category: "Listing", price: 4999, period: "/month", description: "Unlimited listings with virtual tours and priority placement.", benefits: ["Unlimited Listings", "Virtual Tours", "Priority Placement", "CRM Integration"], rating: 4.7, reviews: 234, inStock: true, badge: "Most Popular" },
+    { id: "p3", name: "Brokerage Suite", category: "Suite", price: 14999, period: "/month", description: "Complete brokerage management with agent tracking and commissions.", benefits: ["Agent Management", "Commission Tracking", "Lead Distribution", "Performance Reports"], rating: 4.8, reviews: 123, inStock: true },
+  ],
+  "hotel-booking": [
+    { id: "p1", name: "Standard Room", category: "Room", price: 3999, period: "/night", description: "Comfortable room with queen bed, AC, and free Wi-Fi.", benefits: ["Queen Bed", "AC", "Free Wi-Fi", "Room Service"], rating: 4.5, reviews: 890, inStock: true },
+    { id: "p2", name: "Deluxe Suite", category: "Suite", price: 7999, period: "/night", description: "Spacious suite with living area, balcony, and premium amenities.", benefits: ["King Bed", "Living Area", "Balcony", "Premium Toiletries", "Mini Bar"], rating: 4.7, reviews: 567, inStock: true, badge: "Popular" },
+    { id: "p3", name: "Family Package", category: "Package", price: 12999, period: "/2 nights", description: "2-night stay with breakfast, dinner, and kids activities.", benefits: ["2 Nights", "Breakfast & Dinner", "Kids Activities", "Late Checkout"], rating: 4.8, reviews: 345, inStock: true, badge: "Best Value" },
+  ],
+  "beauty-salon": [
+    { id: "p1", name: "Haircut & Styling", category: "Hair", price: 899, description: "Professional haircut with wash, conditioning, and styling.", benefits: ["Consultation", "Wash", "Cut", "Styling"], rating: 4.6, reviews: 1234, inStock: true },
+    { id: "p2", name: "Bridal Makeup Package", category: "Makeup", price: 14999, originalPrice: 19999, description: "Complete bridal makeup with trial session, HD makeup, and hair styling.", benefits: ["Trial Session", "HD Makeup", "Hair Styling", "Touch-ups"], rating: 4.8, reviews: 456, inStock: true, badge: "Premium" },
+    { id: "p3", name: "Facial & Cleanup", category: "Skincare", price: 1499, description: "Deep cleansing facial with skin analysis and personalized treatment.", benefits: ["Skin Analysis", "Deep Cleanse", "Massage", "Mask", "Moisturize"], rating: 4.7, reviews: 789, inStock: true },
+    { id: "p4", name: "Full Body Massage", category: "Spa", price: 2499, description: "90-minute relaxation massage with aromatherapy oils.", benefits: ["90 Minutes", "Aromatherapy", "Pressure Points", "Hot Towels"], rating: 4.9, reviews: 567, inStock: true, badge: "Top Rated" },
+  ],
 };
 
 const DOMAIN_TESTIMONIALS: Record<string, BusinessGenesis["testimonials"]> = {
@@ -139,9 +165,32 @@ const DOMAIN_TESTIMONIALS: Record<string, BusinessGenesis["testimonials"]> = {
     { name: "Amit Deshmukh", location: "Pune", rating: 4, quote: "Great value for money. The free tier is more generous than competitors' paid plans.", product: "Starter" },
   ],
   "healthcare-clinic": [
-    { name: "Sunita Devi", location: "Delhi", rating: 5, quote: "The health checkup package is excellent value. Caught a vitamin deficiency early.", product: "Health Checkup Package" },
-    { name: "Ramesh Iyer", location: "Chennai", rating: 5, quote: "Dr. Sharma is very thorough and caring. Best physiotherapy experience I've had.", product: "Physiotherapy Session" },
-    { name: "Kavitha Reddy", location: "Hyderabad", rating: 4, quote: "Clean facilities and minimal wait times. The online booking system is very convenient.", product: "General Consultation" },
+    { name: "Priya Reddy", location: "Hyderabad", rating: 5, quote: "The health checkup package was comprehensive. Caught my vitamin D deficiency early.", product: "Health Checkup Package" },
+    { name: "Arun Mehta", location: "Pune", rating: 4, quote: "Quick appointments and the doctors are very thorough. The physiotherapy sessions helped my back pain.", product: "Physiotherapy Session" },
+    { name: "Sneha Iyer", location: "Chennai", rating: 5, quote: "Best dental clinic in the area. Painless cleaning and very hygienic setup.", product: "Dental Cleaning" },
+  ],
+  "agency-crm": [
+    { name: "Rohit Verma", location: "Mumbai", rating: 5, quote: "Switched from HubSpot to this. The India-specific features and WhatsApp integration are game changers.", product: "Growth Plan" },
+    { name: "Ananya Bose", location: "Kolkata", rating: 4, quote: "Pipeline management is intuitive. Our lead conversion rate improved by 35% in 2 months.", product: "Growth Plan" },
+    { name: "Karthik Nair", location: "Bangalore", rating: 5, quote: "The client reporting feature saves us 10 hours per week. Clients love the automated updates.", product: "Enterprise Plan" },
+  ],
+  "education-platform": [
+    { name: "Aditya Sharma", location: "Delhi", rating: 5, quote: "The bootcamp was intense but worth every rupee. Got placed within 2 weeks of completion.", product: "Pro Bootcamp" },
+    { name: "Meera Krishnan", location: "Chennai", rating: 4, quote: "Good course content and the mentor was very supportive. Would recommend for beginners.", product: "Basic Course" },
+    { name: "Vikram Patel", location: "Ahmedabad", rating: 5, quote: "We trained 50 employees through the enterprise program. The custom curriculum was exactly what we needed.", product: "Enterprise Training" },
+  ],
+  "real-estate-crm": [
+    { name: "Sanjay Gupta", location: "Gurgaon", rating: 5, quote: "The virtual tour feature helped us close 3 deals without in-person visits. Game changer for NRI clients.", product: "Premium Listing" },
+    { name: "Pooja Agarwal", location: "Mumbai", rating: 4, quote: "Lead capture from property portals flows directly into the CRM. No more manual data entry.", product: "Premium Listing" },
+  ],
+  "hotel-booking": [
+    { name: "Rahul Malhotra", location: "Delhi", rating: 5, quote: "Booked the family package for Diwali. Kids loved the activities and the food was excellent.", product: "Family Package" },
+    { name: "Shruti Desai", location: "Pune", rating: 4, quote: "The deluxe suite had a beautiful view. Check-in was seamless and the staff was very courteous.", product: "Deluxe Suite" },
+  ],
+  "beauty-salon": [
+    { name: "Neha Kapoor", location: "Mumbai", rating: 5, quote: "The bridal makeup was flawless. My wedding photos look stunning. Thank you, Glow Studio!", product: "Bridal Makeup Package" },
+    { name: "Deepika Rao", location: "Bangalore", rating: 5, quote: "Best facial I've ever had. My skin is glowing. The skin analysis was very detailed.", product: "Facial & Cleanup" },
+    { name: "Ishita Banerjee", location: "Kolkata", rating: 4, quote: "Very professional hair styling. They understood exactly what I wanted.", product: "Haircut & Styling" },
   ],
 };
 
@@ -176,6 +225,36 @@ const DOMAIN_STATS: Record<string, BusinessGenesis["stats"]> = {
     { label: "Success Rate", value: "98%" },
     { label: "Years Experience", value: "15" },
   ],
+  "agency-crm": [
+    { label: "Clients Managed", value: "2,300+" },
+    { label: "Leads Processed", value: "45,000+" },
+    { label: "Revenue Tracked", value: "₹85 Cr+" },
+    { label: "Team Productivity", value: "+40%" },
+  ],
+  "education-platform": [
+    { label: "Students Enrolled", value: "8,500+" },
+    { label: "Courses Available", value: "120+" },
+    { label: "Completion Rate", value: "92%" },
+    { label: "Placement Rate", value: "85%" },
+  ],
+  "real-estate-crm": [
+    { label: "Properties Listed", value: "3,200+" },
+    { label: "Deals Closed", value: "1,100+" },
+    { label: "Agents Active", value: "250+" },
+    { label: "Client Satisfaction", value: "96%" },
+  ],
+  "hotel-booking": [
+    { label: "Happy Guests", value: "25,000+" },
+    { label: "Room Nights Sold", value: "48,000+" },
+    { label: "Average Rating", value: "4.7/5" },
+    { label: "Repeat Guests", value: "65%" },
+  ],
+  "beauty-salon": [
+    { label: "Happy Clients", value: "15,000+" },
+    { label: "Services Completed", value: "32,000+" },
+    { label: "Expert Stylists", value: "12+" },
+    { label: "Client Rating", value: "4.8/5" },
+  ],
 };
 
 const DOMAIN_OFFERS: Record<string, BusinessGenesis["offers"]> = {
@@ -196,6 +275,25 @@ const DOMAIN_OFFERS: Record<string, BusinessGenesis["offers"]> = {
   ],
   "healthcare-clinic": [
     { code: "HEALTH10", discount: 10, type: "percentage", minOrder: 0, description: "10% off on health packages" },
+  ],
+  "agency-crm": [
+    { code: "AGENCY30", discount: 30, type: "percentage", minOrder: 0, description: "30% off on first 3 months" },
+    { code: "FREEAUDIT", discount: 0, type: "fixed", minOrder: 0, description: "Free brand audit with any plan" },
+  ],
+  "education-platform": [
+    { code: "STUDENT25", discount: 25, type: "percentage", minOrder: 0, description: "25% off for students" },
+    { code: "BUNDLE50", discount: 50, type: "fixed", minOrder: 4999, description: "₹500 off on course bundles" },
+  ],
+  "real-estate-crm": [
+    { code: "HOME10", discount: 10, type: "percentage", minOrder: 0, description: "10% off on listing packages" },
+  ],
+  "hotel-booking": [
+    { code: "EARLY20", discount: 20, type: "percentage", minOrder: 0, description: "20% off on early bird bookings" },
+    { code: "STAY3", discount: 0, type: "fixed", minOrder: 0, description: "Stay 3 nights, pay for 2" },
+  ],
+  "beauty-salon": [
+    { code: "GLAM20", discount: 20, type: "percentage", minOrder: 0, description: "20% off on first visit" },
+    { code: "MEMBER15", discount: 15, type: "percentage", minOrder: 0, description: "15% off for members" },
   ],
 };
 
