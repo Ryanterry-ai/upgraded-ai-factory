@@ -742,6 +742,121 @@ export function validateRealism(
 }
 
 // ═══════════════════════════════════════════════════════════
+// HUMAN PERCEPTION BENCHMARK
+// "Would someone believe this business exists?"
+// ═══════════════════════════════════════════════════════════
+
+export interface HumanPerceptionResult {
+  score: number;
+  grade: "A" | "B" | "C" | "D" | "F";
+  checks: { name: string; passed: boolean; weight: number; detail: string }[];
+  verdict: string;
+}
+
+export function evaluateHumanPerception(
+  files: Array<{ path: string; content: string; type: string }>,
+  domain: string,
+  brandName?: string
+): HumanPerceptionResult {
+  const checks: HumanPerceptionResult["checks"] = [];
+
+  // 1. Brand name is NOT generic (weight: 15)
+  const allContent = files.map(f => f.content).join("\n");
+  const genericNames = ["my-project", "project", "my app", "the app", "untitled"];
+  const hasRealBrand = brandName && !genericNames.includes(brandName.toLowerCase());
+  checks.push({
+    name: "Brand Name",
+    passed: !!hasRealBrand,
+    weight: 15,
+    detail: hasRealBrand ? `Brand "${brandName}" is specific` : "Generic brand name detected",
+  });
+
+  // 2. Realistic pricing with currency (weight: 15)
+  const hasCurrency = /₹\s*\d|Rs\.?\s*\d|\$\s*\d|€\s*\d|£\s*\d/.test(allContent);
+  const hasPricing = /plan|pricing|price|per month|\/mo|\/year/i.test(allContent);
+  checks.push({
+    name: "Pricing",
+    passed: hasCurrency && hasPricing,
+    weight: 15,
+    detail: hasCurrency && hasPricing ? "Real currency and pricing found" : "Missing realistic pricing",
+  });
+
+  // 3. Real testimonials with names and locations (weight: 15)
+  const indianNames = /Priya|Amit|Rahul|Sneha|Vikram|Neha|Arjun|Deepa|Karan|Meera|Alex|Sarah|Mike|Priya|Viren/i;
+  const hasTestimonials = /testimonial|review|customer|client/i.test(allContent);
+  const hasNames = indianNames.test(allContent);
+  checks.push({
+    name: "Testimonials",
+    passed: hasTestimonials && hasNames,
+    weight: 15,
+    detail: hasTestimonials && hasNames ? "Real testimonials with named customers" : "Missing or generic testimonials",
+  });
+
+  // 4. Domain-specific products (weight: 15)
+  const domainProducts: Record<string, RegExp> = {
+    ecommerce: /whey protein|creatine|protein powder|pre-workout|bcaa|fish oil|multivitamin/i,
+    restaurant: /sashimi|roll|nigiri|tempura|edamame|miso|teriyaki|ramen/i,
+    "gym-crm": /membership|trainer|workout|plan|session|class/i,
+    saas: /dashboard|analytics|report|api|integration|team/i,
+    healthcare: /doctor|appointment|consultation|treatment|patient|clinic/i,
+  };
+  const pattern = domainProducts[domain];
+  const hasDomainContent = pattern ? pattern.test(allContent) : true;
+  checks.push({
+    name: "Domain Products",
+    passed: hasDomainContent,
+    weight: 15,
+    detail: hasDomainContent ? `Domain-specific content for "${domain}" found` : `No ${domain}-specific products`,
+  });
+
+  // 5. No placeholder images (weight: 10)
+  const hasPlaceholders = /\/api\/placeholder|lorem\s+ipsum|placeholder\.com/i.test(allContent);
+  checks.push({
+    name: "No Placeholders",
+    passed: !hasPlaceholders,
+    weight: 10,
+    detail: hasPlaceholders ? "Placeholder images or text detected" : "Clean — no placeholder content",
+  });
+
+  // 6. Realistic business stats (weight: 10)
+  const hasStats = /\d{1,3}(,\d{3})+|\d+(\.\d+)?%|\d+\+?\s*(customers|users|members|orders)/i.test(allContent);
+  checks.push({
+    name: "Business Stats",
+    passed: hasStats,
+    weight: 10,
+    detail: hasStats ? "Realistic business metrics present" : "No business metrics found",
+  });
+
+  // 7. Checkout/cart or CTA flow exists (weight: 10)
+  const hasFlow = /cart|checkout|buy|order|sign up|get started|subscribe/i.test(allContent);
+  checks.push({
+    name: "Conversion Flow",
+    passed: hasFlow,
+    weight: 10,
+    detail: hasFlow ? "Action flow (cart/checkout/CTA) present" : "No conversion mechanism found",
+  });
+
+  // Calculate score
+  const totalWeight = checks.reduce((s, c) => s + c.weight, 0);
+  const earnedWeight = checks.filter(c => c.passed).reduce((s, c) => s + c.weight, 0);
+  const score = Math.round((earnedWeight / totalWeight) * 100);
+
+  let grade: HumanPerceptionResult["grade"];
+  if (score >= 90) grade = "A";
+  else if (score >= 80) grade = "B";
+  else if (score >= 70) grade = "C";
+  else if (score >= 60) grade = "D";
+  else grade = "F";
+
+  const failedChecks = checks.filter(c => !c.passed);
+  const verdict = failedChecks.length === 0
+    ? "A real customer would believe this business exists."
+    : `Needs improvement: ${failedChecks.map(c => c.name).join(", ")}.`;
+
+  return { score, grade, checks, verdict };
+}
+
+// ═══════════════════════════════════════════════════════════
 // DATA PROVIDER FILE GENERATOR
 // ═══════════════════════════════════════════════════════════
 

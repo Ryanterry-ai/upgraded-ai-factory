@@ -28,6 +28,7 @@ import {
   getRPSEActivityFeed,
   getRPSEMetrics,
   validateRealism,
+  evaluateHumanPerception,
   generateDataProvider,
   type RPSEContext,
   type RPSEDataBundle,
@@ -5550,6 +5551,16 @@ export async function runGeneration(
     }
     if (!realismResult.passed) {
       emit("thinking", { message: `RPSE realism check failed (score: ${realismResult.score}). Output may look like scaffolding.` });
+    }
+
+    // ═══ HUMAN PERCEPTION BENCHMARK ═══
+    const perception = evaluateHumanPerception(files, rpseDomain, projectName);
+    emit("thinking", { message: `Human Perception: ${perception.score}/100 (Grade ${perception.grade}) — ${perception.verdict}` });
+    if (perception.score < 85) {
+      const failed = perception.checks.filter(c => !c.passed);
+      for (const f of failed) {
+        emit("thinking", { message: `  ✗ ${f.name}: ${f.detail}` });
+      }
     }
 
     // Generate preview from files (React preview for non-scraped, HTML for scraped)
